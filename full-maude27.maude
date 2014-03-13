@@ -1,5 +1,4 @@
-
-----                                                To be run on Maude alpha96b
+----                                                     To be run on Maude 2.7 (alpha 101)
 ----                                                    author: Francisco Duran
 ----                           printSyntaxError functionality by Peter Olveczky
 ----                                       narrowing search by Santiago Escobar
@@ -11,7 +10,7 @@ set show advisories off .
 fmod BANNER is 
   pr STRING .
   op banner : -> String .
-  eq banner = "Full Maude alpha96b-1 November 19th 2012" .
+  eq banner = "Full Maude 2.7 March 13th 2013" .
 endfm
 
 ***(
@@ -35,7 +34,6 @@ endfm
 )
 
 ---- to do:
----- - commands remove ids and remove non-handled ids
 ---- - continue .
 ---- - show search graph .
 ---- - show path <number> .
@@ -44,9 +42,18 @@ endfm
 
 ---- Main changes and bugs fixed:
 ----
+---- - December 12th, 2013
+----   - Bug in the renaming of operators with explicit arity where parameterized sorts 
+----     are used. 
+----   - Bug in the renaming of ac operators fixed. Given an acu operator __, a term 
+----     card(E E S, C) was not renamed. 
+---- - July 24th, 2012
+----   - commands remove ids and remove non-handled ids available
 ---- - July 7th, 2012
-----   - A bug in the removal of identity attributes has been fixed. A variant 
-----     was expected in all equations to be used to generate the variants. 
+----   - A bug in the removal of identity attributes has been fixed. A metadata("variant") 
+----     was expected in all equations to be used to generate the variants. To be consistent 
+----     to the new built-in getVariants function I'm using the attribute variant instead
+----     of the metadata. 
 ---- - March 20th, 2012
 ----   - Core Maude views are now accessible from Full Maude. Full Maude do not require 
 ----     explicit sort maps any more.  
@@ -415,11 +422,14 @@ fmod TERM-HANDLING is
   *** ToDo: UPGRADE THIS NOTION TO MODULO AC *********************
   *** is_subTermOf_ *****************************************************
   op is_subTermOf_ : Term TermList -> Bool .
-  eq is T subTermOf T = true .
-  eq is T subTermOf (F[TL]) = is T subTermOf TL .
   eq is T subTermOf (T',NeTL) = is T subTermOf T' 
                                 or-else is T subTermOf NeTL .
-  eq is T subTermOf T' = false [owise] .
+  eq is T subTermOf T = true .
+  eq is T subTermOf T' = is T subTermOf* T' [owise] .
+
+  op is_subTermOf*_ : Term TermList -> Bool .
+  eq is T subTermOf* (F[TL]) = is T subTermOf TL .
+  eq is T subTermOf* T' = false [owise] .
 
   *** noVarOfSort_In_ *****************************************************
   op noVarOfSort_In_ : Type TermList -> Bool .
@@ -536,10 +546,6 @@ fmod TERM-HANDLING is
   eq addTypeVar(F,TP)
    = qid( string(F) + ":" + string(TP) ) .
 
-  *** createTerm  ******************************
-  op createTerm : Qid TypeList -> Term .
-
-
 endfm
 
 fmod SUBSTITUTION-HANDLING is
@@ -628,6 +634,12 @@ fmod SUBSTITUTION-HANDLING is
   eq empty intersectVar* TL2 
    = empty .
 
+  --- Remove Variables from list ----------------------
+  op _setMinus_ : TermList TermList -> TermList .
+  eq (TL1,T,TL2) setMinus (TL1',T,TL2') 
+   = (TL1,TL2) setMinus (TL1',TL2') .
+  eq TL setMinus TL' = TL [owise] .
+
   --- Variables ---
   op Vars : GTermList -> TermList .
   eq Vars((T,TL:GTermList)) = VarsTerm(T),Vars(TL:GTermList) .
@@ -668,14 +680,6 @@ fmod SUBSTITUTION-HANDLING is
   eq anyVars TL:GTermList inVars TL':GTermList 
    = any Vars(TL:GTermList) in Vars(TL':GTermList) .
 
----   op dom : Substitution -> TermList .
----   eq dom(V <- T ; Subst) = (V,dom(Subst)) .
----   eq dom(none) = empty .
-  
----   op range : Substitution -> TermList .
----   eq range(V <- T ; Subst) = (T,range(Subst)) .
----   eq range(none) = empty .
-
   op rangeVars : Substitution -> TermList .
   eq rangeVars(V <- T ; Subst) = (Vars(T),rangeVars(Subst)) .
   eq rangeVars(none) = empty .
@@ -686,6 +690,14 @@ fmod SUBSTITUTION-HANDLING is
   op dom_in_ : Substitution TermList -> Bool .
   eq dom (V <- T ; Subst) in (TL1,V,TL2) = true .
   eq dom Subst in TL = false [owise] .
+
+  op dom_notInVars_ : Substitution TermList -> Bool .
+  eq dom Subst notInVars TL = dom Subst notIn Vars(TL) .
+
+  op dom_notIn_ : Substitution TermList -> Bool .
+  eq dom none notIn TL = true .
+ ceq dom (V <- T ; Subst) notIn TL = true if not (V in TL) .
+  eq dom Subst notIn TL = false [owise] .
 
   op range_inVars_ : Substitution TermList -> Bool .
   eq range Subst inVars TL = range Subst in Vars(TL) .
@@ -804,7 +816,22 @@ fmod RENAMING is
                    rfind(string(V), "#", length(string(V))) + 1,
                    rfind(string(V), ":", length(string(V))) + (- 1))
               ,10) 
-     else 0
+     else 
+         if rfind(string(V), "%", length(string(V))) =/= notFound
+            and
+            rfind(string(V), ":", length(string(V))) =/= notFound
+            and
+            rat(substr(string(V),
+                       rfind(string(V), "%", length(string(V))) + 1,
+                       rfind(string(V), ":", length(string(V))) + (- 1))
+                ,10) 
+            :: Nat
+         then rat(substr(string(V),
+                         rfind(string(V), "%", length(string(V))) + 1,
+                         rfind(string(V), ":", length(string(V))) + (- 1))
+                  ,10) 
+         else 0
+         fi 
      fi .
 
   eq highestVarTerm(F[TL:GTermList]) 
@@ -1246,6 +1273,7 @@ fmod MODULE-HANDLING is
   eq canonice(M,(empty).UnificationTripleSet) = (empty).UnificationTripleSet .
   eq canonice(M,{S,S',N} | US) = {canonice(M,S),canonice(M,S'),N} | canonice(M,US) .
 
+
   *** normalize  ******************************
   op normalize : Module Term -> Term .
   eq normalize(M,T) = getTerm(metaReduce(eraseRls(M),T)) .
@@ -1333,14 +1361,27 @@ fmod MODULE-HANDLING is
      [owise] .
      
   *** getOpsOfQid ***********************************************
+  op getOpsOfQid : Module Qid -> OpDeclSet [memo] .
   op getOpsOfQid : Module Qid TypeList -> OpDeclSet [memo] .
+  op getOpsOfQid : Module OpDeclSet Qid -> OpDeclSet .
   op getOpsOfQid : Module OpDeclSet Qid TypeList -> OpDeclSet .
+
+  eq getOpsOfQid(M,F) 
+   = getOpsOfQid(M,getOps(M),F) .
 
   eq getOpsOfQid(M,F,TPL) 
    = if getOpsOfQid(M,getOps(M),F,TPL) =/= none
      then getOpsOfQid(M,getOps(M),F,TPL) 
      else getOpsOfQid(M,getOps(M),F,restrict TPL To 2) 
      fi .
+
+  eq getOpsOfQid(M,((op F : TPL -> TP [AtS] .) OPDS),F)
+    = (op F : TPL -> TP [AtS] .)
+      getOpsOfQid(M,OPDS,F) .
+
+  eq getOpsOfQid(M,OPDS,F')
+   = none
+     [owise] .
 
   eq getOpsOfQid(M,((op F : TPL -> TP [AtS] .) OPDS),F,TPL')
     = if eSameKind(M,TPL,TPL')
@@ -1357,6 +1398,15 @@ fmod MODULE-HANDLING is
   eq restrict nil To NL = nil .
   eq restrict TPL To 0 = nil .
   eq restrict (TP,TPL) To s(N) = (TP, restrict TPL To N) .
+
+  *** getOpsOfEqs ******************************************************
+  op getOpsOfEqs : EquationSet -> QidList [memo] .
+  eq getOpsOfEqs((eq C = T' [AtS] .) EqS )
+   = C getOpsOfEqs(EqS) .
+  eq getOpsOfEqs((eq F[TL] = T' [AtS] .) EqS )
+   = F getOpsOfEqs(EqS) .
+  eq getOpsOfEqs((none).EquationSet)
+   = nil .
 
   *** getEqsOfQid ******************************************************
   op getEqsOfQid : Module Qid TypeList -> EquationSet [memo] .
@@ -1492,31 +1542,6 @@ fmod MODULE-HANDLING is
    = anyIdSymbol(M,T:Term)
      or-else
      anyIdSymbol(M,S:Substitution) .
-
-  ****
-  op anyIdSymbolT&S : Module Term Substitution -> Bool .
-  eq anyIdSymbolT&S(M,C:Constant,S:Substitution) 
-   = false .
-  eq anyIdSymbolT&S(M,V:Variable,S:Substitution) 
-   = false .
-  eq anyIdSymbolT&S(M,F:Qid[TL:TermList],S:Substitution) 
-   = (getIdSymbol(M,F:Qid[TL:TermList]) :: Term 
-      and-then
-      inst(getIdSymbol(M,F:Qid[TL:TermList]),S:Substitution) )
-     or-else 
-     anyIdSymbolT&S*(M,TL:TermList,S:Substitution) .
-
-  op anyIdSymbolT&S* : Module TermList Substitution -> Bool .
-  eq anyIdSymbolT&S*(M,empty,S:Substitution) 
-   = false .
-  eq anyIdSymbolT&S*(M,(T:Term,TL:TermList),S:Substitution) 
-   = anyIdSymbolT&S(M,T:Term,S:Substitution)
-     or-else 
-     anyIdSymbolT&S*(M,TL:TermList,S:Substitution) .
-
-  op inst : Constant Substitution -> Bool .
-  eq inst(Id:Constant,V:Variable <- Id:Constant ; S:Substitution) = true .
-  eq inst(Id:Constant,S:Substitution) = false [owise] .
 
   *** eSameKind ******************************
   op eSameKind : Module TypeList TypeList -> Bool [memo] .
@@ -1709,6 +1734,53 @@ fmod MODULE-HANDLING is
        (getEqs(eqs2rls#(getEqsVariant(E:EquationSet))) getEqsNoVariant(E:EquationSet))
        getRls(eqs2rls#(getEqsVariant(E:EquationSet)))
      endm .
+
+  op removeVariantLabel : SModule -> SModule .
+  eq removeVariantLabel(
+      mod Q:Qid is
+       IL:ImportList
+       sorts S:SortSet .
+       S:SubsortDeclSet
+       O:OpDeclSet
+       M:MembAxSet
+       E:EquationSet
+       R:RuleSet
+      endm)
+   = mod (addsufix '-EQSV2EQSNV To Q:Qid) is
+       IL:ImportList
+       sorts S:SortSet .
+       S:SubsortDeclSet
+       O:OpDeclSet
+       M:MembAxSet
+       removeVariantLabel(E:EquationSet)
+       R:RuleSet
+      endm .
+
+  op removeVariantLabel : FModule -> SModule .
+  eq removeVariantLabel(
+      fmod Q:Qid is
+       IL:ImportList
+       sorts S:SortSet .
+       S:SubsortDeclSet
+       O:OpDeclSet
+       M:MembAxSet
+       E:EquationSet
+      endfm)
+   = fmod (addsufix '-EQSV2EQSNV To Q:Qid) is
+       IL:ImportList
+       sorts S:SortSet .
+       S:SubsortDeclSet
+       O:OpDeclSet
+       M:MembAxSet
+       removeVariantLabel(E:EquationSet)
+     endfm .
+
+  op removeVariantLabel : EquationSet -> EquationSet .
+  eq removeVariantLabel((eq Lhs = Rhs [AtS variant] .) EqS)
+   = (eq Lhs = Rhs [AtS] .)
+     removeVariantLabel(EqS) .
+  eq removeVariantLabel(EqS)
+   = EqS [owise] .
 
   *** getEqsNoBuiltInUnify *******************************
   op getEqsNoBuiltInUnify : Module -> EquationSet .
@@ -2094,14 +2166,14 @@ fmod MODULE-HANDLING is
      O:OpDeclSet M:MembAxSet E:EquationSet flipRls(R:RuleSet) endm .
 
   *** addOp *******************************
-  op addOps : OpDeclSet SModule -> SModule [memo] .
+  op addOps : OpDeclSet SModule -> SModule .
   eq addOps(OO:OpDeclSet,mod Q:Qid is IL:ImportList sorts S:SortSet . 
       S:SubsortDeclSet O:OpDeclSet M:MembAxSet E:EquationSet R:RuleSet endm)
    = mod (addsufix '-ADDEDOPS To Q:Qid)
      is IL:ImportList sorts S:SortSet . S:SubsortDeclSet 
      override(O:OpDeclSet,OO:OpDeclSet) 
      M:MembAxSet E:EquationSet R:RuleSet endm .
-  op addOps : OpDeclSet FModule -> FModule [memo] .
+  op addOps : OpDeclSet FModule -> FModule .
   eq addOps(OO:OpDeclSet,fmod Q:Qid is IL:ImportList sorts S:SortSet . 
       S:SubsortDeclSet O:OpDeclSet M:MembAxSet E:EquationSet endfm)
    = fmod (addsufix '-ADDEDOPS To Q:Qid)
@@ -2126,8 +2198,8 @@ fmod MODULE-HANDLING is
       O:OpDeclSet M:MembAxSet E:EquationSet (R:RuleSet RR:RuleSet) endm .
 
   *** addEqs *******************************
-  op addEqs : EquationSet SModule -> SModule [memo] .
-  op addEqs : EquationSet FModule -> FModule [memo] .
+  op addEqs : EquationSet SModule -> SModule .
+  op addEqs : EquationSet FModule -> FModule .
   eq addEqs(ES:EquationSet,mod Q:Qid is IL:ImportList sorts S:SortSet . 
           S:SubsortDeclSet O:OpDeclSet M:MembAxSet E:EquationSet R:RuleSet endm)
    = mod (addsufix '-ADDEDEQS To Q:Qid)
@@ -2140,8 +2212,8 @@ fmod MODULE-HANDLING is
       O:OpDeclSet M:MembAxSet (E:EquationSet ES:EquationSet) endfm .
 
   *** addSorts *******************************
-  op addSorts : SortSet SModule -> SModule [memo] .
-  op addSorts : SortSet FModule -> FModule [memo] .
+  op addSorts : SortSet SModule -> SModule .
+  op addSorts : SortSet FModule -> FModule .
   eq addSorts(X:SortSet,
        mod Q:Qid is IL:ImportList sorts S:SortSet . 
        S:SubsortDeclSet O:OpDeclSet M:MembAxSet E:EquationSet R:RuleSet endm)
@@ -2598,6 +2670,66 @@ fmod MODULE-HANDLING is
 
 endfm
 
+fmod VARIANT is
+  pr SUBSTITUTION-HANDLING .
+  pr MODULE-HANDLING .
+  pr META-LEVEL .
+
+  var M : Module .
+  vars T T' TS TS' CtTS CtTS' Lhs Rhs : Term .
+  vars N N' NextVar NextVar' NextVar'' : Nat .
+  var B : Bound .
+  var TL TL' : TermList .
+  var NeTL : NeTermList .
+  var EqS : EquationSet .
+  var AtS : AttrSet .
+  var Q : Qid .
+  vars S S' : Substitution .
+  var V : Variable .
+  vars TP TP' : Type .
+  var C : Constant .
+  vars F F' : Qid .
+
+  --- Variants ----------------------------------------------------------
+---  sort VariantTriple .
+---  op {_,_,_} : Term Substitution Nat -> VariantTriple [ctor] .
+
+  sort VariantTripleSet .
+---  subsort VariantTriple < VariantTripleSet .
+  subsort Variant < VariantTripleSet .
+  op empty : -> VariantTripleSet [ctor] .
+  op _|_ : VariantTripleSet VariantTripleSet -> VariantTripleSet
+    [ctor assoc comm id: empty prec 65 format (d d n d)] .
+---  eq X:VariantTriple | X:VariantTriple = X:VariantTriple .
+  eq X:Variant | X:Variant = X:Variant .
+
+  op getTerms : VariantTripleSet -> TermSet .
+  eq getTerms({T:Term,S:Substitution,NextVar:Nat} 
+              | R:VariantTripleSet)
+   = T:Term | getTerms(R:VariantTripleSet) .
+  eq getTerms((empty).VariantTripleSet)
+   = emptyTermSet .
+
+  op getSubstitutions : VariantTripleSet -> SubstitutionSet .
+  eq getSubstitutions({T:Term,S:Substitution,NextVar:Nat} 
+              | R:VariantTripleSet)
+   = S:Substitution | getSubstitutions(R:VariantTripleSet) .
+  eq getSubstitutions((empty).VariantTripleSet)
+   = empty .
+
+  --- Variants ----------------------------------------------------------
+  sort VariantFour .
+  op {_,_,_,_} : Term Substitution Substitution Nat -> VariantFour [ctor] .
+
+  sort VariantFourSet .
+  subsort VariantFour < VariantFourSet .
+  op empty : -> VariantFourSet [ctor] .
+  op _|_ : VariantFourSet VariantFourSet -> VariantFourSet
+    [ctor assoc comm id: empty prec 65 format (d d n d)] .
+  eq X:VariantFour | X:VariantFour = X:VariantFour .
+
+endfm
+
 fmod META-MINIMIZE-BINDINGS is
   pr SUBSTITUTION-HANDLING .
   pr MODULE-HANDLING .
@@ -2605,6 +2737,7 @@ fmod META-MINIMIZE-BINDINGS is
   pr UNIFICATIONTRIPLESET .
   pr CONVERSION .
   pr META-LEVEL .
+  pr VARIANT .
 
   vars M : Module .
   vars T T' T1 T2 T3 : Term .
@@ -2615,6 +2748,7 @@ fmod META-MINIMIZE-BINDINGS is
   vars N N' NOld : Nat .
   var US? : [UnificationTripleSet] .
   vars US US' : UnificationTripleSet .
+  vars VTS VTS' : VariantFourSet .
 
   --- minimizeBindings ---
   op minimizeBindingsTerm : Module TermList UnificationTripleSet
@@ -2672,13 +2806,71 @@ fmod META-MINIMIZE-BINDINGS is
    = minimizeBindingsTerm**(M,TL',NOld,{V <- T' ; S*,S'*,N},S,S')
   [owise] .
 
+  --- minimizeBindings ---
+  op minimizeBindingsTerm : Module TermList VariantFourSet
+                         -> VariantFourSet .
+  eq minimizeBindingsTerm(M,TL,VTS)
+   = minimizeBindingsTerm(M,TL,highestVar(TL),VTS) .
+
+  op minimizeBindingsTerm : Module TermList Nat VariantFourSet
+                         -> VariantFourSet .
+  eq minimizeBindingsTerm(M,TL,NOld,VTS) 
+   = minimizeBindingsTerm*(M,TL,NOld,VTS,empty) .
+
+  op minimizeBindingsTerm* : Module TermList Nat VariantFourSet
+                             VariantFourSet -> VariantFourSet .
+  eq minimizeBindingsTerm*(M,TL,NOld,empty,VTS') 
+   = VTS' .
+  eq minimizeBindingsTerm*(M,TL,NOld,{T,S,S',N} | VTS,VTS') 
+   = minimizeBindingsTerm*(M,TL,NOld,VTS,
+        VTS' | minimizeBindingsTerm**(M,TL,NOld,{T,S,S',N},S,S') 
+     ) .
+
+  ****************
+  op minimizeBindingsTerm** : Module TermList ---variables to minimize bindings
+                             Nat --- or maximum index of variables 
+                             VariantFour Substitution Substitution
+                          -> VariantFour .
+  eq minimizeBindingsTerm**(M,TL',NOld,{T,S*,S'*,N},none,none) 
+   = {T,remDup(S*),remDup(S'*),N} .
+
+ ceq minimizeBindingsTerm**(M,TL',NOld,{T,S*,V <- V' ; S'*,N},none,V <- V' ; S')
+   = minimizeBindingsTerm**(M,TL',NOld,
+         { T << (V' <- V), S* << (V' <- V),    S'* .. (V' <- V),  N},
+         none,
+         S' .. (V' <- V)
+     ) 
+  if V' =/= V and-then not (V in TL') and-then not (V' in TL')
+     and-then highestVar(V) < NOld
+     and-then highestVar(V') >= NOld
+     and-then typeLeq(M,getTypes(M,V),getTypes(M,V')) .
+
+  eq minimizeBindingsTerm**(M,TL',NOld,{T,S*,V <- T' ; S'*,N},none,V <- T' ; S')
+   = minimizeBindingsTerm**(M,TL',NOld,{T,S*,V <- T' ; S'*,N},none,S')
+  [owise] .
+
+ ceq minimizeBindingsTerm**(M,TL',NOld,{T,V <- V' ; S*,S'*,N},V <- V' ; S,S') 
+   = minimizeBindingsTerm**(M,TL',NOld,
+         { T << (V' <- V), S* << (V' <- V),   S'* .. (V' <- V),   N},
+         S << (V' <- V),    
+         S' .. (V' <- V)
+     )
+  if V' =/= V and-then V in TL' and-then not (V' in TL')
+     and-then typeLeq(M,getTypes(M,V),getTypes(M,V')) . 
+
+  eq minimizeBindingsTerm**(M,TL',NOld,{T,V <- T' ; S*,S'*,N},V <- T' ; S,S') 
+   = minimizeBindingsTerm**(M,TL',NOld,{T,V <- T' ; S*,S'*,N},S,S')
+  [owise] .
+
+  ****
   op remDup : Substitution -> Substitution .
   eq remDup(V <- V ; S) = remDup(S) .
   eq remDup(S) = S [owise] .
-
 endfm
+
 fmod TYPEOFNARROWING is
   pr QID .
+  pr META-TERM .
 
   --- TypeOfNarrowing ----------------------------------
   sorts TypeOfNarrowingElem TypeOfNarrowing .
@@ -2697,6 +2889,13 @@ fmod TYPEOFNARROWING is
 
   *** Extra flags
   op rigidife : Qid -> TypeOfNarrowingElem [ctor] .
+
+  *** Irreducible terms for equational unification to check
+  op irrTerms : TermList -> TypeOfNarrowingElem [ctor] .
+
+  op getIrrTerms : TypeOfNarrowing -> TermList .
+  eq getIrrTerms(X:TypeOfNarrowing irrTerms(TL:TermList)) = TL:TermList .
+  eq getIrrTerms(X:TypeOfNarrowing) = empty [owise] .
 
   *** select one and only one of the following
   op E-ACU-unify : -> TypeOfNarrowingElem [ctor] .
@@ -2860,13 +3059,23 @@ fmod RESULT-CONTEXT-SET is
   eq end(B:Flags) = false [owise] .
   ---
   
+  sorts TraceNarrowStep TraceNarrow TraceNarrowSet .
+  subsort TraceNarrowStep < TraceNarrow < TraceNarrowSet .
+  op {_,_,_,_} : Term Substitution Type Rule -> TraceNarrowStep [ctor format (d d d d d n d n d d)] .
+  op nil : -> TraceNarrow [ctor] .
+  op __ : TraceNarrow TraceNarrow -> TraceNarrow [ctor assoc id: nil format (d n d)] .
+  op empty : -> TraceNarrowSet [ctor] .
+  op _|_ : TraceNarrowSet TraceNarrowSet -> TraceNarrowSet [ctor assoc comm id: empty format (d n n d)] .
+
+  ---
   sorts ResultContext ResultContextSet ResultContextNeSet .
-  op {_,_,_,_,_,_,_,_,_,_} : 
+  op {_,_,_,_,_,_,_,_,_,_,_} : 
       Term Type 
       Substitution Substitution --- computed subs and applied subst
       Context Context --- Original and WithSubst
       Term Term --- TermWithSubst and ContextWithTermAndSubt
       Nat --- highest index of variable
+      TraceNarrow
       Flags 
       -> ResultContext [ctor] .
                
@@ -2880,26 +3089,26 @@ fmod RESULT-CONTEXT-SET is
 
   op getCTTerm : ResultContext -> Term .
   eq getCTTerm(
-      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags})
+      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags})
    = CtTS:Term .
   op getNextVar : ResultContext -> Nat .
   eq getNextVar(
-      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags})
+      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags})
    = NextVar .
   op getLSubst : ResultContext -> Substitution .
   eq getLSubst(
-      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags})
+      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags})
    = S .
   op getRSubst : ResultContext -> Substitution .
   eq getRSubst(
-      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags})
+      {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags})
    = S' .
                
   op _<<_ : ResultContext UnificationTripleSet -> ResultContextSet .
-  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      << (empty).UnificationTripleSet
    = (empty).ResultContextSet .
-  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      << ({Subst,Subst',N} | SS:UnificationTripleSet)
    = {T,
       TP,
@@ -2909,32 +3118,53 @@ fmod RESULT-CONTEXT-SET is
       TS:Term << (Subst ; Subst'),
       CtTS:Term << (Subst ; Subst'),
       max(NextVar,N + 1),
+      (Tr:TraceNarrow << T TP <) << {Subst,Subst',N},
       B:Flags}
-     | {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+     | {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
          << SS:UnificationTripleSet .
+
+  op _<<__< : TraceNarrow Term Type -> TraceNarrow .
+  eq (nil).TraceNarrow << T:Term TP:Type <
+   = (nil).TraceNarrow .
+  eq (Tr:TraceNarrow {T$:Term,none,TP$:Type,R:Rule}) --- Subst none here is special 
+     << T:Term TP:Type <
+   = (Tr:TraceNarrow {T:Term,none,TP:Type,R:Rule}) .
+  eq (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule})
+     << T:Term TP:Type <
+   = (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule}) [owise] .
+
+  op _<<_ : TraceNarrow UnificationTriple -> TraceNarrow .
+  eq (nil).TraceNarrow << {Subst,Subst',N}
+   = (nil).TraceNarrow .
+  eq (Tr:TraceNarrow {T$:Term,none,TP$:Type,R:Rule}) --- Subst none here is special 
+     << {Subst,Subst',N}
+   = (Tr:TraceNarrow {T$:Term << (Subst ; Subst'),Subst ; Subst',TP$:Type,R:Rule}) .
+  eq (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule})
+     << {Subst,Subst',N}
+   = (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule}) [owise] .
 
   op toTriple : Module ResultContextSet -> ResultTripleSet .
   eq toTriple(M, empty ) = empty .
-  eq toTriple(M, {T,TP,S,S',Ct,CtS,TS:Term,CtTS:Term,NextVar,B:Flags} | RTS )
+  eq toTriple(M, {T,TP,S,S',Ct,CtS,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} | RTS )
    = {CtTS:Term, leastSort(M,CtTS:Term), S .. S'}
      | toTriple(M,RTS) .
 
   op _|>_ : ResultContextSet TermList -> ResultContextSet .
   eq (empty).ResultContextSet |> TL = (empty).ResultContextSet .
-  eq ({T,TP,S,S',Ct,CtS,TS:Term,CtTS:Term,NextVar,B:Flags} 
+  eq ({T,TP,S,S',Ct,CtS,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
       | RTS:ResultContextSet) |> TL 
-   = {T,TP,S |> TL,S' |> TL,Ct,CtS,TS:Term,CtTS:Term,NextVar,B:Flags}
+   = {T,TP,S |> TL,S' |> TL,Ct,CtS,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags}
      | (RTS:ResultContextSet |> TL) .
 
   op getTerms : ResultContextSet -> TermSet .
-  eq getTerms({T,TP,S,S',Ct,CtS,TS:Term,CtTS:Term,NextVar,B:Flags} | RTS)
+  eq getTerms({T,TP,S,S',Ct,CtS,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} | RTS)
    = CtTS:Term | getTerms(RTS) .
   eq getTerms((empty).ResultContextSet)
    = emptyTermSet .
 
   op toUnificationTriples : ResultContextSet -> UnificationTripleSet .
   eq toUnificationTriples(
-      {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags} | R:ResultContextSet)
+      {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags} | R:ResultContextSet)
    = {S,S',NextVar} 
      | toUnificationTriples(R:ResultContextSet) .
   eq toUnificationTriples((empty).ResultContextSet)
@@ -2953,7 +3183,6 @@ fmod RESULT-CONTEXT-SET is
   eq | (empty).ResultContextSet | = 0 .
   eq | (RT:ResultContext | RTS:ResultContextSet) | 
    = | RTS:ResultContextSet | + 1 .
-
 endfm
 
 fmod META-MATCH is
@@ -3018,14 +3247,15 @@ fmod META-MATCH is
   op metaBuiltInEqual : Module TermList Term Term -> Bool .
   eq metaBuiltInEqual(M,TL,T,T')
    = canonice(M,T) == canonice(M,T') .
-
 endfm
-fmod VARIANT is
+
+fmod VARIANT-HANDLING is
   pr SUBSTITUTION-HANDLING .
   pr META-MINIMIZE-BINDINGS .
   pr RESULT-CONTEXT-SET .
   pr MODULE-HANDLING .
   pr META-LEVEL .
+  pr VARIANT .
 
   var M : Module .
   vars T T' TS TS' CtTS CtTS' Lhs Rhs : Term .
@@ -3045,41 +3275,12 @@ fmod VARIANT is
   var C : Constant .
   vars F F' : Qid .
 
-  --- Variants ----------------------------------------------------------
-----  sort Variant .
-----  op {_,_,_} : Term Substitution Nat -> Variant [ctor] .
-
-  sort VariantSet .
-  subsort Variant < VariantSet .
-  op empty : -> VariantSet [ctor] .
-  op _|_ : VariantSet VariantSet -> VariantSet
-    [ctor assoc comm id: empty prec 65 format (d d n d)] .
-  eq X:Variant | X:Variant = X:Variant .
-
-  op getTerms : VariantSet -> TermSet .
-  eq getTerms({T:Term,S:Substitution,NextVar:Nat} 
-              | R:VariantSet)
-   = T:Term | getTerms(R:VariantSet) .
-  eq getTerms((empty).VariantSet)
-   = emptyTermSet .
-
-  --- Variants ----------------------------------------------------------
-  sort VariantFour .
-  op {_,_,_,_} : Term Substitution Substitution Nat -> VariantFour [ctor] .
-
-  sort VariantFourSet .
-  subsort VariantFour < VariantFourSet .
-  op empty : -> VariantFourSet [ctor] .
-  op _|_ : VariantFourSet VariantFourSet -> VariantFourSet
-    [ctor assoc comm id: empty prec 65 format (d d n d)] .
-  eq X:VariantFour | X:VariantFour = X:VariantFour .
-  var VT : VariantFour .
-  vars VTS VTS' : VariantFourSet .
+  var VTS : VariantFourSet .
 
   op toVariants : Nat ResultContextSet -> VariantFourSet .
   eq toVariants(OldNextVar:Nat,empty) 
    = empty .
-  eq toVariants(OldNextVar:Nat,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags} | RTS)
+  eq toVariants(OldNextVar:Nat,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags} | RTS)
    = {CtTS,S |> OldNextVar:Nat,S' |> OldNextVar:Nat,NextVar} 
       | toVariants(OldNextVar:Nat,RTS) .
 
@@ -3094,13 +3295,12 @@ fmod VARIANT is
   eq getTerms((empty).VariantFourSet)
    = emptyTermSet .
 
-  op toVariantSet : VariantFourSet -> VariantSet .
-  eq toVariantSet(empty) 
+  op toVariantTripleSet : VariantFourSet -> VariantTripleSet .
+  eq toVariantTripleSet(empty) 
    = empty .
-  eq toVariantSet({T,S,S',NextVar} | VTS)
----    = {T,S ; S',NextVar} | toVariantSet(VTS) .
-   = {T,S,NextVar} | toVariantSet(VTS) .
-
+  eq toVariantTripleSet({T,S,S',NextVar} | VTS)
+---    = {T,S ; S',NextVar} | toVariantTripleSet(VTS) .
+   = {T,S,NextVar} | toVariantTripleSet(VTS) .
 endfm
 
 fmod RIGIDIFE is
@@ -3114,7 +3314,9 @@ fmod RIGIDIFE is
   vars F Q : Qid .
   vars U U' : UnificationTriple .
   vars US US' : UnificationTripleSet .
-  vars S S' S1 S1' S2 S2' : Substitution .
+  vars S S' S1 S1' S2 S2' S* : Substitution .
+  vars Ct CtS Ct' CtS' : Context .
+  vars TS TS' CtTS CtTS' : Term .
   var SS : SubstitutionSet .
   var SSe : NeSubstitutionSet .
   vars N N' N1 N2 NextVar : Nat .
@@ -3322,6 +3524,18 @@ fmod RIGIDIFE is
    = {unrigidLabel(T),TP,unrigidLabel(S)} 
      | unrigidLabel(RTS) .
 
+  op unrigidLabel : ResultContextSet -> ResultContextSet .
+  eq unrigidLabel((empty).ResultContextSet) = empty .
+  eq unrigidLabel({T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags} | RTS:ResultContextSet)
+   = {unrigidLabel(T),TP,unrigidLabel(S),unrigidLabel(S*),Ct,CtS,unrigidLabel(TS),unrigidLabel(CtTS),NextVar,unrigidLabel(Tr:TraceNarrow),B:Flags}
+     | unrigidLabel(RTS:ResultContextSet) .
+
+  op unrigidLabel : TraceNarrow -> TraceNarrow .
+  eq unrigidLabel((nil).TraceNarrow) = nil .
+  eq unrigidLabel(Tr:TraceNarrow {CtTS:Term,Subst:Substitution,TP:Type,R:Rule})
+   = unrigidLabel(Tr:TraceNarrow) 
+     {unrigidLabel(CtTS:Term),unrigidLabel(Subst:Substitution),TP:Type,R:Rule} .
+
   op unrigidLabel : VariantFourSet -> VariantFourSet  .
   eq unrigidLabel((empty).VariantFourSet) = empty .
   eq unrigidLabel({T,S,S',N} | R:VariantFourSet)
@@ -3330,101 +3544,6 @@ fmod RIGIDIFE is
 
   op qid : Nat -> Qid .
   eq qid(N:Nat) = qid(string(N:Nat,10)) .
-
-endfm
-
-fmod META-E-BASIC-UNIFICATION is
-  pr TYPEOFNARROWING .
-  pr EFLAGS .
-  pr RESULT-CONTEXT-SET .
-  pr SUBSTITUTION-HANDLING .
-  pr META-MINIMIZE-BINDINGS .
-  pr RESULT-CONTEXT-SET .
-  pr MODULE-HANDLING .
-  pr META-LEVEL .
-  pr RIGIDIFE .
-
-  *** Repeated definitions to avoid cross calls between modules ************
-  op metaNarrowSearchGenAll : Module Term Term SubstitutionCond 
-                              TypeOfRelation Bound Bound Bound TypeOfNarrowing Nat
-                           -> ResultContextSet .
-  op metaACUUnify : Module Term Term Nat -> UnificationTripleSet .
-  *** Repeated definitions to avoid cross calls between modules ************
-
-  var M : Module .
-  var M' : [Module] .
-  vars T T' : Term .
-  vars NextVar N : Nat .
-  var EF : EFlags .
-  var F : Qid .
-
-  --- metaEUnify-Basic --------------------------------------------------
-  op metaEUnify-Basic : Module Term Term Nat EFlags 
-                           --- Term Lhs
-                     -> UnificationTripleSet .
-  eq metaEUnify-Basic(M,T,T',NextVar,EF)
-   = if getEqsVariant(M) == none
-     then metaACUUnify(M,T,T',NextVar) 
-     else metaEUnify-Basic*(M,T,T',NextVar,EF)
-     fi .
-
-  op metaEUnify-Basic* : Module Term Term Nat EFlags 
-                           --- Term Lhs
-                      -> UnificationTripleSet .
-  eq metaEUnify-Basic*(M,T,T',NextVar,EF)
-   = metaEUnify-Basic**(M,
-       normalize(clearAllFrozen(M),T),
-       normalize(clearAllFrozen(M),T'),
-       NextVar,EF
-     ) .
-
-  op metaEUnify-Basic** : Module Term Term Nat EFlags 
-                           --- Term Lhs
-                      -> UnificationTripleSet .
-  eq metaEUnify-Basic**(M,T,T',NextVar,EF)
-    = if sameKind(M,leastSort(M,T),leastSort(M,T'))
-      then minimizeBindingsTerm(M,Vars(T),NextVar + 1,
-            toUnificationTriples(
-             metaNarrowSearchGenAll(
-               add=E=(new=E=(NextVar),
-                      eqsVariant2rls(clearAllFrozen(M)),
-                      maximalSorts(M,getKind(M,leastSort(M,T)))),
-               new=E=(NextVar)[T',T],
-               'true.Bool,
-               none,
-               '!,
-               unbounded,
-               unbounded,
-               unbounded,
-               basic noStrategy [EF] rigidifeAllEqSymbols(getEqs(M)),
-               NextVar + 1 
-             ) |> (T,T')
-            )
-           )
-      else (empty).UnificationTripleSet
-      fi .
-
-  op new=E= : Nat -> Qid .
-  eq new=E=(N)
-   = qid("_=E" + string(N,10) + "=_") .
-
-  op add=E= : Qid Module SortSet -> Module .
-  eq add=E=(F,M,none)
-   = M .
-  eq add=E=(F,M,S:Sort ; SS:SortSet)
-   = add=E=(F,
-            addRules(
-            (rl F[(addType S:Sort ToVar 'X),(addType S:Sort ToVar 'X)]
-             => 'true.Bool [none] .),
-             addOps(op F : S:Sort S:Sort -> 'Bool [frozen(2)] .,
-             M)),
-            SS:SortSet) .
-
-  op rigidifeAllEqSymbols : EquationSet -> TypeOfNarrowing .
-  eq rigidifeAllEqSymbols(none) 
-   = none . 
-  eq rigidifeAllEqSymbols((eq F:Qid[TL:TermList] = Rhs:Term [AtS:AttrSet] .) EqS:EquationSet) 
-   = rigidife(F:Qid) rigidifeAllEqSymbols(EqS:EquationSet) . 
 endfm
 
 fmod META-E-UNIFICATION is
@@ -3436,8 +3555,8 @@ fmod META-E-UNIFICATION is
   pr RESULT-CONTEXT-SET .
   pr MODULE-HANDLING .
   pr META-LEVEL .
-  pr META-E-BASIC-UNIFICATION .
   pr VARIANT .
+  pr RIGIDIFE .
 
   *** Repeated definitions to avoid cross calls between modules ************
   op normalizedSubstitution? : Module SubstitutionSet -> Bool .
@@ -3446,8 +3565,8 @@ fmod META-E-UNIFICATION is
   op metaACUUnify* : Module UnificandPair Nat Nat ~> UnificationTriple? .
   op metaCoreUnify : Module Term Term Nat -> UnificationTripleSet .
   op metaCoreUnify? : Module Term Term Nat -> Bool .
-  op metaBuiltInUnify : Module Term Term Nat -> UnificationTripleSet .
-  op metaBuiltInUnify? : Module Term Term Nat -> Bool .
+  op metaBuiltInUnify : Module TermList Term Term Nat -> UnificationTripleSet .
+  op metaBuiltInUnify? : Module TermList Term Term Nat -> Bool .
   op _<=[_]_ : SubstitutionSet Module SubstitutionSet -> Bool .
   op _<=[_]_ : Term Module Term -> Bool .
   *** Repeated definitions to avoid cross calls between modules ************
@@ -3478,110 +3597,126 @@ fmod META-E-UNIFICATION is
   var IRR : IrrFlags .
 
   --- metaECoreUnify --------------------------------------------------
-  op metaECoreUnify : Module Term Term -> SubstitutionSet .
+  op metaECoreUnify : Module Term Term TermList -> SubstitutionSet .
                      --- Term Lhs
-  eq metaECoreUnify(M, T, T')
-   = metaEACUUnify(M, T, T') .
+  eq metaECoreUnify(M, T, T',TL)
+   = metaEACUUnify(M, T, T',TL) .
 
-  op metaECoreUnify? : Module Term Term -> Bool .
-  eq metaECoreUnify?(M, T, T')
-   = metaEACUUnify?(M, T, T') .
+  op metaECoreUnify? : Module Term Term TermList -> Bool .
+  eq metaECoreUnify?(M, T, T', TL)
+   = metaEACUUnify?(M, T, T', TL) .
 
   --- metaVariantUnify --------------------------------------------------
   op metaVariantUnify : Module Term Term -> SubstitutionSet .
-  eq metaVariantUnify(M, T, T') = metaEACUUnify(M, T, T') .
+  eq metaVariantUnify(M, T, T') = metaEACUUnify(M, T, T', none) .
 
-  op metaVariantUnify? : Module Term Term -> Bool .
-  eq metaVariantUnify?(M, T, T') = metaEACUUnify?(M, T, T') .
+  op metaVariantUnify : Module Term Term TermList -> SubstitutionSet .
+  eq metaVariantUnify(M, T, T', TL) = metaEACUUnify(M, T, T', TL) .
+
+  op metaVariantUnify? : Module Term Term TermList -> Bool .
+  eq metaVariantUnify?(M, T, T', TL) = metaEACUUnify?(M, T, T', TL) .
 
   op metaVariantUnify : Module Term Term Nat IrrFlags -> UnificationTripleSet .
-  eq metaVariantUnify(M, T, T',NextVar,IRR) = metaEACUUnify(M, T, T',NextVar,IRR) .
+  eq metaVariantUnify(M, T, T',NextVar,IRR) = metaEACUUnify(M, T, T',none,NextVar,IRR) .
 
-  op metaVariantUnify? : Module Term Term Nat IrrFlags -> Bool .
-  eq metaVariantUnify?(M, T, T',NextVar,IRR) = metaEACUUnify?(M, T, T',NextVar,IRR) .
+  op metaVariantUnify : Module Term Term TermList Nat IrrFlags -> UnificationTripleSet .
+  eq metaVariantUnify(M, T, T',TL,NextVar,IRR) = metaEACUUnify(M, T, T',TL,NextVar,IRR) .
+
+  op metaVariantUnify? : Module Term Term TermList Nat IrrFlags -> Bool .
+  eq metaVariantUnify?(M, T, T',TL,NextVar,IRR) = metaEACUUnify?(M, T, T',TL,NextVar,IRR) .
 
   --- metaEACUUnify --------------------------------------------------
-  op metaEACUUnify : Module Term Term -> SubstitutionSet .
-  eq metaEACUUnify(M, T, T')
-   = toSubstitution(metaEACUUnify(M,T,T',highestVar((T,T')) + 1,reducible)) .
+  op metaEACUUnify : Module Term Term TermList -> SubstitutionSet .
+  eq metaEACUUnify(M, T, T', TL)
+   = toSubstitution(metaEACUUnify(M,T,T',TL,highestVar((T,T')) + 1,reducible)) .
 
-  op metaEACUUnify? : Module Term Term -> Bool .
-  eq metaEACUUnify?(M, T, T')
-   = metaEACUUnify?(M,T,T',highestVar((T,T')) + 1,reducible) .
+  op metaEACUUnify? : Module Term Term TermList -> Bool .
+  eq metaEACUUnify?(M, T, T', TL)
+   = metaEACUUnify?(M,T,T',TL,highestVar((T,T')) + 1,reducible) .
 
-  op metaEACUUnifyIrr : Module Term Term -> SubstitutionSet .
-                          --- T irreducible T' reducible
-  eq metaEACUUnifyIrr(M, T, T')
-   = toSubstitution(metaEACUUnify(M,T,T',highestVar((T,T')) + 1,irreducible)) .
+  op metaEACUUnifyIrr : Module Term Term TermList -> SubstitutionSet .
+                    --- T irreducible T' reducible
+  eq metaEACUUnifyIrr(M, T, T',TL)
+   = toSubstitution(metaEACUUnify(M,T,T',TL,highestVar((T,T')) + 1,irreducible)) .
 
-  op metaEACUUnifyIrr? : Module Term Term -> Bool .
-  eq metaEACUUnifyIrr?(M, T, T')
-   = metaEACUUnify?(M,T,T',highestVar((T,T')) + 1,irreducible) .
+  op metaEACUUnifyIrr? : Module Term Term TermList -> Bool .
+  eq metaEACUUnifyIrr?(M, T, T', TL)
+   = metaEACUUnify?(M,T,T',TL,highestVar((T,T')) + 1,irreducible) .
 
-  op metaEACUUnify : Module Term Term Nat IrrFlags -> UnificationTripleSet .
-  eq metaEACUUnify(M, T, T',NextVar,IRR) 
+  op metaEACUUnify : Module Term Term TermList Nat IrrFlags -> UnificationTripleSet .
+  eq metaEACUUnify(M, T, T',TL,NextVar,IRR) 
    = minimizeBindingsTerm(M,Vars(T),NextVar,
-          metaEUnify&(M, T, T',NextVar,ACUUnify IRR)
-     ) |> (T,T') .
+          metaEUnify&(M, T, T',TL,NextVar,ACUUnify IRR)
+     ) |> (T,T',TL) .
 
-  op metaEACUUnify? : Module Term Term Nat IrrFlags -> Bool .
-  eq metaEACUUnify?(M, T, T',NextVar,IRR) 
-   = metaEUnify&?(M, T, T',NextVar,ACUUnify IRR) .
+  op metaEACUUnify? : Module Term Term TermList Nat IrrFlags -> Bool .
+  eq metaEACUUnify?(M, T, T',TL,NextVar,IRR) 
+   = metaEUnify&?(M, T, T',TL,NextVar,ACUUnify IRR) .
 
   --- metaEBuiltInUnify --------------------------------------------------
   op metaEBuiltInUnify : Module Term Term -> SubstitutionSet .
-  eq metaEBuiltInUnify(M, T, T')
-   = toSubstitution(
-       metaEBuiltInUnify(M,T,T',highestVar((T,T')) + 1,reducible)
-     ) .
+  eq metaEBuiltInUnify(M, T, T') = metaEBuiltInUnify(M, T, T',empty) .
+
+  op metaEBuiltInUnify : Module Term Term TermList -> SubstitutionSet .
+  eq metaEBuiltInUnify(M, T, T', TL)
+   = toSubstitution(metaEBuiltInUnify(M,T,T',TL,highestVar((T,T')) + 1,reducible)) .
 
   op metaEBuiltInUnify? : Module Term Term -> Bool .
-  eq metaEBuiltInUnify?(M, T, T')
-   = metaEBuiltInUnify?(M,T,T',highestVar((T,T')) + 1,reducible) .
+  eq metaEBuiltInUnify?(M, T, T') = metaEBuiltInUnify?(M, T, T',empty) .
+
+  op metaEBuiltInUnify? : Module Term Term TermList -> Bool .
+  eq metaEBuiltInUnify?(M, T, T',TL)
+   = metaEBuiltInUnify?(M,T,T',TL,highestVar((T,T')) + 1,reducible) .
 
   op metaEBuiltInUnifyIrr : Module Term Term -> SubstitutionSet .
+  eq metaEBuiltInUnifyIrr(M, T, T') = metaEBuiltInUnifyIrr(M, T, T', empty) .
+
+  op metaEBuiltInUnifyIrr : Module Term Term TermList -> SubstitutionSet .
                           --- T irreducible T' reducible
-  eq metaEBuiltInUnifyIrr(M, T, T')
+  eq metaEBuiltInUnifyIrr(M, T, T', TL)
    = toSubstitution(
-       metaEBuiltInUnify(M,T,T',highestVar((T,T')) + 1,irreducible)
+       metaEBuiltInUnify(M,T,T',TL,highestVar((T,T')) + 1,irreducible)
      ) .
 
-  op metaEBuiltInUnifyIrr? : Module Term Term -> Bool .
-                          --- T irreducible T' reducible
-  eq metaEBuiltInUnifyIrr?(M, T, T')
-   = metaEBuiltInUnify?(M,T,T',highestVar((T,T')) + 1,irreducible) .
+  op metaEBuiltInUnifyIrr? : Module Term Term  -> Bool .
+  eq metaEBuiltInUnifyIrr?(M, T, T') = metaEBuiltInUnifyIrr?(M, T, T', empty) .
 
-  op metaEBuiltInUnify : Module Term Term Nat IrrFlags 
-                 -> UnificationTripleSet . 
-  eq metaEBuiltInUnify(M, T, T',NextVar,IRR) 
+  op metaEBuiltInUnifyIrr? : Module Term Term TermList -> Bool .
+                          --- T irreducible T' reducible
+  eq metaEBuiltInUnifyIrr?(M, T, T', TL)
+   = metaEBuiltInUnify?(M,T,T',TL,highestVar((T,T')) + 1,irreducible) .
+
+  op metaEBuiltInUnify : Module Term Term TermList Nat IrrFlags 
+                         -> UnificationTripleSet . 
+  eq metaEBuiltInUnify(M, T, T',TL,NextVar,IRR) 
    = minimizeBindingsTerm(M,Vars(T),NextVar,
-        metaEUnify&(M, T, T',NextVar,BuiltInUnify IRR)
+        metaEUnify&(M, T, T',TL,NextVar,BuiltInUnify IRR)
      ) |> (T,T') .
 
-  op metaEBuiltInUnify? : Module Term Term Nat IrrFlags -> Bool .
-  eq metaEBuiltInUnify?(M, T, T',NextVar,IRR) 
-   = metaEUnify&?(M, T, T',NextVar,BuiltInUnify IRR) .
+  op metaEBuiltInUnify? : Module Term Term TermList Nat IrrFlags -> Bool .
+  eq metaEBuiltInUnify?(M, T, T',TL,NextVar,IRR) 
+   = metaEUnify&?(M, T, T',TL,NextVar,BuiltInUnify IRR) .
 
   --- metaEUnify --------------------------------------------------
-  op metaEUnify& : Module Term Term Nat EFlags -> UnificationTripleSet . 
+  op metaEUnify& : Module Term Term TermList Nat EFlags -> UnificationTripleSet . 
                       --- Term Lhs
-  eq metaEUnify&(M,T,T',NextVar,EF)
+  eq metaEUnify&(M,T,T',TL,NextVar,EF)
    = if sameKind(M,leastSort(M,T),leastSort(M,T'))
-     then metaEUnify&*(removeBoolEqs(M),T,T',NextVar,EF)
+     then metaEUnify&*(removeBoolEqs(M),T,T',TL,NextVar,EF)
      else empty
      fi .
 
-  op metaEUnify&? : Module Term Term Nat EFlags -> Bool . 
+  op metaEUnify&? : Module Term Term TermList Nat EFlags -> Bool . 
                       --- Term Lhs
-  eq metaEUnify&?(M,T,T',NextVar,EF)
+  eq metaEUnify&?(M,T,T',TL,NextVar,EF)
    = sameKind(M,leastSort(M,T),leastSort(M,T'))
      and-then
-     metaEUnify&*?(removeBoolEqs(M),T,T',NextVar,EF) .
+     metaEUnify&*?(removeBoolEqs(M),T,T',TL,NextVar,EF) .
 
-  op metaEUnify&* : Module Term Term Nat EFlags -> UnificationTripleSet .
+  op metaEUnify&* : Module Term Term TermList Nat EFlags -> UnificationTripleSet .
                       --- Term Lhs
-  eq metaEUnify&*(M,T,T',NextVar,EF)
-   = if metaBuiltInUnify?(M,
+  eq metaEUnify&*(M,T,T',TL,NextVar,EF)
+   = if metaBuiltInUnify?(M,TL,
           fst(generalize(onlyEqsVariant(M),NextVar,T)),
           fst(generalize(onlyEqsVariant(M),
                          snd(generalize(onlyEqsVariant(M),NextVar,T)),T')),
@@ -3594,16 +3729,16 @@ fmod META-E-UNIFICATION is
                     generalize(onlyEqsVariant(M),
                                snd(generalize(onlyEqsVariant(M),NextVar,T)),T'))
           then --- no narrowing is necessary to unify
-               metaBuiltInUnify(M,T,T',NextVar)
-          else metaEUnify$(M,T,T',NextVar,EF)
+               metaBuiltInUnify(M,TL,T,T',NextVar)
+          else metaEUnify$(M,T,T',TL,NextVar,EF)
           fi
      else empty
      fi .
 
-  op metaEUnify&*? : Module Term Term Nat EFlags -> Bool .
+  op metaEUnify&*? : Module Term Term TermList Nat EFlags -> Bool .
                       --- Term Lhs
-  eq metaEUnify&*?(M,T,T',NextVar,EF)
-   = if metaBuiltInUnify?(M,
+  eq metaEUnify&*?(M,T,T',TL,NextVar,EF)
+   = if metaBuiltInUnify?(M,TL,
           fst(generalize(onlyEqsVariant(M),NextVar,T)),
           fst(generalize(onlyEqsVariant(M),
                          snd(generalize(onlyEqsVariant(M),NextVar,T)),T')),
@@ -3616,208 +3751,61 @@ fmod META-E-UNIFICATION is
                     generalize(onlyEqsVariant(M),
                                snd(generalize(onlyEqsVariant(M),NextVar,T)),T'))
           then --- no narrowing is necessary to unify
-               metaBuiltInUnify?(M,T,T',NextVar)
-          else metaEUnify$?(M,T,T',NextVar,EF)
+               metaBuiltInUnify?(M,TL,T,T',NextVar)
+          else metaEUnify$?(M,T,T',TL,NextVar,EF)
           fi
      else false
      fi .
 
-  op metaEUnify$ : Module Term Term Nat EFlags -> UnificationTripleSet .
+  op metaEUnify$ : Module Term Term TermList Nat EFlags -> UnificationTripleSet .
                       --- Term Lhs
+  eq metaEUnify$(M,T,T',TL,NextVar,irreducible EF)
+   = metaEUnifyCollect(M,T,T',(T,TL),NextVar,0,empty) .
+  eq metaEUnify$(M,T,T',TL,NextVar,EF)
+   = metaEUnifyCollect(M,T,T',TL,NextVar,0,empty) [owise] .
 
-  eq metaEUnify$(M,T,T',NextVar,EF)
-   = if howManyBuiltIn(M,(T,T')) > 0
-     then metaEUnify-Variant(M,EF,NextVar,
-            getVariantsTerm(M,T,NextVar,EF),
-            getVariants(M,T',maxNextVar(getVariantsTerm(M,T,NextVar,EF)),EF)
-          ) 
-     else metaEUnify-Basic(M,T,T',NextVar,EF)
+  op metaEUnify$? : Module Term Term TermList Nat EFlags -> Bool . 
+                      --- Term Lhs
+  eq metaEUnify$?(M,T,T',TL,NextVar,irreducible EF)
+   = metaEUnifyCollect?(M,T,T',(T,TL),NextVar,0) .
+  eq metaEUnify$?(M,T,T',TL,NextVar,EF)
+   = metaEUnifyCollect?(M,T,T',TL,NextVar,0) [owise] .
+
+  op metaEUnifyCollect : Module Term Term TermList Nat Nat 
+                          UnificationTripleSet 
+                       -> UnificationTripleSet  .
+  eq metaEUnifyCollect(M,T,T',TL,N,N',US)
+   = if metaEUnify*(M,T =? T',TL,N,N') :: UnificationTriple?
+        and
+        metaEUnify*(M,T =? T',TL,N,N') =/= noUnifier
+     then metaEUnifyCollect(M,T,T',TL,N,s(N'),
+             US | metaEUnify*(M,T =? T',TL,N,N') )
+     else US
      fi .
 
-  op metaEUnify$? : Module Term Term Nat EFlags -> Bool .
-  eq metaEUnify$?(M,T,T',NextVar,EF)
-   = if howManyBuiltIn(M,(T,T')) > 0
-     then metaEUnify-Variant(M,testUnifier EF,NextVar,
-            getVariantsTerm(M,T,NextVar,testUnifier EF),
-            getVariants(M,T',
-              maxNextVar(getVariantsTerm(M,T,NextVar,testUnifier EF)),
-              testUnifier EF
-            )
-          ) 
-     else metaEUnify-Basic(M,T,T',NextVar,EF) 
-     fi =/= empty .
+  op metaEUnifyCollect? : Module Term Term TermList Nat Nat 
+                       -> Bool .
+  eq metaEUnifyCollect?(M,T,T',TL,N,N')
+   = metaEUnify*(M,T =? T',TL,N,N') :: UnificationTriple?
+     and
+     metaEUnify*(M,T =? T',TL,N,N') =/= noUnifier .
 
-  op getVariantsTerm : Module Term Nat EFlags -> VariantFourSet .
-  eq getVariantsTerm(M,T,NextVar,EF)
-   = if irreducible in EF
-     then {T,none,none,NextVar}
-     else getVariants(M,T,NextVar,EF) 
+  *** Code for collection all unifiers
+  op metaEUnify* : Module UnificandPair TermList Nat Nat ~> UnificationTriple? .
+  eq metaEUnify*(M, T =? T',TL,N,N')
+   = metaEUnifyTriple(
+       M, 
+       unflatten(M,T) =? unflatten(M,T'),
+       TL,N,N') .
+
+  op metaEUnifyTriple : Module UnificationProblem TermList Nat Nat ~> UnificationTriple? .
+  eq metaEUnifyTriple(M,T =? T',TL,N,N')
+   = if metaVariantUnify(M,T =? T',TL,N,N') == noUnifier
+     then noUnifier
+     else {getSubst(metaVariantUnify(M,T =? T',TL,N,N')) |> T,
+           getSubst(metaVariantUnify(M,T =? T',TL,N,N')) |> T',
+           getNextVar(metaVariantUnify(M,T =? T',TL,N,N'))}
      fi .
-
-  op metaEUnify-Variant : Module EFlags Nat VariantFourSet VariantFourSet
-                       -> UnificationTripleSet .
-  eq metaEUnify-Variant(M,EF,N,VTS,VTS')
-   = filter-variant-UP(EF,eqsVariant2rls(clearAllFrozen(M)),N,
-       filter-NF(eqsVariant2rls(clearAllFrozen(M)),
-          metaEUnify-Variant*(M,EF,N,empty,VTS,VTS') 
-       ) 
-     ) 
-     .
-
-  op metaEUnify-Variant* : Module EFlags Nat UnificationTripleSet 
-                           VariantFourSet VariantFourSet
-                        -> UnificationTripleSet .
-  eq metaEUnify-Variant*(M,EF,N, US, empty, VTS')
-   = US .
-  eq metaEUnify-Variant*(M,EF,N, US, VT | VTS, VTS')
-   = if metaEUnify-Variant**(M,EF,N, empty, VT, VTS') == empty
-     then *** Continue
-          metaEUnify-Variant*(M,EF,N, US, VTS, VTS')
-     else if testUnifier in EF
-          then *** Stop and don't compute more
-               US | metaEUnify-Variant**(M,EF,N, empty, VT, VTS')
-          else *** Compute more
-               metaEUnify-Variant*(M,EF,N, 
-                 US | metaEUnify-Variant**(M,EF,N, empty, VT, VTS'), 
-                 VTS, VTS')
-          fi
-     fi .
-
-  op metaEUnify-Variant** : Module EFlags Nat UnificationTripleSet 
-                            VariantFour VariantFourSet
-                         -> UnificationTripleSet .
-  eq metaEUnify-Variant**(M,EF,N,US,VT,empty)
-   = US .
-  eq metaEUnify-Variant**(M,EF,N,US,VT,VT' | VTS') 
-   = metaEUnify-Variant**(M,EF,N,
-       US | metaEUnify-Variant***(M,EF,N,VT,VT'),
-       VT, VTS'
-     ) .
-
-  op metaEUnify-Variant*** : Module EFlags Nat VariantFour VariantFour
-                          -> UnificationTripleSet .
-  eq metaEUnify-Variant***(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'}
-     ) 
-   = metaEUnify-Variant****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         empty,
-         metaEUV***(EF,M,T,T',max(NextVar,NextVar'))
-     ) .
-
-  op metaEUV*** : EFlags Module Term Term Nat -> UnificationTripleSet .
-  eq metaEUV***(EF,M,T,T',NextVar)
-   = if ACUUnify in EF
-     then metaACUUnify(M,T,T',NextVar) 
-     else metaBuiltInUnify(M,T,T',NextVar)
-     fi .
-
-  op metaEUnify-Variant**** : Module EFlags Nat VariantFour VariantFour
-                              UnificationTripleSet
-                              UnificationTripleSet
-                           -> UnificationTripleSet .
-  eq metaEUnify-Variant****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         US',
-         empty
-     ) 
-   = US' .
-  eq metaEUnify-Variant****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         US',
-         {S1,S1',NextVar1} | US  --- S1 and S1' come from unify(T,T')
-     )
-   = metaEUnify-Variant****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         US' |
-         if valid-occur-check?(S .. S1)
-            and
-            valid-occur-check?(S' .. S1')
-         then
-         metaEUnify-Variant*****(M,EF,N,
-             {T,S,S*,NextVar},
-             {T',S',S'*,NextVar'},
-             {S1,S1',NextVar1},
-             metaEUV****(EF,M,(S .. S1) << S1',(S' .. S1') << S1,NextVar1)
-         )
-         else empty
-         fi,
-         US
-     ) .
-
-  op metaEUV**** : EFlags Module Substitution Substitution Nat 
-                -> UnificationTripleSet .
-  eq metaEUV****(EF,M,V <- T ; S,V <- T' ; S',NextVar)
-   = if metaEUV***(EF,M,T,T',NextVar) ::  UnificationTripleSet
-        and 
-        metaEUV***(EF,M,T,T',NextVar) =/= empty
-     then canonice(M,
-          {V <- T,V <- T',NextVar}
-          ...
-          metaEUV****$(EF,M,S,S',empty,metaEUV***(EF,M,T,T',NextVar))
-          )
-     else empty
-     fi .
-  eq metaEUV****(EF,M,S,S',NextVar)
-   = {S,S',NextVar} [owise] .
-
-  op metaEUV****$ : EFlags Module Substitution Substitution  
-                   UnificationTripleSet UnificationTripleSet
-                -> UnificationTripleSet .
-  eq metaEUV****$(EF,M,S,S',US',empty)
-   = US' .
-  eq metaEUV****$(EF,M,S,S',US',{S1,S1',NextVar1} | US)
-   = metaEUV****$(EF,M,S,S',
-       US' | metaEUV****(EF,M,S .. S1,S' .. S1',NextVar1),
-       US
-     ) .
-
-  op metaEUnify-Variant***** : Module EFlags Nat VariantFour VariantFour
-                               UnificationTriple UnificationTripleSet
-                            -> UnificationTripleSet .
-  eq metaEUnify-Variant*****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         {S1,S1',NextVar1},
-         empty
-     )
-   = empty .
-  eq metaEUnify-Variant*****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         {S1,S1',NextVar1}, --- S1 and S1' come from unify(T,T')
-         {S2,S2',NextVar2} | US --- S2 is S .. S1 updated 
-                                --- S2' is S' .. S1' updated
-     )
-   = metaEUnify-Variant*****$(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         {S1,S1',NextVar1},
-         {S2,S2',NextVar2}
-     )
-     |
-     metaEUnify-Variant*****(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         {S1,S1',NextVar1},
-         US
-     ) .
-         
-  op metaEUnify-Variant*****$ : Module EFlags Nat VariantFour VariantFour
-                                UnificationTriple UnificationTriple
-                             -> UnificationTripleSet .
-  eq metaEUnify-Variant*****$(M,EF,N,
-         {T,S,S*,NextVar},
-         {T',S',S'*,NextVar'},
-         {S1,S1',NextVar1}, --- S1 and S1' come from unify(T,T')
-         {S2,S2',NextVar2} --- S2 is S updated & S2' is S' updated
-     )
-   = {S2,S2',NextVar2} .
 
   **************************************
   ***** Variant Generation
@@ -3849,21 +3837,31 @@ fmod META-E-UNIFICATION is
 
   op getVariants** : Module Term Nat EFlags -> VariantFourSet .
   eq getVariants**(M,T,NextVar,EF)
-   = filter-variant-VT(EF, ---minimal-unifiers EF,
-        eqsVariant2rls(clearAllFrozen(removeBoolEqs(M))),
-        NextVar,
-        toVariants(NextVar,
-          metaNarrowSearchGenAll(
-           eqsVariant2rls(clearAllFrozen(removeBoolEqs(M))),
-           T,newVar(NextVar,leastSort(M,T)),
-           none,'*,unbounded,unbounded,unbounded,
-           variant(NextVar + 1) noStrategy [EF], ---do not use innermost!!!
-           NextVar + 1) 
-        )
+   = minimizeBindingsTerm(M,Vars(T),NextVar,
+            getVariants***(M,T,NextVar,empty,0)
      ) .
 
+  op getVariants*** : Module Term Nat VariantFourSet Nat -> VariantFourSet .
+  eq getVariants***(M,T,NextVar,VTS,N)
+   = if metaGetVariant(M,T,empty,NextVar,N) == noVariant
+     then VTS
+     else getVariants***$(M,T,NextVar,VTS,N,
+             metaGetVariant(M,T,empty,NextVar,N))
+     fi .
 
-  *** Identify bound for terms
+  op getVariants***$ : Module Term Nat VariantFourSet Nat Variant -> VariantFourSet .
+  eq getVariants***$(M,T,NextVar,VTS,N,{T2:Term,S:Substitution,NV2:Nat})
+   = getVariants***$$(M,T,NextVar,VTS,N,{T2:Term,S:Substitution,NV2:Nat},
+           split({S:Substitution,NV2:Nat},NextVar)  ) .
+
+  op getVariants***$$ : Module Term Nat VariantFourSet Nat Variant UnificationTriple -> VariantFourSet .
+  eq getVariants***$$(M,T,NextVar,VTS,N,
+         {T2:Term,S:Substitution,NV2:Nat},
+         {S1:Substitution,S2:Substitution,NV2:Nat})
+   = getVariants***(M,T,NextVar,
+             VTS | {T2:Term,S1:Substitution,S2:Substitution,NV2:Nat},
+             N + 1) .
+
   sort PairGeneralize .
   op {_,_} : TermList Nat -> PairGeneralize .
   op fst : PairGeneralize -> TermList .
@@ -3977,113 +3975,6 @@ fmod META-E-UNIFICATION is
          and isAssociative(M,F,getTypes(M,TL)) 
       then 1 else 0 fi 
       + howManyAC$$(M,EqS) .
-
-  *** 
-  op howManyBuiltIn : Module NeTermList -> Nat .
-  eq howManyBuiltIn(M,NeTL)
-   = if howManyAC(M,NeTL) > 0
-     then howManyAC(M,NeTL)
-     else howMany(onlyEqsBuiltInUnify(M),NeTL) 
-     fi .
-
-  *** Filter UnificationPairSet according to Variant narrowing strategy
-  op filter-variant-UP : EFlags Module Nat UnificationTripleSet 
-                       -> UnificationTripleSet .
-  eq filter-variant-UP(EF,M,N,US)
-   = if minimal-unifiers in EF and testUnifier !in EF
-     then filter-variant-UP*(M,N,empty,US)
-     else US
-     fi .
-
-  op filter-variant-UP* : 
-       Module Nat UnificationTripleSet UnificationTripleSet 
-           -> UnificationTripleSet .
-  eq filter-variant-UP*(M,N,US$,empty)
-   = US$ .
-  eq filter-variant-UP*(M,N,US$,{S,S*,NextVar} | US)
-   = filter-variant-UP**(M,N,US$,US,{S,S*,NextVar},US) .  
-
-  op filter-variant-UP** : 
-        Module Nat UnificationTripleSet UnificationTripleSet
-                   UnificationTriple UnificationTripleSet 
-                -> UnificationTripleSet .
-  eq filter-variant-UP**(M,N,US$,US',{S,S*,NextVar},empty)
-   = --- RT is not implied by any in RTS'
-     filter-variant-UP*(M,N,US$ | {S,S*,NextVar},US') .
-  eq filter-variant-UP**(M,N,US$,U | US',U',U | US)
-   = if test-variant-UP(M,N,U,U')  --- keep U & remove U'
-     then --- RT is implied by one in RTS'
-          filter-variant-UP*(M,N,US$,U | US') 
-     else if test-variant-UP(M,N,U',U)  --- keep U' & remove U
-          then --- remove T from the set US'
-               filter-variant-UP**(M,N,US$,US',U',US)
-          else --- continue searching in US
-               filter-variant-UP**(M,N,US$,U | US',U',US)
-          fi
-     fi .
-
-  op test-variant-UP : 
-       Module Nat UnificationTriple UnificationTriple -> Bool .
-  eq test-variant-UP(M,N,{S,S*,NextVar},{S',S'*,NextVar'})
-   = (S ; S*) |> N <=[M] (S' ; S'*) |> N  . --- keep T & remove T' 
-
-  *** Filter VariantFourSet according to Variant narrowing strategy
-  op filter-variant-VT : EFlags Module Nat VariantFourSet -> VariantFourSet .
-  eq filter-variant-VT(EF,M,N,VTS)
-   = if minimal-unifiers in EF and testUnifier !in EF
-     then filter-variant-VT*(M,N,empty,VTS)
-     else VTS 
-     fi .
-
-  op filter-variant-VT* : 
-        Module Nat VariantFourSet VariantFourSet -> VariantFourSet .
-  eq filter-variant-VT*(M,N,VTS$,empty)
-   = VTS$ .
-  eq filter-variant-VT*(M,N,VTS$,VT | VTS)
-   = filter-variant-VT**(M,N,VTS$,VTS,VT,VTS) .  
-
-  op filter-variant-VT** : 
-        Module Nat VariantFourSet VariantFourSet
-                   VariantFour VariantFourSet 
-                -> VariantFourSet .
-  eq filter-variant-VT**(M,N,VTS$,VTS',VT,empty)
-   = --- RT is not implied by any in VTSS'
-     filter-variant-VT*(M,N,VTS$ | VT,VTS') .
-  eq filter-variant-VT**(M,N,VTS$,VT | VTS',VT',VT | VTS)
-   = if test-variant-VT(M,N,VT,VT')
-     then --- RT is implied by one in RTS'
-          filter-variant-VT*(M,N,VTS$,VT | VTS') 
-     else if test-variant-VT(M,N,VT',VT)
-          then --- remove T from the set VTS'
-               filter-variant-VT**(M,N,VTS$,VTS',VT',VTS)
-          else --- continue searching in VTS
-               filter-variant-VT**(M,N,VTS$,VT | VTS',VT',VTS)
-          fi
-     fi .
-
-  op test-variant-VT : Module Nat VariantFour VariantFour -> Bool .
-  eq test-variant-VT(M,N,{T,S,S*,NextVar},{T',S',S'*,NextVar'})
-   = --- keep T & remove T'
-     ((S ; S*) |> N ; (newVar(N + 1,leastSort(M,T)) <- T))
-      <=[M] 
-     ((S' ; S'*) |> N ; (newVar(N + 1,leastSort(M,T')) <- T')) .
-
-
-  *** Take only normal forms
-  op filter-NF : Module UnificationTripleSet -> UnificationTripleSet .
-  eq filter-NF(M,empty)
-   = empty .
-  eq filter-NF(M,{S,S*,NextVar} | US)
-   = if normalizedSubstitution?(M,S ; S*)
-     then {S,S*,NextVar} 
-     else empty 
-     fi
-     | filter-NF(M,US) .
-
-  op maxNextVar : VariantFourSet -> Nat .
-  eq maxNextVar(empty) = 0 .
-  eq maxNextVar({T,S,S*,NextVar} | VTS) = max(NextVar,maxNextVar(VTS)) .
-
 endfm
 
 fmod META-ACU-UNIFICATION is
@@ -4191,7 +4082,6 @@ fmod META-UNIFICATION is
                     --- Term Lhs
   eq metaCoreUnify?(M, T, T', N) 
    = metaACUUnify?(M, T, T', N)  .
-
 endfm
 
 fmod META-MSG-UNIFICATION is
@@ -4248,9 +4138,8 @@ fmod META-MSG-UNIFICATION is
   op metaBuiltInUnify? : Module Term Term Nat -> Bool .
   eq metaBuiltInUnify?(M, T1, T2, N) 
    = metaCoreUnify?(M, T1, T2, N) . 
-
-
 endfm
+
 fmod ORDERS-TERM-SUBSTITUTION is
   protecting TERM-HANDLING .
   protecting SUBSTITUTION-HANDLING .
@@ -4266,11 +4155,12 @@ fmod ORDERS-TERM-SUBSTITUTION is
   vars TL TL' TL1 TL2 TL3 : TermList .
   var M : Module .
   vars S S' : Substitution .
-  vars SS SS' : SubstitutionSet .
-  vars V V' V1 V2 : Variable .
+  vars SS SS' SS'' : SubstitutionSet .
+  vars V V' V1 V2 V3 : Variable .
   vars TPL TPL' : TypeList .
   vars N N' : Nat .
   vars F : Qid .
+  var C : Constant .
 
   --- metaEMatch(M,T,T') implies that T is an instance of T' modulo E + axioms
   op metaEMatch : Module Term Term -> SubstitutionSet .
@@ -4380,25 +4270,6 @@ fmod ORDERS-TERM-SUBSTITUTION is
   eq T1:TermSet =[M]= T2:TermSet 
    = metaBuiltInRenaming(M,T1:TermSet,T2:TermSet) .
 
-  op metaCoreRenaming : Module TermSet TermSet -> Bool .
-  eq metaCoreRenaming(M,emptyTermSet,emptyTermSet)
-   = true .
- ceq metaCoreRenaming(M,T:Term | T:TermSet,T':Term | T':TermSet)
-    = metaCoreRenaming(M,T:TermSet,T':TermSet)
-   if metaCoreRenaming$(M,T:Term,T':Term) .
-  eq metaCoreRenaming(M,T:TermSet,T':TermSet)
-   = false [owise] .
-
-  op metaCoreRenaming$ : Module Term Term -> Bool .
-  eq metaCoreRenaming$(M,T:Term,T':Term)
-   = metaCoreRenaming$$(M,canonice(M,T:Term),canonice(M,T':Term)) .
-
-  op metaCoreRenaming$$ : Module Term Term -> Bool .
-  eq metaCoreRenaming$$(M,T:Term,T':Term)
-   = T == T'
-     or-else 
-     onlyRenaming(M,metaCoreMatchShared(M,T',T) |> T) .
-
   *****
   op metaBuiltInRenaming : Module TermSet TermSet -> Bool .
   eq metaBuiltInRenaming(M,emptyTermSet,emptyTermSet)
@@ -4411,22 +4282,83 @@ fmod ORDERS-TERM-SUBSTITUTION is
 
   op metaBuiltInRenaming$ : Module Term Term -> Bool .
   eq metaBuiltInRenaming$(M,T:Term,T':Term)
-   = metaBuiltInRenaming$$(M,canonice(M,T:Term),canonice(M,T':Term)) .
+   = canonice(M,nullVars(T)) == canonice(M,nullVars(T'))
+     and-then
+     (metaBuiltInRenaming$$1(M,canonice(M,T),canonice(M,T'))
+      or-else 
+      metaBuiltInRenaming$$2(M,canonice(M,T),canonice(M,T')) 
+      ) .
 
-  op metaBuiltInRenaming$$ : Module Term Term -> Bool .
-  eq metaBuiltInRenaming$$(M,T:Term,T':Term)
-   = T == T'
-     or-else 
-     onlyRenaming(M,metaBuiltInMatchShared(M,T',T) |> T) .
+  op metaBuiltInRenaming$$1 : Module Term Term -> Bool .
+  eq metaBuiltInRenaming$$1(M,T:Term,T':Term)
+   = metaBuiltInRenaming$$1*(
+         canonice(M,totalOrder(M,flatten(M,T:Term)) <<( 0 )<),
+         canonice(M,totalOrder(M,flatten(M,T':Term)) <<( 0 )<) ) . 
+
+  op metaBuiltInRenaming$$1* : Term Term -> Bool .
+  eq metaBuiltInRenaming$$1*(T:Term,T':Term) = T:Term == T':Term .
+
+  op totalOrder : Module Term -> Term .
+  eq totalOrder(M,C) = C .
+  eq totalOrder(M,V) = V .
+  eq totalOrder(M,F[TL]) 
+   = if not isCommutative(M,F[TL])
+     then F[totalOrderTL(M,TL)] 
+     else F[reorderTL(M,F,totalOrderTL(M,TL))] 
+     fi .
+
+  op totalOrderTL : Module TermList -> TermList .
+  eq totalOrderTL(M,empty) = empty .
+  eq totalOrderTL(M,(T,TL)) = (totalOrder(M,T),totalOrderTL(M,TL)) .
+
+  op reorderTL : Module Qid TermList -> TermList .
+  eq reorderTL(M,F,empty) = empty .
+  eq reorderTL(M,F,(T,TL))
+   = if insertTL(M,F,T,TL) =/= (T,TL)
+     then reorderTL(M,F,insertTL(M,F,T,TL))
+     else (T,reorderTL(M,F,TL))
+     fi .
+
+  op insertTL : Module Qid Term TermList -> TermList .
+  eq insertTL(M,F,T',empty) = T' .
+  eq insertTL(M,F,T',(T,TL))
+   = if canonice(M,F[nullVars(T'),nullVars(T)]) == F[canonice(M,nullVars(T')),canonice(M,nullVars(T))]
+     then (T',T,TL)
+     else (T,insertTL(M,F,T',TL))
+     fi .
+
+  op nullVars : Term -> Term .
+  eq nullVars(C) = C .
+  eq nullVars(V) = qid("#0:" + string(getType(V))) .
+  eq nullVars(F[TL]) = F[nullVarsTL(TL)] . 
+
+  op nullVarsTL : TermList -> TermList .
+  eq nullVarsTL(empty) = empty .
+  eq nullVarsTL((T,TL)) = (nullVars(T),nullVarsTL(TL)) .
 
   *****
-  op onlyRenaming : Module SubstitutionSet -> Bool .
-  eq onlyRenaming(M,empty) 
+  op metaBuiltInRenaming$$2 : Module Term Term -> Bool .
+  eq metaBuiltInRenaming$$2(M,T:Term,T':Term)
+   = T == T'
+     or-else 
+     onlyRenamingAny(M,metaBuiltInMatchShared(M,T',T) |> T) .
+
+  *****
+  op onlyRenamingAll : Module SubstitutionSet -> Bool .
+  eq onlyRenamingAll(M,empty) 
+   = true .
+  eq onlyRenamingAll(M,S | SS)
+   = onlyRenaming*(M,S) 
+     and-then
+     onlyRenamingAll(M,SS) .
+
+  op onlyRenamingAny : Module SubstitutionSet -> Bool .
+  eq onlyRenamingAny(M,empty) 
    = false .
-  eq onlyRenaming(M,S | SS)
+  eq onlyRenamingAny(M,S | SS)
    = onlyRenaming*(M,S) 
      or-else 
-     onlyRenaming(M,SS) .
+     onlyRenamingAny(M,SS) .
 
   op onlyRenaming* : Module Substitution -> Bool .
   eq onlyRenaming*(M,(V <- T) ; (V' <- T) ; S)
@@ -4522,8 +4454,8 @@ fmod ORDERS-TERM-SUBSTITUTION is
   eq eqNormalizeSubstitution*(M, V <- T ; S:Substitution)
    = V <- getTerm(metaReduce(eraseRls(M),T)) 
      ; eqNormalizeSubstitution*(M, S:Substitution) .
-
 endfm
+
 fmod META-NORMALIZE is
   protecting META-TERM .
   protecting META-LEVEL .
@@ -4564,7 +4496,7 @@ fmod META-NORMALIZE is
   eq metaNormalizeCollect$(M,T,TP)
    = metaNormalizeCollect$(M,{T,TP,none}) .
 
-  op metaNormalizeCollect$ : Module ResultTriple ~> ResultTripleSet . ---[memo] .
+  op metaNormalizeCollect$ : Module ResultTriple ~> ResultTripleSet .
   eq metaNormalizeCollect$(M,{T,TP,S})
    = metaSearchCollect(M, 
        T, (addType TP ToVar 'XXXXXXX),
@@ -4579,7 +4511,7 @@ fmod META-NORMALIZE is
   eq metaOneRewriting$(M,T,TP)
    = metaOneRewriting$(M,{T,TP,none}) .
 
-  op metaOneRewriting$ : Module ResultTriple -> ResultTripleSet . ---[memo] .
+  op metaOneRewriting$ : Module ResultTriple -> ResultTripleSet .
   
   eq metaOneRewriting$(M,{T,TP,S})
    = metaSearchCollect(M, 
@@ -4626,8 +4558,6 @@ fmod META-NORMALIZE is
                             TypeOfNarrowing
                             ResultContextSet
              -> ResultContextSet .
-  op oneMoreStep : Module SubstitutionCond TypeOfNarrowing
-                   ResultContextSet -> ResultContextSet [memo] .
   --- Not defined in this module-------------
 
   op metaNormalizeCollect : Module Term ~> ResultTripleSet .
@@ -4691,6 +4621,7 @@ fmod META-NORMALIZE is
        none,'!,unbounded,unbounded,unbounded,E-rewriting noStrategy,
        {T,TP,S,none,[],[],T << S,T << S,
         max(highestVar(S),highestVar((T,T << S))) + 1,
+        nil,
         empty}
      )) .
 
@@ -4711,6 +4642,7 @@ fmod META-NORMALIZE is
        none,'+,1,unbounded,unbounded,E-rewriting noStrategy,
        {T,TP,S,none,[],[],T << S,T << S,
         max(highestVar(S),highestVar((T,T << S))) + 1,
+        nil,
         empty}
      )) .
 
@@ -4718,10 +4650,10 @@ fmod META-NORMALIZE is
   op noSelf : ResultContextSet ResultContextSet -> ResultContextSet .
   eq noSelf(empty,RTS')
    = RTS' .
-  eq noSelf({T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,B:Flags} | RTS,RTS')
+  eq noSelf({T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags} | RTS,RTS')
    = noSelf(RTS,
       if TS == T and-then CtTS == T and-then Ct == [] and-then CtS == []
-      then noSelf*({T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,B:Flags}, RTS')
+      then noSelf*({T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}, RTS')
       else RTS'
       fi
      ) .
@@ -4729,8 +4661,8 @@ fmod META-NORMALIZE is
   op noSelf* : ResultContext ResultContextSet -> ResultContextSet .
   eq noSelf*(RT,empty)
    = empty .
-  eq noSelf*({T,TP,S,S*,[],[],T,T,NextVar,B:Flags}, 
-             {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',B':Flags} | RTS)
+  eq noSelf*({T,TP,S,S*,[],[],T,T,NextVar,Tr:TraceNarrow,B:Flags}, 
+             {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',Tr':TraceNarrow,B':Flags} | RTS)
    = if TS' == T' and-then CtTS' == T' and-then Ct' == [] and-then CtS' == []
         and-then 
         T == T' and-then TP == TP' 
@@ -4739,10 +4671,9 @@ fmod META-NORMALIZE is
      then ---remove
           empty
      else ---keep
-          {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',B':Flags}
+          {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',Tr:TraceNarrow,B':Flags}
      fi
-     | noSelf*({T,TP,S,S*,[],[],T,T,NextVar,B:Flags},RTS) .
-
+     | noSelf*({T,TP,S,S*,[],[],T,T,NextVar,Tr':TraceNarrow,B:Flags},RTS) .
 endfm
 
 fmod META-E-NARROWING is
@@ -4839,6 +4770,25 @@ fmod META-E-NARROWING is
   eq metaETopMostNarrow(M,T,B,IRR,ON,N) 
    = toTriple(M,metaENarrowShowAll(M,T,B,full topmost ON [IRR],N)) |> T .
 
+  op metaEBuiltInTopMostNarrowRC : Module Term TermList Nat -> ResultContextSet .
+  eq metaEBuiltInTopMostNarrowRC(M,T,TL,N) 
+   = metaETopMostNarrowRC(M,T,1,reducible, E-BuiltIn-unify irrTerms(TL),N) .
+  op metaEBuiltInTopMostNarrowRCIrr : Module Term TermList Nat -> ResultContextSet .
+  eq metaEBuiltInTopMostNarrowRCIrr(M,T,TL,N) 
+   = metaETopMostNarrowRC(M,T,1,irreducible, E-BuiltIn-unify irrTerms(TL),N) .
+
+  op metaEACUTopMostNarrowRC : Module Term Nat -> ResultContextSet .
+  eq metaEACUTopMostNarrowRC(M,T,N) 
+   = metaETopMostNarrowRC(M,T,1,reducible, E-ACU-unify,N) .
+  op metaEACUTopMostNarrowRCIrr : Module Term Nat -> ResultContextSet .
+  eq metaEACUTopMostNarrowRCIrr(M,T,N) 
+   = metaETopMostNarrowRC(M,T,1,irreducible, E-ACU-unify,N) .
+
+  op metaETopMostNarrowRC : Module Term Bound IrrFlags TypeOfNarrowing Nat
+                       -> ResultContextSet .
+  eq metaETopMostNarrowRC(M,T,B,IRR,ON,N) 
+   = metaENarrowShowAll(M,T,B,full topmost ON [IRR],N) |> T .
+
   --- Auxiliary
   op [_,_] : TypeOfNarrowing IrrFlags ~> TypeOfNarrowing .
   eq [ E-ACU-unify, reducible ] = E-ACU-unify .
@@ -4888,7 +4838,7 @@ fmod META-E-NARROWING is
                        -> ResultContextSet .
   eq metaENarrowShowAll(M,T,B,ON,N)
    = metaENarrowGen(removeBoolEqs(M),B,ON, 
-       {T,leastSort(M,T),none,none,[],[],T,T,N,empty}) .
+       {T,leastSort(M,T),none,none,[],[],T,T,N,nil,empty}) .
 
   *** Call for ResultContextSet
   op metaENarrowGen : Module Bound TypeOfNarrowing
@@ -4936,23 +4886,23 @@ fmod META-E-NARROWING is
                         Bound TypeOfNarrowing 
                         ResultContext
                      -> ResultContextSet .
-  eq metaENarrowGen**(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+  eq metaENarrowGen**(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = if not testNonVarRedex(ON,T,TS) --- T is a variable
      then if CtS == []
           then *** Term CtTS is a normal form so we return it
-               {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags}
+               {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}
       else *** Term T is a rigid normal form inside a context Ct
            *** but since no rewrite has been done and
                *** this can be part of a previous metaNarrowSub call,
                *** this path is discarded
                empty
           fi
-     else if metaENarrowStra(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+     else if metaENarrowStra(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
          =/= empty
-          then metaENarrowStra(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+          then metaENarrowStra(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
           else if CtS == []
                then *** Term CtTS is a normal form so we return it
-                    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,end(true,B:Flags)}
+                    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,end(true,B:Flags)}
            else *** Term T is a rigid normal form inside a context Ct
                 *** but since no rewrite has been done and
                     *** this can be part of a previous metaNarrowSub call,
@@ -4967,7 +4917,7 @@ fmod META-E-NARROWING is
   *** Note that metaENarrowRls and metaENarrowSub 
   *** call to metaNarrow recursively
   op metaENarrowStra : Module Bound TypeOfNarrowing ResultContext 
-                    -> ResultContextSet . ---[memo] .
+                    -> ResultContextSet .
   ---innermost
   eq metaENarrowStra(M,B,innermost ON,RT)
    = if metaENarrowSub(M,B,innermost ON,RT) =/= empty
@@ -5035,17 +4985,17 @@ fmod META-E-NARROWING is
   eq auxMetaUnify**(M,E-rewriting ON,T,T',N)
    = toUnificationTriple[N](metaCoreMatch(removeBoolEqs(M),T,T')) .
   eq auxMetaUnify**(M,E-ACU-unify ON,T,T',N)
-   = metaEACUUnify(removeBoolEqs(M),T,T',N,reducible) .
+   = metaEACUUnify(removeBoolEqs(M),T,T',getIrrTerms(ON),N,reducible) .
   eq auxMetaUnify**(M,E-ACU-unify-Irr ON,T,T',N)
-   = metaEACUUnify(removeBoolEqs(M),T,T',N,irreducible) .
+   = metaEACUUnify(removeBoolEqs(M),T,T',getIrrTerms(ON),N,irreducible) .
   eq auxMetaUnify**(M,E-BuiltIn-unify ON,T,T',N)
-   = metaEBuiltInUnify(removeBoolEqs(M),T,T',N,reducible) .
+   = metaEBuiltInUnify(removeBoolEqs(M),T,T',getIrrTerms(ON),N,reducible) .
   eq auxMetaUnify**(M,E-BuiltIn-unify-Irr ON,T,T',N)
-   = metaEBuiltInUnify(removeBoolEqs(M),T,T',N,irreducible) .
+   = metaEBuiltInUnify(removeBoolEqs(M),T,T',getIrrTerms(ON),N,irreducible) .
   eq auxMetaUnify**(M,ACU-unify ON,T,T',N)
    = metaACUUnify(removeBoolEqs(M),T,T',N) .
   eq auxMetaUnify**(M,BuiltIn-unify ON,T,T',N)
-   = metaBuiltInUnify(removeBoolEqs(M),T,T',N) .
+   = metaBuiltInUnify(removeBoolEqs(M),getIrrTerms(ON),T,T',N) .
 
   *** Remove rigid normal forms
   op removeEND : ResultContextSet -> ResultContextSet .
@@ -5065,7 +5015,7 @@ fmod META-E-NARROWING is
    = RTS [owise] .
 
   op isEND : ResultContext -> Bool .
-  eq isEND({T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+  eq isEND({T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = end(B:Flags) .
 
   *** Call for Rules ---> Returns empty if no rule is applied
@@ -5096,10 +5046,14 @@ fmod META-E-NARROWING is
                     -> ResultContextSet .
   eq metaENarrowRls*(M,B,ON, 
         (rl Lhs => Rhs [Att].), 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = metaENarrowRls**$(M,B,ON, 
         (rl Lhs => Rhs [Att].), 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
+           Tr:TraceNarrow {CtTS,none,leastSort(M,CtTS),(rl Lhs => Rhs [Att].)},
+                          --- Subst none here is key to write the real stuff 
+                          --- later in function _<<_
+           B:Flags},
         'rl_=>_`[_`].[Lhs,Rhs,'none.AttrSet] <<{none,NextVar}<) . 
   eq metaENarrowRls*(M,B,ON, X:Rule, X:ResultContext)
    = empty [owise] .
@@ -5110,10 +5064,10 @@ fmod META-E-NARROWING is
                       -> ResultContextSet .
   eq metaENarrowRls**$(M,B,ON,
         (rl Lhs => Rhs [Att].), 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
         {Subst,NextVar'})
    = metaENarrowRls**$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs,Rhs,'none.AttrSet] << Subst) .
 
@@ -5122,11 +5076,15 @@ fmod META-E-NARROWING is
                           UnificationPair Term
                        -> ResultContextSet .
   eq metaENarrowRls**$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
+          Tr:TraceNarrow {CtTS,none,TP$:Type,(rl Lhs => Rhs [Att].)},
+          B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs',Rhs','none.AttrSet])
    = metaENarrowRls**$$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
+           Tr:TraceNarrow {CtTS,none,TP$:Type,(rl Lhs' => Rhs' [Att].)},
+           B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs',Rhs','none.AttrSet],
         auxMetaUnify(M,ON,TS,Lhs',NextVar')) .
@@ -5136,7 +5094,7 @@ fmod META-E-NARROWING is
                            UnificationPair Term UnificationTripleSet
                         -> ResultContextSet .
   eq metaENarrowRls**$$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},
+    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs',Rhs','none.AttrSet],US)
     = if US =/= empty
@@ -5149,6 +5107,7 @@ fmod META-E-NARROWING is
         CtS[Rhs'],
         CtS[Rhs'],
         NextVar',
+                Tr:TraceNarrow,
                 B:Flags} 
                <<(M,ON) US
             )
@@ -5167,12 +5126,12 @@ fmod META-E-NARROWING is
   op rebuildTypeAndDiscardErroneous* : Module TypeOfNarrowing
                                        ResultContext -> ResultContextSet .
   eq rebuildTypeAndDiscardErroneous*(M,ON,
-       {T,TP,S,S',[],[],TS,TS,NextVar,B:Flags})
+       {T,TP,S,S',[],[],TS,TS,NextVar,Tr:TraceNarrow,B:Flags})
    = if leastSort(M,TS) :: Type
      then normalize-terms?(M,ON,
              {canonice(M,T),leastSort(M,TS),S,S',
               [],[],canonice(M,TS),canonice(M,TS),
-              NextVar,B:Flags})
+              NextVar,Tr:TraceNarrow,B:Flags})
      else empty
      fi .
 
@@ -5184,19 +5143,19 @@ fmod META-E-NARROWING is
   eq RT <<(M,ON) (empty).UnificationTripleSet
    = (empty).ResultContextSet .
 
-  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      <<(M,ON) ({Subst,Subst',N} | SS:UnificationTripleSet)
-   = {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+   = {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      <<((M,ON)) {Subst,Subst',N}
      |
-     {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+     {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      <<(M,ON) SS:UnificationTripleSet .
 
   op _<<`(`(_`,_`)`)_ : ResultContext 
                         Module TypeOfNarrowing
                         UnificationTriple -> ResultContextSet .
 
-  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+  eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      <<((M,ON)) {Subst,Subst',N}
    = if (variant in ON 
          and-then 
@@ -5221,7 +5180,7 @@ fmod META-E-NARROWING is
          not applied-normalized-subs in ON 
          and-then
          not computed-normalized-subs in ON)
-     then {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,B:Flags} 
+     then {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
            << if not anyIdSymbol(M,Subst ; Subst')
               then {Subst,Subst',N}
               else {normalizeRls(M,Subst),normalizeRls(M,Subst'),N}
@@ -5234,30 +5193,30 @@ fmod META-E-NARROWING is
   op normalize-terms? : Module TypeOfNarrowing ResultContext 
                      -> ResultContext .
   eq normalize-terms?(M,E-normalize-terms ON,
-     {T,TP,S,S',[],[],TS,TS,NextVar,B:Flags})
+     {T,TP,S,S',[],[],TS,TS,NextVar,Tr:TraceNarrow,B:Flags})
    = {getTerm(metaReduce(M,T)),
       getType(metaReduce(M,T)),
       S,S',[],[],
       getTerm(metaReduce(M,TS)),
       getTerm(metaReduce(M,TS)),
-      NextVar,B:Flags} .
+      NextVar,Tr:TraceNarrow,B:Flags} .
   eq normalize-terms?(M,normalize-terms ON,
-     {T,TP,S,S',[],[],TS,TS,NextVar,B:Flags})
+     {T,TP,S,S',[],[],TS,TS,NextVar,Tr:TraceNarrow,B:Flags})
    = {getTerm(metaNormalizeCollect(M,T)),
       getType(metaNormalizeCollect(M,T)),
       S,S',[],[],
       getTerm(metaNormalizeCollect(M,TS)),
       getTerm(metaNormalizeCollect(M,TS)),
-      NextVar,B:Flags} .
+      NextVar,Tr:TraceNarrow,B:Flags} .
   eq normalize-terms?(M,ON,RT)
    = RT [owise] .
 
   *** Call at inner subterms
   op metaENarrowSub : Module Bound TypeOfNarrowing ResultContext  
-                      -> ResultContextSet . ---[memo] .
-  eq metaENarrowSub(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags}) 
+                      -> ResultContextSet .
+  eq metaENarrowSub(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}) 
    = metaENarrowSub#(M,B,ON,flatten(M,auxSplitTerm(ON,T,TS)),
-            {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags}) .
+            {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}) .
 
   op auxSplitTerm : TypeOfNarrowing Term Term -> Term .
   eq auxSplitTerm(basic ON,T,TS) = T .
@@ -5289,7 +5248,7 @@ fmod META-E-NARROWING is
   eq splitTerm(M,F,
                N,NL,AC?:Bool,
                TL',(T,TL),
-               {T'',TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+               {T'',TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = if ((not AC?:Bool) and-then N inNatList NL)
         or-else
         (AC?:Bool and-then NL =/= 0)
@@ -5297,12 +5256,12 @@ fmod META-E-NARROWING is
      else {T,leastSort(M,T),S,S',
            Ct[F[TL',[],TL]],
            CtS[F[TL' << (S ; S'),[],TL << (S ; S')]],T << (S ; S'),
-           CtTS,NextVar,B:Flags}
+           CtTS,NextVar,Tr:TraceNarrow,B:Flags}
      fi
      | splitTerm(M,F,
                  s(N),NL,AC?:Bool,
                  (TL',T),TL,
-                 {T'',TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags}) .
+                 {T'',TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}) .
 
   op metaENarrowSub#Gen : Module Bound TypeOfNarrowing ResultContextSet  
                        -> ResultContextSet .
@@ -5314,7 +5273,7 @@ fmod META-E-NARROWING is
   op filter-variant-RT : Module TypeOfNarrowing ResultContext 
                       ResultContextSet -> ResultContextSet .
   eq filter-variant-RT(M,ON,
-          {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags},RTS)
+          {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},RTS)
    = if variant in ON and testUnifier !in ON
      then filter-variant-RT*(M,Vars(TS),empty,RTS)
      else RTS
@@ -5346,10 +5305,10 @@ fmod META-E-NARROWING is
      fi .
 
   op test-variant-RT : Module TermList ResultContext ResultContext 
-                    -> Bool . ---[memo] .
+                    -> Bool .
   eq test-variant-RT(M,TL,
-         {T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,B:Flags},
-         {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',B':Flags})
+         {T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
+         {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',Tr':TraceNarrow,B':Flags})
    = test-variant-RT*(M,TL,S |> TL,S' |> TL) .
 
   op test-variant-RT* : Module TermList Substitution Substitution -> Bool .
@@ -5361,7 +5320,6 @@ fmod META-E-NARROWING is
   op |_| : Substitution -> Nat .
   eq | (none).Substitution | = 0 .
   eq | V <- T ; S | = s(| S |) .
-
 endfm
 
 fmod META-NARROWING-SEARCH is
@@ -5397,43 +5355,23 @@ fmod META-NARROWING-SEARCH is
   --- metaNarrowSearch --------------------------------------------------------
 
   *** Shortcuts to Narrowing Search
-  op metaNarrowSearch : Module Term Term -> ResultTripleSet .
-  eq metaNarrowSearch(M,T,T') = metaNarrowSearch(M,T,T',unbounded) .
-
-  op metaNarrowSearch : Module Term Term Bound -> ResultTripleSet .
-  eq metaNarrowSearch(M,T,T',B) = metaNarrowSearch(M,T,T',B,1) .
-
-  op metaNarrowSearch : Module Term Term Bound Bound -> ResultTripleSet .
-  eq metaNarrowSearch(M,T,T',B,BN) = metaNarrowSearch(M,T,T','!,B,BN) .
-
-  op metaNarrowSearch : Module Term Term TypeOfRelation Bound Bound 
-                     -> ResultTripleSet .
-  eq metaNarrowSearch(M,T,T',QQ,B,BN) 
-   = metaNarrowSearch(M,T,T',none,QQ,B,BN) .
-
-  op metaNarrowSearch : Module Term Term SubstitutionCond 
-                        TypeOfRelation Bound Bound 
-                        -> ResultTripleSet .
-  eq metaNarrowSearch(M,T,T',SCond,QQ,B,BN)
-   = metaNarrowSearch(M,T,T',SCond,QQ,B,BN,unbounded) .
-
   op metaNarrowSearch : Module Term Term SubstitutionCond 
                         TypeOfRelation Bound Bound Bound
                         -> ResultTripleSet .
-  eq metaNarrowSearch(M,T,T',SCond,QQ,B,BN,Sol)
+  eq metaNarrowSearch(M,T,T',SCond,QQ,BN,B,Sol)
    = if (BN == unbounded and-then Sol =/= unbounded)
         or-else
         (BN =/= unbounded and-then Sol =/= unbounded and-then BN < Sol)
-     then metaNarrowSearch*(M,T,T',SCond,QQ,B,Sol,Sol) 
-     else metaNarrowSearch*(M,T,T',SCond,QQ,B,BN,Sol) 
+     then metaNarrowSearch*(M,T,T',SCond,QQ,Sol,B,Sol) 
+     else metaNarrowSearch*(M,T,T',SCond,QQ,BN,B,Sol) 
      fi .
 
   op metaNarrowSearch* : Module Term Term SubstitutionCond 
                          TypeOfRelation Bound Bound Bound
                          -> ResultTripleSet .
-  eq metaNarrowSearch*(M,T,T',SCond,QQ,B,BN,Sol)
-   = metaNarrowSearchGen(M,T,T',SCond,QQ,B,BN,Sol,
-         full BuiltIn-unify noStrategy E-normalize-terms) .
+  eq metaNarrowSearch*(M,T,T',SCond,QQ,BN,B,Sol)
+   = metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,
+         full E-BuiltIn-unify noStrategy E-normalize-terms) .
 
   *** General Call
   op metaNarrowSearchGen : Module Term Term SubstitutionCond 
@@ -5443,9 +5381,36 @@ fmod META-NARROWING-SEARCH is
                            Bound --- chosen solution
                            TypeOfNarrowing 
             -> ResultTripleSet .
-  eq metaNarrowSearchGen(M,T,T',SCond,QQ,B,BN,Sol,ON)
+  eq metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,ON)
    = toTriple(M,metaNarrowSearchGenAll(M,T,T',SCond,QQ,B,BN,Sol,ON)) .
 
+  *** Shortcuts to Narrowing Search Path
+  op metaNarrowSearchPath : Module Term Term SubstitutionCond 
+                            TypeOfRelation Bound Bound Bound
+                         -> TraceNarrowSet .
+  eq metaNarrowSearchPath(M,T,T',SCond,QQ,BN,B,Sol)
+   = if (BN == unbounded and-then Sol =/= unbounded)
+        or-else
+        (BN =/= unbounded and-then Sol =/= unbounded and-then BN < Sol)
+     then metaNarrowSearchPath*(M,T,T',SCond,QQ,Sol,B,Sol) 
+     else metaNarrowSearchPath*(M,T,T',SCond,QQ,BN,B,Sol) 
+     fi .
+
+  op metaNarrowSearchPath* : Module Term Term SubstitutionCond 
+                             TypeOfRelation Bound Bound Bound
+                          -> TraceNarrowSet .
+  eq metaNarrowSearchPath*(M,T,T',SCond,QQ,BN,B,Sol)
+   = extractTraces(
+       metaNarrowSearchGenAll(M,T,T',SCond,QQ,B,BN,Sol,
+         full E-BuiltIn-unify noStrategy E-normalize-terms)) .
+
+  op extractTraces : ResultContextSet -> TraceNarrowSet .
+  eq extractTraces(empty) = empty .
+  eq extractTraces({T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags} | RTS)
+   = if Tr:TraceNarrow == nil then empty else Tr:TraceNarrow fi
+     | extractTraces(RTS) .
+
+  *** Starting Call
   op metaNarrowSearchGenAll : Module Term Term SubstitutionCond 
                               TypeOfRelation Bound Bound Bound TypeOfNarrowing
                            -> ResultContextSet .
@@ -5458,7 +5423,7 @@ fmod META-NARROWING-SEARCH is
   eq metaNarrowSearchGenAll(M,T,T',SCond,QQ,B,BN,Sol,ON,N)
    = metaNarrowSearchAll(addSorts('Universal,M),
             T,T',SCond,QQ,B,BN,Sol,ON,
-            {T,leastSort(M,T),none,none,[],[],T,T,N,empty}) .
+            {T,leastSort(M,T),none,none,[],[],T,T,N,nil,empty}) .
 
   *** One Narrowing step in the search process (including possible filters)
   op metaNarrowStep : Module SubstitutionCond 
@@ -5483,10 +5448,10 @@ fmod META-NARROWING-SEARCH is
    = filterSCond**(M,SCond,RT) | filterSCond*(M,SCond,RTS) .
 
   op filterSCond** : Module SubstitutionCond ResultContext 
-                   -> ResultContextSet . ---[memo] .
-  eq filterSCond**(M,SCond,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+                   -> ResultContextSet .
+  eq filterSCond**(M,SCond,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = if SCond <=[M] S
-     then {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags}
+     then {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}
      else empty
      fi .
 
@@ -5509,21 +5474,21 @@ fmod META-NARROWING-SEARCH is
 
   *** Take only normal forms
   op isNF : Module ResultContext -> Bool .
-  eq isNF(M,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,B:Flags})
+  eq isNF(M,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = end(B:Flags) or-else metaOneRewriting(M,CtTS) == empty .
      
   *** Take only normal forms
   op isVariant : Module Nat ResultContextSet ResultContext -> Bool .
   eq isVariant(M,N,
-        {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',B':Flags} | RTS,
-        {T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,B:Flags})
+        {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',Tr':TraceNarrow,B':Flags} | RTS,
+        {T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
     = not (
        (S' |> N ; (newVar(N + 1,TP') <- CtTS'))
            <=[M] 
        (S |> N ; (newVar(N + 1,TP) <- CtTS))
       )
       and-then
-      isVariant(M,N,RTS,{T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,B:Flags}) .
+      isVariant(M,N,RTS,{T,TP,S,S*,Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}) .
   eq isVariant(M,N,RTS,RT)
    = true [owise] .
 
@@ -5609,8 +5574,8 @@ fmod META-NARROWING-SEARCH is
    = S':Substitution .
   eq upDown#(M,S':Substitution,V <- T ; S:Substitution)
    = upDown#(M,S':Substitution ; V <- getTerm(metaReduce(M,T)),S:Substitution) .
-
 endfm
+
 *************************************
 ****** End of Santiago Escobar's code
 *******************************************************************************
@@ -6063,6 +6028,9 @@ fmod COMMANDS is
   op variant`unify_. : @Bubble@ -> @Command@ .
 
   *** unifying command
+  op asymmetric`variant`unify_. : @Bubble@ -> @Command@ .
+
+  *** unifying command
   op get`variants_. : @Bubble@ -> @Command@ .
 
   *** select command
@@ -6138,6 +6106,7 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod PRINT-SYNTAX-ERROR is
+---  protecting META-LEVEL + PRE-VARIANT .
   protecting META-LEVEL .
   protecting INT .
 
@@ -6426,6 +6395,7 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod EXT-SORT is
+---  pr META-LEVEL + PRE-VARIANT .
   pr META-LEVEL .
   pr EXT-BOOL .
   pr VIEW-EXPR-TO-QID .
@@ -6457,32 +6427,37 @@ fmod EXT-SORT is
 
   vars Tp Tp' Tp'' Tp''' : Type .
   vars TpL TpL' : TypeList .
+  var  M : Module .
 
   op sameKind : Module TypeList TypeList -> Bool [ditto] .
-  eq sameKind(M:Module, (Tp Tp' TpL), (Tp'' Tp''' TpL'))
-    = sameKind(M:Module, Tp, Tp'') 
-      and-then sameKind(M:Module, Tp' TpL, Tp''' TpL') .
-  eq sameKind(M:Module, nil, nil) = true .
-  eq sameKind(M:Module, TpL, TpL) = false [owise] .
+  eq sameKind(M, (Tp Tp' TpL), (Tp'' Tp''' TpL'))
+    = sameKind(M, Tp, Tp'') 
+      and-then sameKind(M, Tp' TpL, Tp''' TpL') .
+  eq sameKind(M, nil, nil) = true .
+  eq sameKind(M, TpL, TpL') = false [owise] .
 
-  eq sameKind(M:Module, cc(S:Sort ; SS:SortSet), Tp) 
-    = sameKind(M:Module, S:Sort, Tp) .
-  eq sameKind(M:Module, Tp, cc(S:Sort ; SS:SortSet)) 
-    = sameKind(M:Module, Tp, S:Sort) .
-  eq sameKind(M:Module, cc(S:Sort ; SS:SortSet), cc(S':Sort ; SS':SortSet)) 
-    = sameKind(M:Module, S:Sort, S':Sort) .
+  eq sameKind(M, cc(S:Sort ; SS:SortSet), Tp) 
+    = sameKind(M, S:Sort, Tp) .
+  eq sameKind(M, Tp, cc(S:Sort ; SS:SortSet)) 
+    = sameKind(M, Tp, S:Sort) .
+  eq sameKind(M, cc(S:Sort ; SS:SortSet), cc(S':Sort ; SS':SortSet)) 
+    = sameKind(M, S:Sort, S':Sort) .
+
+  op sameKindAll : Module Type TypeList -> Bool .
+  eq sameKindAll(M, Tp, Tp' TpL) = sameKind(M, Tp, Tp') and-then sameKindAll(M, Tp, TpL) .
+  eq sameKindAll(M, Tp, nil) = true .
 
   op eLeastSort : Module TermList ~> TypeList .
-  eq eLeastSort(M:Module, (T:Term, TL:TermList)) 
-    = (leastSort(M:Module, T:Term) eLeastSort(M:Module, TL:TermList)) .
-  eq eLeastSort(M:Module, empty) = nil .
-  eq eLeastSort(M:Module, qidError(QIL)) = qidError(QIL) .
+  eq eLeastSort(M, (T:Term, TL:TermList)) 
+    = (leastSort(M, T:Term) eLeastSort(M, TL:TermList)) .
+  eq eLeastSort(M, empty) = nil .
+  eq eLeastSort(M, qidError(QIL)) = qidError(QIL) .
 
   op eLeastSort : Module TermSet ~> TypeSet .
-  eq eLeastSort(M:Module, (T:Term | TS:TermSet)) 
-    = (leastSort(M:Module, T:Term) ; eLeastSort(M:Module, TS:TermSet)) .
-  eq eLeastSort(M:Module, emptyTermSet) = none .
-  eq eLeastSort(M:Module, qidError(QIL)) = qidError(QIL) .
+  eq eLeastSort(M, (T:Term | TS:TermSet)) 
+    = (leastSort(M, T:Term) ; eLeastSort(M, TS:TermSet)) .
+  eq eLeastSort(M, emptyTermSet) = none .
+  eq eLeastSort(M, qidError(QIL)) = qidError(QIL) .
 
   op qidError : QidList -> [Sort] .
   op stringError : QidList -> [String] .
@@ -6702,7 +6677,7 @@ fmod EXT-SORT is
   eq type2qid(S) 
     = if getPars(S) == empty
       then S
-      else qid(string(getName(S)) + "{" + string(parameterList2QidList(getPars(S))) + "}")
+      else qid(string(getName(S)) + "{" + string(qidList2Qid(parameterList2QidList(getPars(S)))) + "}")
       fi .
   eq type2qid(K) = qid("[" + string(type2qid(getSort(K))) + "]") .
   
@@ -6821,7 +6796,7 @@ fmod EXT-DECL is
 *** extended attribute declarations 
   op strat : IntList -> Attr [ditto] .   *** to handle on-demand strategies
   op ditto : -> Attr [ctor] .
-
+  
   op _in_ : Attr AttrSet -> Bool .
   eq At in At AtS = true .
   eq At in AtS = false [owise] .
@@ -6902,6 +6877,7 @@ endfm
 **** get a copy of a term in which all the variables in it have been renamed.
 
 fmod EXT-TERM is
+---  pr META-LEVEL + PRE-VARIANT .
   pr META-LEVEL .
   pr EXT-BOOL .
   pr EXT-DECL .
@@ -7314,7 +7290,7 @@ fmod MOD-NAME-TO-QID is
   pr MOD-NAME .
   pr EXT-QID-LIST .
 
-  op header2Qid :  -> Qid .
+  op header2Qid : Header -> Qid .
   op header2QidList : Header -> QidList .
   op parameterDecl2Qid : ParameterDecl -> Qid .
   op parameterDecl2QidList : ParameterDecl -> QidList .
@@ -7387,6 +7363,7 @@ fmod UNIT is
   pr EXT-DECL .
   pr O-O-DECL .
   pr MOD-NAME-TO-QID .
+---  inc META-LEVEL + PRE-VARIANT .
   inc META-LEVEL .
 
   op moduleName : Import -> ModuleName .
@@ -8144,6 +8121,9 @@ fmod UNIT is
   eq removeNonExecs(RlS) = RlS [owise] .
 
   *** moreGeneralEqs  ******************************
+  ---- An equation is more general than other if there is a substitution such that 
+  ---- the more general equation with such a substitution applied is equal to the 
+  ---- less general one. 
   op moreGeneralEqs : Module -> Module .
   op moreGeneralRls : Module -> Module .
   op $moreGeneralEqs : Module Module EquationSet EquationSet -> Module .
@@ -8265,6 +8245,7 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod META-FULL-MAUDE-SIGN is
+---  including META-LEVEL + PRE-VARIANT .
   including META-LEVEL .
   including UNIT .
 
@@ -9679,6 +9660,7 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod MOVE-UP is
+---  pr META-LEVEL + PRE-VARIANT .  
   pr META-LEVEL .  
   pr CONVERSION .
   op up : Module -> Term .
@@ -12145,6 +12127,7 @@ fmod EVALUATION is
         getModules(IL', DB'), VDS, DB') 
     if < IL ; PDL ; DB' > := normalize(getImports(U), getPars(U), DB)
     /\ IL' := subunitImports(PDL, IL, DB') .
+   eq evalModule(U, VDS, DB) = DB [owise] .
 
   eq evalModule1(U, U', (U'' UL), VDS, DB)
     = evalModule1(U, addDecls(U', setImports(U'', nil)), UL, VDS, DB) .
@@ -12262,7 +12245,6 @@ fmod EVALUATION is
         flatModule(setImports(transform(addDecls(PU, U), DB), nil)),
         insertInternalModule(getName(PU), transform(PU, DB), DB)) .
   eq evalPreModule3(unitError(QIL), U, M, DB) = warning(DB, QIL) .
- 
 endfm
 
 -------------------------------------------------------------------------------
@@ -12432,7 +12414,7 @@ fmod RENAMING-SET-APPL-ON-TERM is
 *** source term in the map with the term on which the map is applied, and then
 *** the application of the obtained substitution. Note, however, that a
 *** complete matching algorithm is not required. Given the form of the pattern
-*** we can choose before hand the appropriate map, that is, we know that in
+*** we can choose beforehand the appropriate map, that is, we know that in
 *** fact there is a match when the function is called. Note also that the map
 *** has to be applied to the whole family of subsort overloaded operators. We
 *** just have to check that the sort of the given variable and the
@@ -12465,8 +12447,8 @@ fmod RENAMING-SET-APPL-ON-TERM is
   eq applyMapsToTerm2(SRS, ORS, qidError(QIL), M) = qidError(QIL) .
   eq applyMapsToTerm2(SRS, ORS, F[TL], M) 
     = imageOfTerm(SRS, ORS, F[TL], 
-        getRightOpMaps(F, eLeastSort(M, TL), leastSort(M, F[TL]), 
-          ORS, M), M)
+        getRightOpMaps(F, eLeastSort(M, TL), leastSort(M, F[TL]), ORS, M), 
+        M)
     [owise] .
     ---- if (F =/= '<_:_|_>) and (F =/= '<_:_|`>) .
   eq applyMapsToTerm2(SRS, ORS, '<_:_|_>[O, Ct, T], M) 
@@ -12533,12 +12515,16 @@ fmod RENAMING-SET-APPL-ON-TERM is
   eq getRightOpMaps(F, TyL, Ty, (op F to F' [AtS], RS), M)
     = (op F to F' [AtS], getRightOpMaps(F, TyL, Ty, RS, M)) .
   eq getRightOpMaps(F, TyL, Ty, op F : TyL' -> Ty' to F' [AtS], M)
-    = if sameKind(M, TyL Ty, TyL' Ty') 
+    = if (size(TyL') == 2 and-then (sameKindAll(M, Ty', TyL) and-then assoc in attrs2SameKind(F, TyL, M)))
+         or-else
+         sameKind(M, TyL Ty, TyL' Ty') 
       then (op F : TyL' -> Ty' to F' [AtS])
       else none
       fi .
   eq getRightOpMaps(F, TyL, Ty, (op F : TyL' -> Ty' to F' [AtS], RS), M)
-    = if sameKind(M, TyL Ty, TyL' Ty') 
+    = if (size(TyL') == 2 and-then (sameKindAll(M, Ty', TyL) and-then assoc in attrs2SameKind(F, TyL, M)))
+         or-else
+         sameKind(M, TyL Ty, TyL' Ty') 
       then (op F : TyL' -> Ty' to F' [AtS], 
             getRightOpMaps(F, TyL, Ty, RS, M))
       else getRightOpMaps(F, TyL, Ty, RS, M)
@@ -12573,6 +12559,14 @@ fmod RENAMING-SET-APPL-ON-TERM is
   eq varListSort((V, TL)) = (getType(V) varListSort(TL)) .
   eq varListSort(empty) = nil .
 
+  op attrs2SameKind : Qid TypeList Module -> AttrSet .
+  op attrs2SameKind : Qid TypeList OpDeclSet Module -> AttrSet .
+  eq attrs2SameKind(F, Ty Ty' TyL, M) = attrs2SameKind(F, Ty Ty', getOps(M), M) .
+ ceq attrs2SameKind(F, TyL, op F : TyL' -> Ty' [AtS] . OPDS, M) ---- all subsort overloaded operators have the same equational attributes 
+    = AtS
+    if sameKind(M, TyL, TyL') .
+  eq attrs2SameKind(F, TyL, OPDS, M) = none [owise] .
+  
 *** Application of a map set to the set of attributes in an object
 
   eq applyMapsToObjectAttrSet(RS, RS', C, '_`,_[A[T], TL], M)
@@ -17791,6 +17785,10 @@ fmod COMMAND-PROCESSING is
   op procVariantUnify2 : Module UnificationProblem Bound -> QidList .
   op procVariantUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
 
+  op procAsymmetricVariantUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
+  op procAsymmetricVariantUnify2 : Module UnificationProblem Bound -> QidList .
+  op procAsymmetricVariantUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
+
   op procGetVariants : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
   op parseGetVariants : Term OpDeclSet -> Term .
   op procGetVariants2 : Module Term Bound -> QidList .
@@ -17902,6 +17900,9 @@ fmod COMMAND-PROCESSING is
 
   eq procCommand('variant`unify_.['bubble[T]], ME, M, VS, DB) 
     = procVariantUnify(ME, M, 'bubble[T], unbounded, VS, DB) .
+
+  eq procCommand('asymmetric`variant`unify_.['bubble[T]], ME, M, VS, DB) 
+    = procAsymmetricVariantUnify(ME, M, 'bubble[T], unbounded, VS, DB) .
 
   eq procCommand('get`variants_.['bubble[T]], ME, M, VS, DB) 
     = procGetVariants(ME, M, 'bubble[T], unbounded, VS, DB) .
@@ -18506,6 +18507,12 @@ fmod COMMAND-PROCESSING is
   eq solveBubblesNarrowSearchR2(M, T, F[T', T'', TL], QI, D, I, VDS)
     = procNarrowSearch2(M, T, constsToVars(F[T', T'', TL], VDS), nil, QI, D, I) .
 
+  op acuCohComplete : SModule -> SModule .       ---- Defined later in module ACU-COHERENCE-COMPLETION
+
+  sort IdsToRemove .                             ---- moved from VARIANTS
+  ops all non-handled : -> IdsToRemove .         ---- moved from VARIANTS
+  op removeIds : Module IdsToRemove ~> Module .  ---- moved from VARIANTS
+  
   ceq procNarrowSearch2(M, T, T', CD, QI, D, D')
     = if RTS:[ResultTripleSet] :: ResultTripleSet
       then ('search 
@@ -18525,7 +18532,12 @@ fmod COMMAND-PROCESSING is
             'in eMetaPrettyPrint(getName(M)) ':
             eMetaPrettyPrint(M, T) '\s qid("~>" + string(QI)) '\s 
             eMetaPrettyPrint(M, T'') '.
-            procNarrowSearch3(M, 0, Vars((T,T')), RTS:[ResultTripleSet]))
+            procNarrowSearch3(M, 0, Vars((T,T')), RTS:[ResultTripleSet])
+            if D =/= unbounded and-then D' == unbounded and-then | RTS:[ResultTripleSet] | < D
+            then procNarrowSearch2RT(M, T, T', CD, QI, D, D',RTS:[ResultTripleSet],1)
+            else nil
+            fi 
+            ('\n '\n 'No 'more 'solutions. '\n))
       else if RTS:[ResultTripleSet] == empty
            then ('search 
            if D == unbounded and D' == unbounded
@@ -18553,8 +18565,7 @@ fmod COMMAND-PROCESSING is
        /\ RTS:[ResultTripleSet]
           := upDown(M,
               metaNarrowSearchGen(
-                 ---removeIds(acuCohComplete(M)),
-                 acuCohComplete(M),
+                 removeIds(acuCohComplete(M), non-handled),
                  T,
                  T'', 
                  none, 
@@ -18565,8 +18576,38 @@ fmod COMMAND-PROCESSING is
                  full E-ACU-unify noStrategy E-normalize-terms) 
               |> (T,T'') 
              ) .
+
+  var RTS' : ResultTripleSet .
+
+  op procNarrowSearch2RT : Module Term Term Condition Qid Bound Bound ResultTripleSet Nat -> QidList .
+  ceq procNarrowSearch2RT(M, T, T', CD, QI, D, D',RTS',J)
+    = nil
+   if | RTS' | == D .
+  ceq procNarrowSearch2RT(M, T, T', CD, QI, D, D',RTS',J)
+    = if RTS:[ResultTripleSet] :: ResultTripleSet
+      then (procNarrowSearch3(M, | RTS' |, Vars((T,T')), RTS:[ResultTripleSet])
+            procNarrowSearch2RT(M, T, T', CD, QI, D, D',RTS' | RTS:[ResultTripleSet],J + 1) )
+      else nil 
+      fi 
+    if | RTS' | < D
+       /\ T'' := prepSearchPattern(T')
+       /\ (RTS' | RTS:[ResultTripleSet])
+          := upDown(M,
+              metaNarrowSearchGen(
+                 removeIds(acuCohComplete(M), non-handled),
+                 T,
+                 T'', 
+                 none, 
+                 typeOfRelation(QI), 
+                 D', 
+                 D + J, 
+                 unbounded,
+                 full E-ACU-unify noStrategy E-normalize-terms) 
+              |> (T,T'') 
+             ) .
+
   eq procNarrowSearch3(M, I, TL:TermList, empty)
-   = ('\n '\n 'No 'more 'solutions. '\n) .
+   = nil .
   eq procNarrowSearch3(M, I, TL:TermList, {T:Term,TP:Type,S:Substitution} | RTS:ResultTripleSet)
     = ('\n '\n 'Solution qid(string(I + 1, 10))
        if (S:Substitution |> TL:TermList) == none
@@ -18977,9 +19018,6 @@ fmod COMMAND-PROCESSING is
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
-  op acuCohComplete : SModule -> SModule . --- Defined later in module ACU-COHERENCE-COMPLETION
-----  op removeIds : Module ~> Module . ---Defined later in module VARIANTS
-
   ceq procVariantUnify2(M, T =? T', D)
     = if X:[SubstitutionSet] :: SubstitutionSet
       then ('variant 'unify 
@@ -18987,7 +19025,7 @@ fmod COMMAND-PROCESSING is
             'in eMetaPrettyPrint(getName(M)) ':
             eMetaPrettyPrint(M, T =? T')
             if X:[SubstitutionSet] == empty
-            then '\n 'No 'unifier
+            then '\n 'No 'variant 'unifier
             else procVariantUnify3(M, T =? T', 0, X:[SubstitutionSet])
             fi)
       else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'variant 'unify 'command. '\n 
@@ -18995,8 +19033,7 @@ fmod COMMAND-PROCESSING is
     if X:[SubstitutionSet] 
        := toSubstitution(
             metaVariantUnify(
-               ---removeIds(acuCohComplete(M)),
-               acuCohComplete(M),
+               removeIds(acuCohComplete(M), non-handled),
                T,
                T',
                highestVar((T,T')) + 1,
@@ -19014,6 +19051,59 @@ fmod COMMAND-PROCESSING is
       else '\n eMetaPrettyPrint(M, S:Substitution)
       fi
      procVariantUnify3(M, UP, I + 1, SS:SubstitutionSet) .
+
+  *** ASYMMETRIC-VARIANT-UNIFY 
+  
+  ceq procAsymmetricVariantUnify(ME, M, T, D, VDS, DB)
+    *** D is a bound on the number of solutions
+    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+      then procAsymmetricVariantUnify2(
+             getModule(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
+             parseUnify(
+               getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)), 
+               getVars(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))), 
+             getBound(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
+      else getMsg(getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
+                ----('\r 'Error: '\o 'Incorrect 'asymmetric 'variant 'unify 'command. '\n)
+      fi
+    if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
+
+  ---op acuCohComplete : SModule -> SModule . --- Defined later in module ACU-COHERENCE-COMPLETION
+  ---op removeIds : Module ~> Module . ---Defined later in module VARIANTS
+
+  ceq procAsymmetricVariantUnify2(M, T =? T', D)
+    = if X:[SubstitutionSet] :: SubstitutionSet
+      then ('variant 'unify 
+            if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi 
+            'in eMetaPrettyPrint(getName(M)) ':
+            eMetaPrettyPrint(M, T =? T')
+            if X:[SubstitutionSet] == empty
+            then '\n 'No 'asymmetric 'unifier
+            else procAsymmetricVariantUnify3(M, T =? T', 0, X:[SubstitutionSet])
+            fi)
+      else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'asymmetric 'variant 'unify 'command. '\n 
+      fi 
+    if X:[SubstitutionSet] 
+       := toSubstitution(
+            metaVariantUnify(
+               removeIds(acuCohComplete(M), non-handled),
+               T,
+               T',
+               highestVar((T,T')) + 1,
+               minimal-unifiers irreducible
+            )
+          ) .
+  eq procAsymmetricVariantUnify2(M?, UP??:[UnificationProblem], D?) = getMsg(M?) [owise] .
+    
+  eq procAsymmetricVariantUnify3(M, UP, I, empty)
+   = ('\n '\n 'No 'more 'solutions. '\n) .
+  eq procAsymmetricVariantUnify3(M, UP, I, S:Substitution | SS:SubstitutionSet)
+   = '\n '\n 'Solution qid(string(I + 1, 10))
+      if S:Substitution == none
+      then '\n 'empty 'substitution
+      else '\n eMetaPrettyPrint(M, S:Substitution)
+      fi
+     procAsymmetricVariantUnify3(M, UP, I + 1, SS:SubstitutionSet) .
 
   *** GET-VARIANTS 
 
@@ -19047,8 +19137,7 @@ fmod COMMAND-PROCESSING is
       fi 
     if X:[VariantFourSet] 
          := getVariants(
-               ---removeIds(acuCohComplete(M)),
-               acuCohComplete(M),
+              removeIds(acuCohComplete(M), non-handled),
               T,
               highestVar(T) + 1,
               ACUUnify irreducible minimal-unifiers
@@ -19068,9 +19157,7 @@ fmod COMMAND-PROCESSING is
       fi
       '`}
      procGetVariants3(M, T, I + 1, VS:VariantFourSet) .
-
 endfm
-
 
 ----load check-input-module.maude
 
@@ -19230,6 +19317,7 @@ fmod MODULE-VARIANTS is
   var  TL : TermList .
   var  AtS : AttrSet .
   var  VFS : VariantFourSet .
+  var  VtS : VariantTripleSet .
   vars Tp Tp' Tp'' : Type .
   var  TpL : TypeList .
   var  Rl : Rule .
@@ -19251,7 +19339,7 @@ fmod MODULE-VARIANTS is
 
   ------------------------------------------------------------------------------
   ---- Given a module \mathcal{R} = (\Sigma, E, R) 
-  ---- removeIdsUnif(\mathcal{R}) = removeIdsUnif((\widehat{\Sigma}, B, \widetilde{U}), R)
+  ---- removeIds(\mathcal{R}) = removeIds((\widehat{\Sigma}, B, \widetilde{U}), R)
   ---- where 
   ---- - \widehat{\Sigma} is obtained by 
   ----   - adding to $\Sigma$ a fresh new sort [Tuple] and 
@@ -19271,13 +19359,13 @@ fmod MODULE-VARIANTS is
   ------------------------------------------------------------------------------
   
   sort VariantProcedure .
-  ops narrowing ad-hoc : -> VariantProcedure .
-  var  VP : VariantProcedure .
-  sort IdsToRemove .
-  ops all non-handled : -> IdsToRemove .
+  ops narrowing ad-hoc built-in : -> VariantProcedure .
+  var VP : VariantProcedure .
+  sort IdsToRemove .                             ---- moved to COMMAND-PROCESSING
+  ops all non-handled : -> IdsToRemove .         ---- moved to COMMAND-PROCESSING
   var Which : IdsToRemove .  
   
-  op removeIds : Module IdsToRemove ~> Module . 
+  op removeIds : Module IdsToRemove ~> Module .  ---- moved to COMMAND-PROCESSING
   ---- given a module returns an equivalent module without ids but with variants of eqs and rls
   ---- the second argument may be either all (all id attributes are removed) or non-handled (only those not directly handled by Maude's unification are removed)
   op removeIds : Module IdsToRemove VariantProcedure ~> Module . 
@@ -19289,12 +19377,12 @@ fmod MODULE-VARIANTS is
   op getVariants : Module Module EquationSet VariantProcedure -> EquationSet .
   ---- given a (\widehat{\Sigma}, B, \widetilde{U}) returns the variants of the given set of equations
   ---- It takes the modules without and with ids. The module with id attributes is used to normalize.
-  op getVariants : Module Module Term VariantProcedure -> VariantFourSet .
+  op getVariants# : Module Module Term VariantProcedure -> VariantTripleSet .
   ---- given a (\widehat{\Sigma}, B, \widetilde{U}) returns the variants of a term (a tuple)
-  op getRlVariants : Module VariantFourSet Term Condition AttrSet -> RuleSet .
+  op getRlVariants : Module VariantTripleSet Term Condition AttrSet -> RuleSet .
   ---- given the variants of a tuple < LHS, target terms in condition >, a RHS, a condition, and an attribute set,
   ---- it constructs the corresponding variant rules
-  op getEqVariants : Module VariantFourSet Term Condition AttrSet -> EquationSet .
+  op getEqVariants : Module VariantTripleSet Term Condition AttrSet -> EquationSet .
   ---- given the variants of a tuple < LHS, target terms in condition >, a RHS, a condition, and an attribute set,
   ---- it constructs the corresponding variant equations
   
@@ -19324,31 +19412,45 @@ fmod MODULE-VARIANTS is
         getVariants(makeIdsTuplingModule(M, Which), addTupling(M, M), getRls(M), VP)) .
   
   eq getVariants(M, M', Rl RlS, VP) 
-    = getRlVariants(M', getVariants(M, M', makeTuple(lhs(Rl), cond(Rl)), VP), rhs(Rl), cond(Rl), atts(Rl)) 
+    = getRlVariants(M', getVariants#(M, M', makeTuple(lhs(Rl), cond(Rl)), VP), rhs(Rl), cond(Rl), atts(Rl)) 
       getVariants(M, M', RlS, VP) .
   eq getVariants(M, M', (none).RuleSet, VP) = none .
     
   eq getVariants(M, M', Eq EqS, VP) 
-    = getEqVariants(M', getVariants(M, M', makeTuple(lhs(Eq), cond(Eq)), VP), rhs(Eq), cond(Eq), atts(Eq)) 
+    = getEqVariants(M', getVariants#(M, M', makeTuple(lhs(Eq), cond(Eq)), VP), rhs(Eq), cond(Eq), atts(Eq)) 
       getVariants(M, M', EqS, VP) .
   eq getVariants(M, M', (none).EquationSet, VP) = none .
     
-  eq getVariants(M, M', T, narrowing) = getVariants(M, T, 1, irreducible ACUUnify) .
+  eq getVariants#(M, M', T, narrowing) = makeVariantSet(getVariants(M, T, 1, irreducible ACUUnify minimal-unifiers)) .
   
-  eq getRlVariants(M, {'<_>[T], Subst, Subst', N} | VFS, T', nil, AtS)
+  op makeVariantSet : VariantFourSet -> VariantTripleSet .
+  eq makeVariantSet({T, Subst, Subst', N} | VFS) = {T, Subst, N} | makeVariantSet(VFS) .
+  eq makeVariantSet(empty) = empty .
+  
+---- PD: pre alpha96
+----  eq getVariants#(M, M', T, built-in) = getVariants#(M, T, 0) .
+----
+----  op getVariants# : Module Term Nat -> VariantTripleSet .  
+----  eq getVariants#(M, T, N) 
+----    = if metaGenerateVariant(M, T, 0, N) == noVariant
+----      then empty
+----      else metaGenerateVariant(M, T, 0, N), getVariants#(M, T, s N)
+----      fi .
+  
+  eq getRlVariants(M, ({'<_>[T], Subst, N} | VtS), T', nil, AtS)
     = (rl getTerm(metaNormalize(M, T)) => getTerm(metaNormalize(M, _<<_(T', Subst))) [AtS] .)
-      getRlVariants(M, VFS, T', nil, AtS) .
-  eq getRlVariants(M, {F[T, TL], Subst, Subst', N} | VFS, T', Cond, AtS)
+      getRlVariants(M, VtS, T', nil, AtS) .
+  eq getRlVariants(M, ({F[T, TL], Subst,N} | VtS), T', Cond, AtS)
     = (crl getTerm(metaNormalize(M, T)) => getTerm(metaNormalize(M, _<<_(T', Subst))) if makeCond(TL, Cond, Subst) [AtS] .)
-      getRlVariants(M, VFS, T', Cond, AtS) .
+      getRlVariants(M, VtS, T', Cond, AtS) .
   eq getRlVariants(M, empty, T', Cond, AtS) = none .
 
-  eq getEqVariants(M, {'<_>[T], Subst, Subst', N} | VFS, T', nil, AtS)
+  eq getEqVariants(M, ({'<_>[T], Subst, N} | VtS), T', nil, AtS)
     = (eq getTerm(metaNormalize(M, T)) = getTerm(metaNormalize(M, _<<_(T', Subst))) [AtS] .)
-      getEqVariants(M, VFS, T', nil, AtS) .
-  eq getEqVariants(M, {F[T, TL], Subst, Subst', N} | VFS, T', Cond, AtS)
+      getEqVariants(M, VtS, T', nil, AtS) .
+  eq getEqVariants(M, ({F[T, TL], Subst, N} | VtS), T', Cond, AtS)
     = (ceq getTerm(metaNormalize(M, T)) = getTerm(metaNormalize(M, _<<_(T', Subst))) if makeCond(TL, Cond, Subst) [AtS] .)
-      getEqVariants(M, VFS, T', Cond, AtS) .
+      getEqVariants(M, VtS, T', Cond, AtS) .
   eq getEqVariants(M, empty, T', Cond, AtS) = none .
 
   ------------------------------------------------------------------------------
@@ -19508,17 +19610,17 @@ fmod MODULE-VARIANTS is
   ---- See Th. 2, FroCos'09
   ---- TO DO: it doesn't give the minimal set of variants
   
-  op getVariants : Module Term SubstitutionSet -> VariantFourSet .
+  op getVariants : Module Term SubstitutionSet -> VariantTripleSet .
   op getSubstitutions : Module QidSet OpDeclSet Nat -> Tuple{SubstitutionSet,Nat} .
   op getSubstitutions1 : Module Variable OpDeclSet Nat -> Tuple{SubstitutionSet,Nat} .
   op combineSubsts : SubstitutionSet SubstitutionSet -> SubstitutionSet .
   
-  eq getVariants(M, M', T, ad-hoc) 
+  eq getVariants#(M, M', T, ad-hoc) 
     = getVariants(M', T, getSubst(getSubstitutions(M', vars(T), getOps(M'), 0))) .
 
   eq getVariants(M, T, Subst | SubstS)
-    = {getTerm(metaNormalize(M, T << Subst)), Subst, none, 0} | getVariants(M, T, SubstS) .
-  eq getVariants(M, T, empty) = {T, none, none, 0} .
+    = {getTerm(metaNormalize(M, T << Subst)), Subst, 0} | getVariants(M, T, SubstS) .
+  eq getVariants(M, T, empty) = {T, none, 0} .
   
   eq getSubstitutions(M, V ; VS, ODS, N)
     = < combineSubsts(
@@ -19604,7 +19706,7 @@ fmod MODULE-VARIANTS is
   eq removeLonelyAssocs(M) 
     = if $anyLonelyAssoc(getOps(M))
       then if nonValidAttrs(getOps(M), owise idem iter)
-                then unitError('The 'module 'uses 'non-supported 'attributes '`(owise`, 'idem`, 'or 'iter '`). '`))
+           then unitError('The 'module 'uses 'non-supported 'attributes '`(owise`, 'idem`, 'or 'iter '`). '`))
            else if singleVbleInLHSs(getRls(M))
                 then unitError('The 'module 'contains 'rules 'with 'single 'variables 'in 'their 'left-hand 'sides. '`))
                 else if singleVbleInLHSs(getEqs(M))
@@ -19748,10 +19850,6 @@ fmod ACU-COHERENCE-COMPLETION is
     [owise] . 
   eq acuCohComplete(M, ODS, (none).EquationSet) = none . 
     
-  op sameKindAll : Module Type TypeList -> Bool .
-  eq sameKindAll(M, Tp, Tp' TpL) = sameKind(M, Tp, Tp') and-then sameKindAll(M, Tp, TpL) .
-  eq sameKindAll(M, Tp, nil) = true .
-
   ---- Given f(t1,...,tn) -> r if C
   ---- if f AC add f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
   eq acuCohComplete(M, Tp, assoc comm AtS, rl F[TL] => RHS [AtS'] .)
@@ -19974,6 +20072,7 @@ endfm
 
 
 mod DATABASE-HANDLING is
+---  inc META-LEVEL + PRE-VARIANT .
   inc META-LEVEL .
   inc CONFIGURATION .
   pr VIEW-META-PRETTY-PRINT .
@@ -20238,6 +20337,7 @@ mod DATABASE-HANDLING is
         ((F == 'unify_.) or-else 
          (F == 'id-unify_.) or-else 
          (F == 'variant`unify_.) or-else 
+         (F == 'asymmetric`variant`unify_.) or-else 
          (F == 'get`variants_.)
          ))))))) .
 
@@ -20537,7 +20637,7 @@ mod DATABASE-HANDLING is
     < O : X@DatabaseClass | db : DB, input : ('remove`identity`attributes_.[T]), output : nil, default : ME,   Atts >
     => < O : X@DatabaseClass | 
           db : DB', input : nilTermList, 
-          output : (eMetaPrettyPrint(getFlatModule(ME'', DB'), removeIds(getFlatModule(ME'', DB'), all))),
+          output : (eMetaPrettyPrint(getFlatModule(ME'', DB'), removeIds(acuCohComplete(getFlatModule(ME'', DB')), all))),
           default : ME, Atts > 
     if < DB' ; ME'' > := evalModExp(parseModExp(T), DB) .
 
@@ -20627,6 +20727,7 @@ endm
 
 *******************************************************************************
 fmod TEXT-STYLE is
+--- pr META-LEVEL + PRE-VARIANT .
  pr META-LEVEL .
 
  var QL : QidList .
