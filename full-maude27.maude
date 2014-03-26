@@ -2866,8 +2866,8 @@ fmod META-MINIMIZE-BINDINGS is
   op remDup : Substitution -> Substitution .
   eq remDup(V <- V ; S) = remDup(S) .
   eq remDup(S) = S [owise] .
-endfm
 
+endfm
 fmod TYPEOFNARROWING is
   pr QID .
   pr META-TERM .
@@ -3078,7 +3078,7 @@ fmod RESULT-CONTEXT-SET is
       TraceNarrow
       Flags 
       -> ResultContext [ctor] .
-               
+		       
   subsort ResultContext < ResultContextNeSet < ResultContextSet .
   op empty : -> ResultContextSet [ctor] .
   op _|_ : ResultContextSet ResultContextSet -> ResultContextSet
@@ -3103,7 +3103,7 @@ fmod RESULT-CONTEXT-SET is
   eq getRSubst(
       {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags})
    = S' .
-               
+		       
   op _<<_ : ResultContext UnificationTripleSet -> ResultContextSet .
   eq {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
      << (empty).UnificationTripleSet
@@ -3183,6 +3183,7 @@ fmod RESULT-CONTEXT-SET is
   eq | (empty).ResultContextSet | = 0 .
   eq | (RT:ResultContext | RTS:ResultContextSet) | 
    = | RTS:ResultContextSet | + 1 .
+
 endfm
 
 fmod META-MATCH is
@@ -3247,8 +3248,8 @@ fmod META-MATCH is
   op metaBuiltInEqual : Module TermList Term Term -> Bool .
   eq metaBuiltInEqual(M,TL,T,T')
    = canonice(M,T) == canonice(M,T') .
-endfm
 
+endfm
 fmod VARIANT-HANDLING is
   pr SUBSTITUTION-HANDLING .
   pr META-MINIMIZE-BINDINGS .
@@ -3301,6 +3302,7 @@ fmod VARIANT-HANDLING is
   eq toVariantTripleSet({T,S,S',NextVar} | VTS)
 ---    = {T,S ; S',NextVar} | toVariantTripleSet(VTS) .
    = {T,S,NextVar} | toVariantTripleSet(VTS) .
+
 endfm
 
 fmod RIGIDIFE is
@@ -3544,6 +3546,7 @@ fmod RIGIDIFE is
 
   op qid : Nat -> Qid .
   eq qid(N:Nat) = qid(string(N:Nat,10)) .
+
 endfm
 
 fmod META-E-UNIFICATION is
@@ -3975,6 +3978,7 @@ fmod META-E-UNIFICATION is
          and isAssociative(M,F,getTypes(M,TL)) 
       then 1 else 0 fi 
       + howManyAC$$(M,EqS) .
+
 endfm
 
 fmod META-ACU-UNIFICATION is
@@ -4082,6 +4086,7 @@ fmod META-UNIFICATION is
                     --- Term Lhs
   eq metaCoreUnify?(M, T, T', N) 
    = metaACUUnify?(M, T, T', N)  .
+
 endfm
 
 fmod META-MSG-UNIFICATION is
@@ -4122,24 +4127,33 @@ fmod META-MSG-UNIFICATION is
 
   ******* metaBuiltInUnify ***********************************************
   op metaBuiltInUnify : Module Term Term -> SubstitutionSet .
-  eq metaBuiltInUnify(M, T, T')
-   = toSubstitution(metaBuiltInUnify(M, T, T', highestVar((T,T')) + 1)) .
+  eq metaBuiltInUnify(M, T, T') = metaBuiltInUnify(M, empty, T, T') .
+
+  op metaBuiltInUnify : Module TermList Term Term -> SubstitutionSet .
+  eq metaBuiltInUnify(M, TL, T, T')
+   = toSubstitution(metaBuiltInUnify(M, TL, T, T', highestVar((T,T')) + 1)) .
 
   *** General Call for UnificationPairSet
   op metaBuiltInUnify : Module Term Term Nat -> UnificationTripleSet .
+  eq metaBuiltInUnify(M, T1, T2, N) = metaBuiltInUnify(M, empty, T1, T2, N) .
+
+  op metaBuiltInUnify : Module TermList Term Term Nat -> UnificationTripleSet .
                        --- Term Lhs
-  eq metaBuiltInUnify(M, T1, T2, N) 
+  eq metaBuiltInUnify(M, TL, T1, T2, N) 
    = metaCoreUnify(M, T1, T2, N)  . 
 
   op metaBuiltInUnify? : Module Term Term -> Bool .
-  eq metaBuiltInUnify?(M, T, T')
-   = metaBuiltInUnify?(M, T, T',highestVar((T,T')) + 1) .
+  eq metaBuiltInUnify?(M, T, T') = metaBuiltInUnify?(M, empty, T, T') .
 
-  op metaBuiltInUnify? : Module Term Term Nat -> Bool .
-  eq metaBuiltInUnify?(M, T1, T2, N) 
+  op metaBuiltInUnify? : Module TermList Term Term -> Bool .
+  eq metaBuiltInUnify?(M, TL, T, T')
+   = metaBuiltInUnify?(M, TL, T, T',highestVar((T,T')) + 1) .
+
+  op metaBuiltInUnify? : Module TermList Term Term Nat -> Bool .
+  eq metaBuiltInUnify?(M, TL, T1, T2, N) 
    = metaCoreUnify?(M, T1, T2, N) . 
-endfm
 
+endfm
 fmod ORDERS-TERM-SUBSTITUTION is
   protecting TERM-HANDLING .
   protecting SUBSTITUTION-HANDLING .
@@ -4454,8 +4468,8 @@ fmod ORDERS-TERM-SUBSTITUTION is
   eq eqNormalizeSubstitution*(M, V <- T ; S:Substitution)
    = V <- getTerm(metaReduce(eraseRls(M),T)) 
      ; eqNormalizeSubstitution*(M, S:Substitution) .
-endfm
 
+endfm
 fmod META-NORMALIZE is
   protecting META-TERM .
   protecting META-LEVEL .
@@ -4557,7 +4571,7 @@ fmod META-NORMALIZE is
                             Bound --- chosen solution
                             TypeOfNarrowing
                             ResultContextSet
-             -> ResultContextSet .
+			 -> ResultContextSet .
   --- Not defined in this module-------------
 
   op metaNormalizeCollect : Module Term ~> ResultTripleSet .
@@ -4674,6 +4688,7 @@ fmod META-NORMALIZE is
           {T',TP',S',S'*,Ct',CtS',TS',CtTS',NextVar',Tr:TraceNarrow,B':Flags}
      fi
      | noSelf*({T,TP,S,S*,[],[],T,T,NextVar,Tr':TraceNarrow,B:Flags},RTS) .
+
 endfm
 
 fmod META-E-NARROWING is
@@ -4790,11 +4805,12 @@ fmod META-E-NARROWING is
    = metaENarrowShowAll(M,T,B,full topmost ON [IRR],N) |> T .
 
   --- Auxiliary
-  op [_,_] : TypeOfNarrowing IrrFlags ~> TypeOfNarrowing .
+  op [_,_] : TypeOfNarrowing IrrFlags -> TypeOfNarrowing .
   eq [ E-ACU-unify, reducible ] = E-ACU-unify .
   eq [ E-ACU-unify, irreducible ] = E-ACU-unify-Irr .
   eq [ E-BuiltIn-unify, reducible ] = E-BuiltIn-unify .
   eq [ E-BuiltIn-unify, irreducible ] = E-BuiltIn-unify-Irr .
+  eq [ X:TypeOfNarrowing, X:IrrFlags ] = X:TypeOfNarrowing [owise] .
 
   *** Shortcuts to Basic Narrowing
   op metaEBasicNarrow : Module Term -> ResultTripleSet .
@@ -4891,20 +4907,20 @@ fmod META-E-NARROWING is
      then if CtS == []
           then *** Term CtTS is a normal form so we return it
                {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags}
-      else *** Term T is a rigid normal form inside a context Ct
-           *** but since no rewrite has been done and
+	  else *** Term T is a rigid normal form inside a context Ct
+	       *** but since no rewrite has been done and
                *** this can be part of a previous metaNarrowSub call,
                *** this path is discarded
                empty
           fi
      else if metaENarrowStra(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
-         =/= empty
+	     =/= empty
           then metaENarrowStra(M,B,ON,{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
           else if CtS == []
                then *** Term CtTS is a normal form so we return it
                     {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,end(true,B:Flags)}
-           else *** Term T is a rigid normal form inside a context Ct
-                *** but since no rewrite has been done and
+	       else *** Term T is a rigid normal form inside a context Ct
+	            *** but since no rewrite has been done and
                     *** this can be part of a previous metaNarrowSub call,
                     *** this path is discarded
                     empty
@@ -4949,7 +4965,7 @@ fmod META-E-NARROWING is
   *** Generic call to metaUnification with different parameters
   op auxMetaUnify : Module TypeOfNarrowing 
                     Term Term Nat ~> UnificationTripleSet .
-        --- Term Lhs
+		--- Term Lhs
   eq auxMetaUnify(M,variant(N') ON,T,T',N)
    = unrigidife(qid(N'),
        auxMetaUnify*(getM(rigidifeNat(M,qid(N'),T,N')),
@@ -4964,7 +4980,7 @@ fmod META-E-NARROWING is
 
   op auxMetaUnify* : Module TypeOfNarrowing 
                     Term Term Nat ~> UnificationTripleSet .
-        --- Term Lhs
+		--- Term Lhs
  ceq auxMetaUnify*(M,rigidife(F:Qid) ON,T,T',N)
    = unrigidife(Q:Qid,
        auxMetaUnify**(M#:Module,rigidife(F:Qid) ON,T#:Term,T',N) 
@@ -4980,7 +4996,7 @@ fmod META-E-NARROWING is
 
   op auxMetaUnify** : Module TypeOfNarrowing 
                      Term Term Nat ~> UnificationTripleSet .
-         --- Term Lhs
+		 --- Term Lhs
                  --- [memo] . --- Very useful but huge space use 
   eq auxMetaUnify**(M,E-rewriting ON,T,T',N)
    = toUnificationTriple[N](metaCoreMatch(removeBoolEqs(M),T,T')) .
@@ -4995,7 +5011,7 @@ fmod META-E-NARROWING is
   eq auxMetaUnify**(M,ACU-unify ON,T,T',N)
    = metaACUUnify(removeBoolEqs(M),T,T',N) .
   eq auxMetaUnify**(M,BuiltIn-unify ON,T,T',N)
-   = metaBuiltInUnify(removeBoolEqs(M),getIrrTerms(ON),T,T',N) .
+   = metaBuiltInUnify(removeBoolEqs(M),T,T',N) .
 
   *** Remove rigid normal forms
   op removeEND : ResultContextSet -> ResultContextSet .
@@ -5046,10 +5062,10 @@ fmod META-E-NARROWING is
                     -> ResultContextSet .
   eq metaENarrowRls*(M,B,ON, 
         (rl Lhs => Rhs [Att].), 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags})
    = metaENarrowRls**$(M,B,ON, 
         (rl Lhs => Rhs [Att].), 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
            Tr:TraceNarrow {CtTS,none,leastSort(M,CtTS),(rl Lhs => Rhs [Att].)},
                           --- Subst none here is key to write the real stuff 
                           --- later in function _<<_
@@ -5064,10 +5080,10 @@ fmod META-E-NARROWING is
                       -> ResultContextSet .
   eq metaENarrowRls**$(M,B,ON,
         (rl Lhs => Rhs [Att].), 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
         {Subst,NextVar'})
    = metaENarrowRls**$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs,Rhs,'none.AttrSet] << Subst) .
 
@@ -5076,13 +5092,13 @@ fmod META-E-NARROWING is
                           UnificationPair Term
                        -> ResultContextSet .
   eq metaENarrowRls**$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
           Tr:TraceNarrow {CtTS,none,TP$:Type,(rl Lhs => Rhs [Att].)},
           B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs',Rhs','none.AttrSet])
    = metaENarrowRls**$$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,
            Tr:TraceNarrow {CtTS,none,TP$:Type,(rl Lhs' => Rhs' [Att].)},
            B:Flags},
         {Subst,NextVar'},
@@ -5094,19 +5110,19 @@ fmod META-E-NARROWING is
                            UnificationPair Term UnificationTripleSet
                         -> ResultContextSet .
   eq metaENarrowRls**$$$(M,B,ON, 
-    {T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
+	{T,TP,S,S',Ct,CtS,TS,CtTS,NextVar,Tr:TraceNarrow,B:Flags},
         {Subst,NextVar'},
         'rl_=>_`[_`].[Lhs',Rhs','none.AttrSet],US)
     = if US =/= empty
       then rebuildTypeAndDiscardErroneous(M,ON,
                {Ct[Rhs'],
-            TP,
-        S,S',
-        [],
-        [],
-        CtS[Rhs'],
-        CtS[Rhs'],
-        NextVar',
+	        TP,
+		S,S',
+		[],
+		[],
+		CtS[Rhs'],
+		CtS[Rhs'],
+		NextVar',
                 Tr:TraceNarrow,
                 B:Flags} 
                <<(M,ON) US
@@ -5127,7 +5143,7 @@ fmod META-E-NARROWING is
                                        ResultContext -> ResultContextSet .
   eq rebuildTypeAndDiscardErroneous*(M,ON,
        {T,TP,S,S',[],[],TS,TS,NextVar,Tr:TraceNarrow,B:Flags})
-   = if leastSort(M,TS) :: Type
+   = if	leastSort(M,TS) :: Type
      then normalize-terms?(M,ON,
              {canonice(M,T),leastSort(M,TS),S,S',
               [],[],canonice(M,TS),canonice(M,TS),
@@ -5320,6 +5336,7 @@ fmod META-E-NARROWING is
   op |_| : Substitution -> Nat .
   eq | (none).Substitution | = 0 .
   eq | V <- T ; S | = s(| S |) .
+
 endfm
 
 fmod META-NARROWING-SEARCH is
@@ -5349,6 +5366,8 @@ fmod META-NARROWING-SEARCH is
   var ON : TypeOfNarrowing .
   vars QQ QQ' : TypeOfRelation .
   vars NextVar NextVar' : Nat .
+  var U : UnificationTriple .
+  vars US US' : UnificationTripleSet .
 
   var SCond : SubstitutionCond .
 
@@ -5373,6 +5392,25 @@ fmod META-NARROWING-SEARCH is
    = metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,
          full E-BuiltIn-unify noStrategy E-normalize-terms) .
 
+  *** Shortcuts to Paramodulation Search
+  op metaParamodulationSearch : Module Term Term SubstitutionCond 
+                                TypeOfRelation Bound Bound Bound
+                             -> ResultTripleSet .
+  eq metaParamodulationSearch(M,T,T',SCond,QQ,BN,B,Sol)
+   = if (BN == unbounded and-then Sol =/= unbounded)
+        or-else
+        (BN =/= unbounded and-then Sol =/= unbounded and-then BN < Sol)
+     then metaParamodulationSearch*(M,T,T',SCond,QQ,Sol,B,Sol) 
+     else metaParamodulationSearch*(M,T,T',SCond,QQ,BN,B,Sol) 
+     fi .
+
+  op metaParamodulationSearch* : Module Term Term SubstitutionCond 
+                         TypeOfRelation Bound Bound Bound
+                         -> ResultTripleSet .
+  eq metaParamodulationSearch*(M,T,T',SCond,QQ,BN,B,Sol)
+   = metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,
+         full E-BuiltIn-unify noStrategy E-normalize-terms alsoAtVarPosition) .
+
   *** General Call
   op metaNarrowSearchGen : Module Term Term SubstitutionCond 
                            TypeOfRelation 
@@ -5380,7 +5418,7 @@ fmod META-NARROWING-SEARCH is
                            Bound --- number of solutions
                            Bound --- chosen solution
                            TypeOfNarrowing 
-            -> ResultTripleSet .
+			-> ResultTripleSet .
   eq metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,ON)
    = toTriple(M,metaNarrowSearchGenAll(M,T,T',SCond,QQ,B,BN,Sol,ON)) .
 
@@ -5428,7 +5466,7 @@ fmod META-NARROWING-SEARCH is
   *** One Narrowing step in the search process (including possible filters)
   op metaNarrowStep : Module SubstitutionCond 
                       ResultContextSet TypeOfNarrowing 
-           -> ResultContextSet .
+		   -> ResultContextSet .
   eq metaNarrowStep(M,SCond,RTS,ON)
    = filterSCond(M,SCond,metaENarrowGen(M,1,ON,RTS)) .
 
@@ -5463,7 +5501,7 @@ fmod META-NARROWING-SEARCH is
                             Bound --- chosen solution
                             TypeOfNarrowing
                             ResultContextSet
-             -> ResultContextSet .
+			 -> ResultContextSet .
   eq metaNarrowSearchAll(M,TOrig,T',SCond,QQ,B,BN,Sol,ON,RTS)
    = if QQ == '+
      then noSelf(RTS,
@@ -5503,7 +5541,7 @@ fmod META-NARROWING-SEARCH is
   op metaNarrowSearchCheck : Module Term Term SubstitutionCond 
                              TypeOfRelation Bound Bound Bound TypeOfNarrowing
                              ResultContextSet ResultContextSet ResultContextSet
-                 -> ResultContextSet .
+			     -> ResultContextSet .
 
   eq metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,B,BN,Sol,ON,RTSSol,RTS',empty)
    = if B == 0 or-else BN == 0 or-else Sol == 0 or-else RTS' == empty
@@ -5523,38 +5561,50 @@ fmod META-NARROWING-SEARCH is
 
   eq metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,B,BN,Sol,ON,RTSSol,RTS',
          RT | RTS)
-   = if isSolution?(M,TOrig,T',QQ,BN,Sol,ON,RTSSol,RT)
-        and-then
-        auxMetaUnify(M,ON,getCTTerm(RT),T',getNextVar(RT)) =/= empty *** Is actual term an instance of T'?
+   = if isSolution?(M,TOrig,T',QQ,BN,Sol,ON,RTSSol,RT,finalTerm(M,T',QQ,ON,RT))
      then *** This is a solution
           metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,
                   B,dec(BN),dec(Sol),
                   ON,
                   if Sol == unbounded or-else Sol == 1
-                  then RT << auxMetaUnify(M,ON,getCTTerm(RT),T',getNextVar(RT))
+                  then RT << finalTerm(M,T',QQ,ON,RT)
                   else empty
                   fi 
                   | RTSSol,
                   RTS',RTS)
      else *** Continue with the remaining
-      metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,
+	  metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,
              B,BN,Sol,ON,RTSSol,RTS',RTS)
      fi .
 
   op isSolution? : Module Term Term  
                    TypeOfRelation Bound Bound TypeOfNarrowing
-                   ResultContextSet ResultContext
-            -> Bool .
-  eq isSolution?(M,TOrig,T',QQ,BN,Sol,ON,RTSSol,RT)
+                   ResultContextSet ResultContext UnificationTripleSet
+	        -> Bool .
+  eq isSolution?(M,TOrig,T',QQ,BN,Sol,ON,RTSSol,RT,US)
    = *** Is this the chosen solution?
-     (BN == unbounded or-else BN > 0)
+     ((BN == unbounded or-else BN > 0) and-then US =/= empty)
      and-then
      *** Is this step correct wrt relations <'!,'*,'+> ?
-     ( QQ == '* or-else (QQ == '! and-then isEND(RT)) )
+     ( (QQ == '* and-then US =/= empty) 
+       or-else 
+       (QQ == '! and-then (isEND(RT) or US =/= empty)) )
      and-then
      *** Is this a valid variant solution?
-     (not (variant in ON) or-else 
-      (isNF(M,RT) and-then isVariant(M,highestVar(TOrig) + 1,RTSSol,RT))) .
+     (US =/= empty and-then
+      ( not (variant in ON) 
+        or-else 
+       (isNF(M,RT) and-then isVariant(M,highestVar(TOrig) + 1,RTSSol,RT)))) .
+
+  op finalTerm : Module Term  
+                 TypeOfRelation TypeOfNarrowing
+                 ResultContext
+	      -> UnificationTripleSet .
+  eq finalTerm(M,T',QQ,ON,RT)  *** Is actual term an instance of T'?
+   = if QQ =/= '!
+     then auxMetaUnify(M,ON,getCTTerm(RT),T',getNextVar(RT)) 
+     else auxMetaUnify(M,[ON,irreducible],getCTTerm(RT),T',getNextVar(RT)) 
+     fi .
 
   op upDown : Module ResultTripleSet -> ResultTripleSet .
   eq upDown(M,RTS:ResultTripleSet)
@@ -5574,8 +5624,8 @@ fmod META-NARROWING-SEARCH is
    = S':Substitution .
   eq upDown#(M,S':Substitution,V <- T ; S:Substitution)
    = upDown#(M,S':Substitution ; V <- getTerm(metaReduce(M,T)),S:Substitution) .
-endfm
 
+endfm
 *************************************
 ****** End of Santiago Escobar's code
 *******************************************************************************
@@ -17782,8 +17832,10 @@ fmod COMMAND-PROCESSING is
   op procIdUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
 
   op procVariantUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
+  op procVariantUnify2 : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
   op procVariantUnify2 : Module UnificationProblem Bound -> QidList .
-  op procVariantUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
+  op procVariantUnify3 : Module UnificationProblem Bound Nat -> QidList .
+  op procVariantUnify3Aux : Module UnificationPair Nat -> QidList .
 
   op procAsymmetricVariantUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
   op procAsymmetricVariantUnify2 : Module UnificationProblem Bound -> QidList .
@@ -18513,6 +18565,7 @@ fmod COMMAND-PROCESSING is
   ops all non-handled : -> IdsToRemove .         ---- moved from VARIANTS
   op removeIds : Module IdsToRemove ~> Module .  ---- moved from VARIANTS
   
+  *** D is a bound on the number of solutions, and D' is a bound on the depth of the search
   ceq procNarrowSearch2(M, T, T', CD, QI, D, D')
     = if RTS:[ResultTripleSet] :: ResultTripleSet
       then ('search 
@@ -18570,8 +18623,8 @@ fmod COMMAND-PROCESSING is
                  T'', 
                  none, 
                  typeOfRelation(QI), 
-                 D', 
                  D, 
+                 D', 
                  unbounded,
                  full E-ACU-unify noStrategy E-normalize-terms) 
               |> (T,T'') 
@@ -18599,8 +18652,8 @@ fmod COMMAND-PROCESSING is
                  T'', 
                  none, 
                  typeOfRelation(QI), 
-                 D', 
                  D + J, 
+                 D', 
                  unbounded,
                  full E-ACU-unify noStrategy E-normalize-terms) 
               |> (T,T'') 
@@ -18825,7 +18878,7 @@ fmod COMMAND-PROCESSING is
                getVars(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))), 
              getBound(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
       else getMsg(getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'match 'command. '\n)
+                ----('\r 'Error: '\o 'Incorrect 'unify 'command. '\n)
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
@@ -18846,8 +18899,8 @@ fmod COMMAND-PROCESSING is
             'in eMetaPrettyPrint(getName(M)) ':
             eMetaPrettyPrint(M, UP) '\n '\n
             if UP? == noUnifier
-            then 'No 'unifier
-            else procUnify3Aux(M, UP?, 0) '\n '\n
+            then 'No 'unifier '\n
+            else procUnify3Aux(M, UP?, 0)
                  procUnify3(M, UP, D, 1)
             fi)
       else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'unify 'command. '\n 
@@ -19006,7 +19059,8 @@ fmod COMMAND-PROCESSING is
   
   ceq procVariantUnify(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
-    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)
+           :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
       then procVariantUnify2(
              getModule(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
              parseUnify(
@@ -19018,39 +19072,38 @@ fmod COMMAND-PROCESSING is
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
-  ceq procVariantUnify2(M, T =? T', D)
-    = if X:[SubstitutionSet] :: SubstitutionSet
+  ceq procVariantUnify2(M, UP, D)
+    = if UP? :: UnificationPair?
       then ('variant 'unify 
             if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi 
             'in eMetaPrettyPrint(getName(M)) ':
-            eMetaPrettyPrint(M, T =? T')
-            if X:[SubstitutionSet] == empty
-            then '\n 'No 'variant 'unifier
-            else procVariantUnify3(M, T =? T', 0, X:[SubstitutionSet])
+            eMetaPrettyPrint(M, UP) '\n '\n
+            if UP? == noUnifier
+            then 'No 'variant 'unifier '\n
+            else procVariantUnify3Aux(M, UP?, 0)
+                 procVariantUnify3(M, UP, D, 1)
             fi)
       else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'variant 'unify 'command. '\n 
       fi 
-    if X:[SubstitutionSet] 
-       := toSubstitution(
-            metaVariantUnify(
-               removeIds(acuCohComplete(M), non-handled),
-               T,
-               T',
-               highestVar((T,T')) + 1,
-               minimal-unifiers reducible
-            )
-          ) .
+    if UP? := metaVariantUnify(M, UP, empty, 0, 0) .
   eq procVariantUnify2(M?, UP??:[UnificationProblem], D?) = getMsg(M?) [owise] .
     
-  eq procVariantUnify3(M, UP, I, empty)
-   = ('\n '\n 'No 'more 'solutions. '\n) .
-  eq procVariantUnify3(M, UP, I, S:Substitution | SS:SubstitutionSet)
-   = '\n '\n 'Solution qid(string(I + 1, 10))
-      if S:Substitution == none
-      then '\n 'empty 'substitution
-      else '\n eMetaPrettyPrint(M, S:Substitution)
-      fi
-     procVariantUnify3(M, UP, I + 1, SS:SubstitutionSet) .
+  eq procVariantUnify3Aux(M, {Sb, N}, I)
+    = 'Solution qid(string(I + 1, 10)) '\n
+      if Sb == none
+      then 'empty 'substitution '\n '\n
+      else eMetaPrettyPrint(M, Sb) '\n '\n
+      fi .
+
+  eq procVariantUnify3(M, UP, D, I)
+    = if D == unbounded or-else I < D 
+      then if metaVariantUnify(M, UP, empty, 0, I) :: UnificationPair
+           then (procVariantUnify3Aux(M, metaVariantUnify(M, UP, empty, 0, I), I)
+                 procVariantUnify3(M, UP, D, I + 1))
+           else ('No 'more 'solutions. '\n)
+           fi
+      else nil
+      fi .
 
   *** ASYMMETRIC-VARIANT-UNIFY 
   
