@@ -42,6 +42,9 @@ endfm
 
 ---- Main changes and bugs fixed:
 ----
+---- - September 12th, 2013
+----   - Bug in ACU completion when handling modules with explicit use of kinds. Reported 
+----     by Luis Aguirre  
 ---- - December 12th, 2013
 ----   - Bug in the renaming of operators with explicit arity where parameterized sorts 
 ----     are used. 
