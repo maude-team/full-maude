@@ -2869,8 +2869,8 @@ fmod META-MINIMIZE-BINDINGS is
   op remDup : Substitution -> Substitution .
   eq remDup(V <- V ; S) = remDup(S) .
   eq remDup(S) = S [owise] .
-
 endfm
+
 fmod TYPEOFNARROWING is
   pr QID .
   pr META-TERM .
