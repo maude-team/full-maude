@@ -42,6 +42,12 @@ endfm
 
 ---- Main changes and bugs fixed:
 ----
+---- - July 14th, 2014
+----   - Fixed bug in the parsing of terms with operators '=' or '=>'. Although the first level 
+----     parsing was done correctly, to solve bubbles an operator = (resp. =>) was introduced
+----     to handle equations (resp. rules). Reported by Adri‡n Riesco.
+----   - Fixed bug on the pretty printing of views. Typical error on structures with id elements.  
+----     Probably due to changes in the definion of map sets. Reported by Adri‡n Riesco. 
 ---- - September 12th, 2013
 ----   - Bug in ACU completion when handling modules with explicit use of kinds. Reported 
 ----     by Luis Aguirre  
@@ -10558,14 +10564,14 @@ fmod UNIT-BUBBLE-PARSING is
            fi 
       else qidError('\r 'Warning: 
                  '\o printSyntaxError(RP, '`( QIL '`) '= '`( QIL' '`)) '\n
-                 '\r 'Error: '\o 'no 'parse 'for 'eq QIL '\s '~ '\s QIL' '\n)
+                 '\r 'Error: '\o 'no 'parse 'for 'eq QIL '\s '= '\s QIL' '\n)
       fi 
     if M' := addOps((VDS
-                     op '_=_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
+                     op '_@@@=@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
                addSorts('@@@, M)) 
        /\ QIL := downQidList(T) 
        /\ QIL' := downQidList(T') 
-       /\ RP := metaParse(M', '`( QIL '`) '= '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', '`( QIL '`) '@@@=@@@ '`( QIL' '`), '@@@) .
 
   ceq solveBubblesCEq('bubble[T], 'bubble[T'], M, B, VDS, DB)
     = if RP :: ResultPair
@@ -10575,14 +10581,14 @@ fmod UNIT-BUBBLE-PARSING is
            fi 
       else qidError('\r 'Warning: 
                  '\o printSyntaxError(RP, '`( QIL '`) '= '`( QIL' '`)) '\n
-                 '\r 'Error: '\o 'no 'parse 'for 'ceq QIL '\s '~ '\s QIL' '\n)
+                 '\r 'Error: '\o 'no 'parse 'for 'ceq QIL '\s '= '\s QIL' '\n)
       fi 
     if M' := addOps((VDS
-                     op '_=_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
+                     op '_@@@=@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
                addSorts('@@@, M)) 
        /\ QIL := downQidList(T) 
        /\ QIL' := downQidList(T') 
-       /\ RP := metaParse(M', '`( QIL '`) '= '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', '`( QIL '`) '@@@=@@@ '`( QIL' '`), '@@@) .
 
   ceq solveBubblesRl('bubble[T], 'bubble[T'], M, B, VDS, DB)
     = if RP :: ResultPair
@@ -10595,11 +10601,11 @@ fmod UNIT-BUBBLE-PARSING is
                  '\r 'Error: '\o 'no 'parse 'for 'rl QIL '\s '=> '\s QIL' '\n)
       fi 
     if M' := addOps((VDS
-                     op '_=>_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
+                     op '_@@@=>@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
                addSorts('@@@, M)) 
        /\ QIL := downQidList(T) 
        /\ QIL' := downQidList(T') 
-       /\ RP := metaParse(M', '`( QIL '`) '=> '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', '`( QIL '`) '@@@=>@@@ '`( QIL' '`), '@@@) .
   ceq solveBubblesCRl('bubble[T], 'bubble[T'], M, B, VDS, DB)
     = if RP :: ResultPair
       then if B 
@@ -10611,11 +10617,11 @@ fmod UNIT-BUBBLE-PARSING is
                  '\r 'Error: '\o 'no 'parse 'for 'crl QIL '\s '=> '\s QIL' '\n)
       fi 
     if M' := addOps((VDS
-                     op '_=>_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
+                     op '_@@@=>@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .), 
                addSorts('@@@, M)) 
        /\ QIL := downQidList(T) 
        /\ QIL' := downQidList(T') 
-       /\ RP := metaParse(M', '`( QIL '`) '=> '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', '`( QIL '`) '@@@=>@@@ '`( QIL' '`), '@@@) .
 
 
   ceq solveBubbles2('bubble[T], T?:Type?, M, true, VDS, DB)
@@ -10868,10 +10874,10 @@ fmod UNIT-BUBBLE-PARSING is
       fi .
 
   ops lhs rhs : Term -> Term .
-  eq lhs('_=_[T, T']) = T .
-  eq lhs('_=>_[T, T']) = T .
-  eq rhs('_=_[T, T']) = T' .
-  eq rhs('_=>_[T, T']) = T' .
+  eq lhs(F[T, T']) = T .
+  eq lhs(F[T, T']) = T .
+  eq rhs(F[T, T']) = T' .
+  eq rhs(F[T, T']) = T' .
   eq lhs(qidError(QIL)) = qidError(QIL) .
   eq rhs(qidError(QIL)) = qidError(QIL) .
 
@@ -17033,8 +17039,8 @@ fmod VIEW-META-PRETTY-PRINT is
                  if QI == '`) then '\s else nil fi
               '\b 'from '\o eMetaPrettyPrint(ME) 
               '\b 'to '\o eMetaPrettyPrint(ME') '\b 'is '\o '\n 
-       '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) 
-       '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) 
+       if SMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) else nil fi 
+       if OMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) else nil fi 
        '\b 'endv '\o '\n) 
     if QIL QI := eMetaPrettyPrint(VE) .
   ceq eMetaPrettyPrint(DB, view VE{PDL} from ME to ME' is SMS OMS endv)
@@ -17046,8 +17052,8 @@ fmod VIEW-META-PRETTY-PRINT is
                   fi) 
               '\b 'from '\o eMetaPrettyPrint(ME) 
               '\b 'to '\o eMetaPrettyPrint(ME') '\b 'is '\o '\n 
-       '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) 
-       '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) 
+       if OMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) else nil fi 
+       if OMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) else nil fi 
        '\b 'endv '\o '\n ) 
     if QIL QI := eMetaPrettyPrint(VE) .
   eq eMetaPrettyPrint(DB, viewError(QIL)) = QIL .
@@ -17058,14 +17064,14 @@ fmod VIEW-META-PRETTY-PRINT is
     if VE =/= nil /\ VE' =/= nil .
   eq eMetaPrettyPrint(QI{VE}) = QI '`{ eMetaPrettyPrint(VE) '`} '\s .
 
-  eq eMetaPrettyPrint(ME, ME', DB, SM SMS, SMS', OMS')
+ ceq eMetaPrettyPrint(ME, ME', DB, SM SMS, SMS', OMS')
     = (eMetaPrettyPrint(ME, ME', DB, SM, SMS', OMS') '\n 
        '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS', OMS'))
-    [owise] .     
-  eq eMetaPrettyPrint(ME, ME', DB, OM OMS, SMS', OMS')
+    if SMS =/= none .     
+ ceq eMetaPrettyPrint(ME, ME', DB, OM OMS, SMS', OMS')
     = (eMetaPrettyPrint(ME, ME', DB, OM, SMS', OMS') '\n 
        '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS', OMS'))
-    [owise] .     
+    if OMS =/= none .     
   eq eMetaPrettyPrint(ME, ME', DB, (none).SortMappingSet, SMS, OMS) = nil .
   eq eMetaPrettyPrint(ME, ME', DB, (none).OpMappingSet, SMS, OMS) = nil .
 
@@ -17073,25 +17079,26 @@ fmod VIEW-META-PRETTY-PRINT is
     = ('\b 'op '\o eMetaPrettyPrint(getFlatModule(ME, DB), T) '\b 'to 
                'term '\o eMetaPrettyPrint(getFlatModule(ME', DB), T') '\b '. '\o) .
 
-  eq eMetaPrettyPrint(op_to`term_.(T, T')) 
-    = ('op eMetaPrettyPrint(T) '\b 'to 'term '\o eMetaPrettyPrint(T') '.) .
-  eq eMetaPrettyPrint(op F to F' .)
-    = ('\b 'op '\o F '\b 'to '\o F' '.) .
-  eq eMetaPrettyPrint(op F : TyL -> Ty to F' .)
+  eq eMetaPrettyPrint(ME, ME', DB, op_to`term_.(T, T'), SMS, OMS) 
+    = ('op eMetaPrettyPrint(T) '\b 'to 'term '\o eMetaPrettyPrint(T') '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, op F to F' ., SMS, OMS)
+    = ('\b 'op '\o F '\b 'to '\o F' '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, op F : TyL -> Ty to F' ., SMS, OMS)
     = ('\b 'op '\o F '\b ': 
        '\o eMetaPrettyPrint(TyL) '\b '-> '\o eMetaPrettyPrint(Ty) 
-       '\b 'to '\o F' '.) .
-  eq eMetaPrettyPrint(sort S to S' .) 
-    = ('\b 'sort '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') '.) .
-  eq eMetaPrettyPrint(class S to S' .)
-    = ('\b 'class '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') '.) .
-  eq eMetaPrettyPrint(attr QI . S to QI' .) 
-    = ('\b 'attr '\o eMetaPrettyPrint(S) '\b '. '\o QI '\b 'to '\o QI' '.) .
-  eq eMetaPrettyPrint(msg F to F' .) = ('\b 'msg '\o F '\b 'to '\o F' '.) .
-  eq eMetaPrettyPrint(msg F : TyL -> Ty to F' .)
+       '\b 'to '\o F' '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, sort S to S' ., SMS, OMS) 
+    = ('\b 'sort '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, class S to S' ., SMS, OMS)
+    = ('\b 'class '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, attr QI . S to QI' ., SMS, OMS) 
+    = ('\b 'attr '\o eMetaPrettyPrint(S) '\b '. '\o QI '\b 'to '\o QI' '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, msg F to F' ., SMS, OMS) 
+    = ('\b 'msg '\o F '\b 'to '\o F' '. '\n) .
+  eq eMetaPrettyPrint(ME, ME', DB, msg F : TyL -> Ty to F' ., SMS, OMS)
     = ('\b 'msg '\o F '\b ': 
        '\o eMetaPrettyPrint(TyL) '\b '-> '\o eMetaPrettyPrint(Ty) 
-       '\b 'to '\o F' '.) .
+       '\b 'to '\o F' '. '\n) .
 endfm
 
 *******************************************************************************
