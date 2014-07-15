@@ -43,7 +43,7 @@ endfm
 ---- Main changes and bugs fixed:
 ----
 ---- - July 14th, 2014
-----   - Fixed bug in the parsing of terms with operators '=' or '=>'. Although the first level 
+----   - Fixed bug in the parsing of terms with operators '=' or '=>'. Although the first-level 
 ----     parsing was done correctly, to solve bubbles an operator = (resp. =>) was introduced
 ----     to handle equations (resp. rules). Reported by Adri‡n Riesco.
 ----   - Fixed bug on the pretty printing of views. Typical error on structures with id elements.  
