@@ -1,0 +1,157 @@
+************* Chapter 13 *********************
+ mod EXCLUSIVE-OR is 
+    sorts Nat NatSet .
+    op 0 : -> Nat [ctor] .
+    op s : Nat -> Nat [ctor] .
+    
+    subsort Nat < NatSet .
+    op _*_ : NatSet NatSet -> NatSet [ctor assoc comm] .
+
+    vars X Y Z : [NatSet] .
+    eq [idem]     : X * X = 0     [variant] .
+    eq [idem-Coh] : X * X * Z = Z [variant] .
+    eq [id]       : X * 0 = X     [variant] .
+  endm
+
+********
+get variants in EXCLUSIVE-OR :  X * Y .
+***(Output:
+Variant #1
+[NatSet]: #1:[NatSet] * #2:[NatSet]
+X --> #1:[NatSet]
+Y --> #2:[NatSet]
+Variant #2
+Nat: 0
+X --> %1:[NatSet]
+Y --> %1:[NatSet]
+Variant #3
+[NatSet]: %1:[NatSet] * %3:[NatSet]
+X --> %1:[NatSet] * %2:[NatSet]
+Y --> %2:[NatSet] * %3:[NatSet]
+Variant #4
+[NatSet]: %1:[NatSet]
+X --> %1:[NatSet] * %2:[NatSet]
+Y --> %2:[NatSet]
+Variant #5
+[NatSet]: %2:[NatSet]
+X --> %1:[NatSet]
+Y --> %1:[NatSet] * %2:[NatSet]
+Variant #6
+[NatSet]: %1:[NatSet]
+X --> 0
+Y --> %1:[NatSet]
+Variant #7
+[NatSet]: %1:[NatSet]
+X --> %1:[NatSet]
+Y --> 0
+No more variants.
+)***
+
+************************************************
+ mod VARIANT-VENDING-MACHINE is 
+   sorts Coin Item Marking Money State . 
+   subsort Coin < Money .
+   op empty : -> Money .
+   op __ : Money Money -> Money [assoc comm id: empty] . 
+   subsort Money Item < Marking . 
+   op __ : Marking Marking -> Marking [assoc comm id: empty] . 
+   op <_> : Marking -> State .
+   ops $ q : -> Coin . 
+   ops a c : -> Item . 
+   var M : Marking .
+   rl [buy-c] : < M $ > => < M c > . 
+   rl [buy-a] : < M $ > => < M a q > . 
+   eq [change] : q q q q M = $ M [variant] . 
+ endm
+
+*********
+get variants in VARIANT-VENDING-MACHINE : < X:Marking Y:Marking > .
+***(
+get variants in VARIANT-VENDING-MACHINE : < X:Marking Y:Marking > .
+
+Variant #1
+rewrites: 0 in 0ms cpu (0ms real) (0 rewrites/second)
+State: < #1:Marking #2:Marking >
+X:Marking --> #1:Marking
+Y:Marking --> #2:Marking
+
+Variant #2
+rewrites: 3 in 0ms cpu (1ms real) (3222 rewrites/second)
+State: < $ %1:Marking %2:Marking >
+X:Marking --> q q q %1:Marking
+Y:Marking --> q %2:Marking
+
+Variant #3
+rewrites: 3 in 0ms cpu (1ms real) (3134 rewrites/second)
+State: < $ %1:Marking %2:Marking >
+X:Marking --> q q %1:Marking
+Y:Marking --> q q %2:Marking
+
+Variant #4
+rewrites: 3 in 0ms cpu (1ms real) (3073 rewrites/second)
+State: < $ %1:Marking %2:Marking >
+X:Marking --> q %1:Marking
+Y:Marking --> q q q %2:Marking
+)***
+
+*********
+get variants in VARIANT-VENDING-MACHINE : < $ q q X:Marking > .
+***(
+Variant #1
+rewrites: 0 in 0ms cpu (0ms real) (0 rewrites/second)
+State: < $ q q #1:Marking >
+X:Marking --> #1:Marking
+
+No more variants.
+)***
+
+*********
+reduce in META-LEVEL : 
+   metaGetVariant(upModule('VARIANT-VENDING-MACHINE,true), 
+           '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],empty,0,0) .
+reduce in META-LEVEL : 
+   metaGetVariant(upModule('VARIANT-VENDING-MACHINE,true), 
+           '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],empty,0,1) .
+reduce in META-LEVEL : 
+   metaGetVariant(upModule('VARIANT-VENDING-MACHINE,true), 
+           '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],empty,0,2) .
+
+*********
+variant unify in VARIANT-VENDING-MACHINE : 
+            < q q X:Marking > =? < $ Y:Marking > .
+
+*********
+reduce in META-LEVEL : 
+           metaVariantUnify(upModule('VARIANT-VENDING-MACHINE,true), 
+            '<_>['__['q.Coin,'q.Coin,'X:Marking]] =? '<_>['__['$.Coin,'Y:Marking]],
+            empty,0,0) .
+
+******************************************************************
+fmod ABELIAN-GROUP is
+  --- Sort Information 
+       sorts Element  .
+
+  --- Abelian Group Function Symbols
+       op _+_ : Element Element -> Element  [comm assoc prec 30] .
+       op -_ : Element -> Element  [prec 20] .
+       op 0 : ->  Element .
+
+       vars X Y Z : Element  .
+ 
+ --- Abelian Group Axioms
+       eq X + 0 = X [variant] .
+       eq X + - X = 0 [variant] .
+       eq X + - X + Y = Y [variant] .
+       eq - - X = X [variant] .
+       eq - 0 = 0 [variant] .
+       eq - X + - Y = -(X + Y) [variant] .
+       eq -(X + Y) + Y = - X [variant] .
+       eq -(- X + Y) = X + - Y [variant] .
+       eq - X + - Y + Z  = -(X + Y) + Z [variant] .
+       eq -(X + Y) + Y + Z = - X + Z [variant] .
+endfm
+
+get variants X + Y .
+*** 47 variants
+get variants - X .
+*** 4 variants

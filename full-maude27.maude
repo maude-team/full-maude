@@ -349,8 +349,12 @@ set include TRUTH-VALUE off .
 *** Narrowing and Equational Unification
 *** by Santiago Escobar
 ***
+fmod META-LEVEL-MNPA is
+  pr META-LEVEL * (op `{_`,_`} : Term Nat -> SmtResult to `{_`,_`}Smt )  .
+endfm
+
 fmod UNIFICATIONTRIPLE is
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting INT .
 
   --- UnificationPair --------------------------------------------
@@ -381,7 +385,7 @@ endfm
 
 fmod TERM-HANDLING is
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting EXT-BOOL . *** For and-then
 
   var T T' T'' : Term .
@@ -559,7 +563,7 @@ endfm
 
 fmod SUBSTITUTION-HANDLING is
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting TERM-HANDLING .
 
   var S S' Subst Subst' : Substitution .
@@ -723,14 +727,14 @@ fmod SUBSTITUTION-HANDLING is
 endfm
 
 fmod TERMSET is
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting SUBSTITUTION-HANDLING .
 
   sort TermSet .
   subsort Term < TermSet .
   op emptyTermSet : -> TermSet [ctor] .
   op _|_ : TermSet TermSet -> TermSet
-    [ctor assoc comm id: emptyTermSet format (d n d d) prec 42] .
+    [ctor assoc comm id: emptyTermSet format (d n d d)] .
   eq X:Term | X:Term = X:Term .
 
   op _in_ : Term TermSet -> Bool .
@@ -742,11 +746,12 @@ fmod TERMSET is
    = emptyTermSet .
   eq TermSet((T:Term,TL:TermList))
    = T:Term | TermSet(TL:TermList) .
+
 endfm
 
 fmod RENAMING is
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting TERM-HANDLING .
   protecting SUBSTITUTION-HANDLING .
   protecting TERMSET .
@@ -913,7 +918,7 @@ endfm
 
 fmod SUBSTITUTIONSET is
   protecting SUBSTITUTION-HANDLING .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting TERMSET .
   protecting RENAMING .
 
@@ -1237,7 +1242,7 @@ endfm
 
 fmod MODULE-HANDLING is
   protecting INT .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting EXT-BOOL . *** From Full Maude
   protecting SUBSTITUTION-HANDLING .
   protecting UNIFICATIONTRIPLESET .
@@ -2681,7 +2686,7 @@ endfm
 fmod VARIANT is
   pr SUBSTITUTION-HANDLING .
   pr MODULE-HANDLING .
-  pr META-LEVEL .
+  pr META-LEVEL-MNPA .
 
   var M : Module .
   vars T T' TS TS' CtTS CtTS' Lhs Rhs : Term .
@@ -2744,7 +2749,7 @@ fmod META-MINIMIZE-BINDINGS is
   pr SUBSTITUTIONSET .
   pr UNIFICATIONTRIPLESET .
   pr CONVERSION .
-  pr META-LEVEL .
+  pr META-LEVEL-MNPA .
   pr VARIANT .
 
   vars M : Module .
@@ -2874,8 +2879,8 @@ fmod META-MINIMIZE-BINDINGS is
   op remDup : Substitution -> Substitution .
   eq remDup(V <- V ; S) = remDup(S) .
   eq remDup(S) = S [owise] .
-endfm
 
+endfm
 fmod TYPEOFNARROWING is
   pr QID .
   pr META-TERM .
@@ -2993,7 +2998,7 @@ endfm
 
 fmod RESULT-CONTEXT-SET is
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting TERM-HANDLING .
   protecting SUBSTITUTION-HANDLING .
   protecting RENAMING .
@@ -3198,7 +3203,7 @@ fmod META-MATCH is
   protecting TERM-HANDLING .
   protecting MODULE-HANDLING .
   protecting SUBSTITUTION-HANDLING .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting RENAMING .
   protecting SUBSTITUTIONSET .
 
@@ -3263,7 +3268,7 @@ fmod VARIANT-HANDLING is
   pr META-MINIMIZE-BINDINGS .
   pr RESULT-CONTEXT-SET .
   pr MODULE-HANDLING .
-  pr META-LEVEL .
+  pr META-LEVEL-MNPA .
   pr VARIANT .
 
   var M : Module .
@@ -3565,7 +3570,7 @@ fmod META-E-UNIFICATION is
   pr META-MINIMIZE-BINDINGS .
   pr RESULT-CONTEXT-SET .
   pr MODULE-HANDLING .
-  pr META-LEVEL .
+  pr META-LEVEL-MNPA .
   pr VARIANT .
   pr RIGIDIFE .
 
@@ -3619,7 +3624,7 @@ fmod META-E-UNIFICATION is
 
   --- metaVariantUnify --------------------------------------------------
   op metaVariantUnify : Module Term Term -> SubstitutionSet .
-  eq metaVariantUnify(M, T, T') = metaEACUUnify(M, T, T', none) .
+  eq metaVariantUnify(M, T, T') = metaEACUUnify(M, T, T', empty) .
 
   op metaVariantUnify : Module Term Term TermList -> SubstitutionSet .
   eq metaVariantUnify(M, T, T', TL) = metaEACUUnify(M, T, T', TL) .
@@ -3628,7 +3633,7 @@ fmod META-E-UNIFICATION is
   eq metaVariantUnify?(M, T, T', TL) = metaEACUUnify?(M, T, T', TL) .
 
   op metaVariantUnify : Module Term Term Nat IrrFlags -> UnificationTripleSet .
-  eq metaVariantUnify(M, T, T',NextVar,IRR) = metaEACUUnify(M, T, T',none,NextVar,IRR) .
+  eq metaVariantUnify(M, T, T',NextVar,IRR) = metaEACUUnify(M, T, T',empty,NextVar,IRR) .
 
   op metaVariantUnify : Module Term Term TermList Nat IrrFlags -> UnificationTripleSet .
   eq metaVariantUnify(M, T, T',TL,NextVar,IRR) = metaEACUUnify(M, T, T',TL,NextVar,IRR) .
@@ -3996,7 +4001,7 @@ fmod META-ACU-UNIFICATION is
   pr SUBSTITUTIONSET .
   pr UNIFICATIONPAIRSET .
   pr CONVERSION .
-  pr META-LEVEL .
+  pr META-LEVEL-MNPA .
   pr META-MINIMIZE-BINDINGS .
   pr META-E-UNIFICATION .
 
@@ -4135,41 +4140,46 @@ fmod META-MSG-UNIFICATION is
 
   ******* metaBuiltInUnify ***********************************************
   op metaBuiltInUnify : Module Term Term -> SubstitutionSet .
-  eq metaBuiltInUnify(M, T, T') = metaBuiltInUnify(M, empty, T, T') .
+  eq metaBuiltInUnify(M, T, T')
+   = metaBuiltInUnify(M, empty, T, T') .
 
   op metaBuiltInUnify : Module TermList Term Term -> SubstitutionSet .
-  eq metaBuiltInUnify(M, TL, T, T')
+  eq metaBuiltInUnify(M, TL T, T')
    = toSubstitution(metaBuiltInUnify(M, TL, T, T', highestVar((T,T')) + 1)) .
 
   *** General Call for UnificationPairSet
-  op metaBuiltInUnify : Module Term Term Nat -> UnificationTripleSet .
-  eq metaBuiltInUnify(M, T1, T2, N) = metaBuiltInUnify(M, empty, T1, T2, N)  .
-
   op metaBuiltInUnify : Module TermList Term Term Nat -> UnificationTripleSet .
-                                    --- Term Lhs
+                       --- Term Lhs
   eq metaBuiltInUnify(M, TL, T1, T2, N) 
-   = metaCoreUnify(M, T1, T2, N)  . 
+   = metaBuiltInUnify(M, T1, T2, N) .
+
+  op metaBuiltInUnify : Module Term Term Nat -> UnificationTripleSet .
+  eq metaBuiltInUnify(M, T1, T2, N) 
+   = metaCoreUnify(M, T1, T2, N) . 
 
   op metaBuiltInUnify? : Module Term Term -> Bool .
-  eq metaBuiltInUnify?(M, T, T') = metaBuiltInUnify?(M, empty, T, T') .
+  eq metaBuiltInUnify?(M, T, T')
+   = metaBuiltInUnify?(M, empty, T, T') .
 
   op metaBuiltInUnify? : Module TermList Term Term -> Bool .
   eq metaBuiltInUnify?(M, TL, T, T')
    = metaBuiltInUnify?(M, TL, T, T',highestVar((T,T')) + 1) .
 
-  op metaBuiltInUnify? : Module Term Term Nat -> Bool .
-  eq metaBuiltInUnify?(M, T1, T2, N) = metaBuiltInUnify?(M, empty, T1, T2, N)  .
-
   op metaBuiltInUnify? : Module TermList Term Term Nat -> Bool .
   eq metaBuiltInUnify?(M, TL, T1, T2, N) 
+   = metaBuiltInUnify?(M, T1, T2, N)  .
+
+  op metaBuiltInUnify? : Module Term Term Nat -> Bool .
+  eq metaBuiltInUnify?(M, T1, T2, N) 
    = metaCoreUnify?(M, T1, T2, N) . 
+
 
 endfm
 fmod ORDERS-TERM-SUBSTITUTION is
   protecting TERM-HANDLING .
   protecting SUBSTITUTION-HANDLING .
   protecting META-MATCH .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting META-UNIFICATION .
   protecting META-E-UNIFICATION .
   protecting RENAMING .
@@ -4483,7 +4493,7 @@ fmod ORDERS-TERM-SUBSTITUTION is
 endfm
 fmod META-NORMALIZE is
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting META-UNIFICATION .
   protecting RESULT-CONTEXT-SET .
   protecting ORDERS-TERM-SUBSTITUTION .
@@ -4704,7 +4714,7 @@ endfm
 
 fmod META-E-NARROWING is
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting META-UNIFICATION .
   protecting META-MSG-UNIFICATION .
   protecting META-E-UNIFICATION .
@@ -5352,7 +5362,7 @@ endfm
 fmod META-NARROWING-SEARCH is
   protecting META-E-NARROWING .
   protecting META-TERM .
-  protecting META-LEVEL .
+  protecting META-LEVEL-MNPA .
   protecting META-UNIFICATION .
   protecting RESULT-CONTEXT-SET .
   protecting ORDERS-TERM-SUBSTITUTION .
@@ -5400,6 +5410,25 @@ fmod META-NARROWING-SEARCH is
    = metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,
          full E-BuiltIn-unify noStrategy E-normalize-terms) .
 
+  *** Shortcuts to Paramodulation Search
+  op metaParamodulationSearch : Module Term Term SubstitutionCond 
+                                TypeOfRelation Bound Bound Bound
+                             -> ResultTripleSet .
+  eq metaParamodulationSearch(M,T,T',SCond,QQ,BN,B,Sol)
+   = if (BN == unbounded and-then Sol =/= unbounded)
+        or-else
+        (BN =/= unbounded and-then Sol =/= unbounded and-then BN < Sol)
+     then metaParamodulationSearch*(M,T,T',SCond,QQ,Sol,B,Sol) 
+     else metaParamodulationSearch*(M,T,T',SCond,QQ,BN,B,Sol) 
+     fi .
+
+  op metaParamodulationSearch* : Module Term Term SubstitutionCond 
+                         TypeOfRelation Bound Bound Bound
+                         -> ResultTripleSet .
+  eq metaParamodulationSearch*(M,T,T',SCond,QQ,BN,B,Sol)
+   = metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,
+         full E-BuiltIn-unify noStrategy E-normalize-terms alsoAtVarPosition) .
+
   *** General Call
   op metaNarrowSearchGen : Module Term Term SubstitutionCond 
                            TypeOfRelation 
@@ -5408,14 +5437,14 @@ fmod META-NARROWING-SEARCH is
                            Bound --- chosen solution
                            TypeOfNarrowing 
 			-> ResultTripleSet .
-  eq metaNarrowSearchGen(M,T,T',SCond,QQ,BN,B,Sol,ON)
+  eq metaNarrowSearchGen(M,T,T',SCond,QQ,B,BN,Sol,ON)
    = toTriple(M,metaNarrowSearchGenAll(M,T,T',SCond,QQ,B,BN,Sol,ON)) .
 
   *** Shortcuts to Narrowing Search Path
   op metaNarrowSearchPath : Module Term Term SubstitutionCond 
                             TypeOfRelation Bound Bound Bound
                          -> TraceNarrowSet .
-  eq metaNarrowSearchPath(M,T,T',SCond,QQ,BN,B,Sol)
+  eq metaNarrowSearchPath(M,T,T',SCond,QQ,B,BN,Sol)
    = if (BN == unbounded and-then Sol =/= unbounded)
         or-else
         (BN =/= unbounded and-then Sol =/= unbounded and-then BN < Sol)
