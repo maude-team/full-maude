@@ -508,7 +508,7 @@ Z:Nat --> s(0)
 (search [1] in MEMBERSHIP : member(s(0),0 : s(0): nil) ~>! success .)
 ***( Output:
 Solution 1
-Z:Bool --> true
+empty substitution
 )***
 
 (search [,5] in MEMBERSHIP : member(N:Nat,0 : s(0): nil) ~>! success .)
@@ -540,11 +540,12 @@ N:Nat --> s(0)
               none, '*, unbounded, 1, unbounded) .)
 ***( Output: 
 result ResultTriple :
-  {'<_>['__['a.Item,'c.Item]],'State,
-	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#8:Money <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#9:Marking <- 'a.Item ;
-	'M:Money <- '__['$.Coin,'__['q.Coin,'q.Coin,'q.Coin]]}
+  {'<<_>>['__['a.Item,'c.Item,'empty.Money]],'State,
+	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'#4:Marking <- '__['a.Item,'empty.Money];
+	'#6:Money <- 'empty.Money ;
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'M:Money <- '__['$.Coin,'__['q.Coin,'q.Coin,'q.Coin,'empty.Money]]}
 )***
 
 (red in META-NARROWING-SEARCH :
@@ -574,11 +575,12 @@ rl '<<_>>['__['#4:Marking,'$.Coin]]=> '<<_>>['__['#4:Marking,'c.Item]] [label('b
               none, '*, unbounded, 1, unbounded) .)
 ***( Output: 
 result ResultTriple :
-  {'__['a.Item,'c.Item],'Marking,
-	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#8:Money <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#9:Marking <- 'a.Item ;
-	'M:Money <- '__['c.Item,'__['q.Coin,'q.Coin,'q.Coin]]}
+  {'__['a.Item,'c.Item,'empty.Money],'Marking,
+	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'#4:Marking <- '__['a.Item,'empty.Money];
+	'#6:Money <- 'empty.Money ;
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'M:Money <- '__['c.Item,'__['q.Coin,'q.Coin,'q.Coin,'empty.Money]]}
 )***
 
 ************* Section 16.14 *********************

@@ -102,6 +102,11 @@ rewrites: 0 in 0ms cpu (0ms real) (0 rewrites/second)
 State: < $ q q #1:Marking >
 X:Marking --> #1:Marking
 
+Variant #2
+rewrites: 1 in 0ms cpu (0ms real) (6944 rewrites/second)
+State: < $ $ %1:Marking >
+X:Marking --> q q %1:Marking
+
 No more variants.
 )***
 
@@ -109,23 +114,50 @@ No more variants.
 reduce in META-LEVEL : 
    metaGetVariant(upModule('VARIANT-VENDING-MACHINE,true), 
            '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],empty,0,0) .
+***(
+result Variant: {'<_>['__['$.Coin,'q.Coin,'q.Coin,'#1:Marking]],
+	'X:Marking <- '#1:Marking,1}
+)***
 reduce in META-LEVEL : 
    metaGetVariant(upModule('VARIANT-VENDING-MACHINE,true), 
            '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],empty,0,1) .
+***(
+result Variant: {'<_>['__['$.Coin,'$.Coin,'%1:Marking]],
+	'X:Marking <- '__['q.Coin,'q.Coin,'%1:Marking],1}
+)***
 reduce in META-LEVEL : 
    metaGetVariant(upModule('VARIANT-VENDING-MACHINE,true), 
            '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],empty,0,2) .
+***(
+result Variant?: noVariant
+)***
 
 *********
 variant unify in VARIANT-VENDING-MACHINE : 
             < q q X:Marking > =? < $ Y:Marking > .
+***(
+Unifier #1
+rewrites: 1 in 0ms cpu (0ms real) (3448 rewrites/second)
+X:Marking --> $ %1:Marking
+Y:Marking --> q q %1:Marking
 
+Unifier #2
+rewrites: 1 in 0ms cpu (0ms real) (2092 rewrites/second)
+X:Marking --> q q #1:Marking
+Y:Marking --> #1:Marking
+
+No more unifiers.
+)***
 *********
 reduce in META-LEVEL : 
            metaVariantUnify(upModule('VARIANT-VENDING-MACHINE,true), 
             '<_>['__['q.Coin,'q.Coin,'X:Marking]] =? '<_>['__['$.Coin,'Y:Marking]],
             empty,0,0) .
-
+***(
+result UnificationPair: {
+	'X:Marking <- '__['$.Coin,'%1:Marking] ; 
+	'Y:Marking <- '__['q.Coin,'q.Coin,'%1:Marking],1}
+)***
 ******************************************************************
 fmod ABELIAN-GROUP is
   --- Sort Information 
