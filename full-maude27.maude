@@ -42,12 +42,14 @@ endfm
 
 ---- Main changes and bugs fixed:
 ----
+---- - Feb 18th, 2015
+----   - Classes without attributes may be defined as class Foo . or class Foo | .
 ---- - July 14th, 2014
 ----   - Fixed bug in the parsing of terms with operators '=' or '=>'. Although the first-level 
 ----     parsing was done correctly, to solve bubbles an operator = (resp. =>) was introduced
-----     to handle equations (resp. rules). Reported by Adri‡n Riesco.
+----     to handle equations (resp. rules). Reported by Adrian Riesco.
 ----   - Fixed bug on the pretty printing of views. Typical error on structures with id elements.  
-----     Probably due to changes in the definion of map sets. Reported by Adri‡n Riesco. 
+----     Probably due to changes in the definion of map sets. Reported by Adrian Riesco. 
 ---- - September 12th, 2013
 ----   - Bug in ACU completion when handling modules with explicit use of kinds. Reported 
 ----     by Luis Aguirre  
