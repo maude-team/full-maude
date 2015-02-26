@@ -65,3 +65,13 @@ load ../../FormalTools/CRC-samples/philosophers/dining-phils.fm
 
 load pruebas/gen-tree.fm
 load pruebas/list-test.fm
+
+load narrowing.fm
+
+load bug-reports/riesco/class-no-attributes.fm
+load bug-reports/riesco/lider.fm
+load bug-reports/riesco/network.fm
+load bug-reports/riesco/nspk.fm
+load bug-reports/riesco/prueba.fm
+load bug-reports/riesco/show-view.fm
+

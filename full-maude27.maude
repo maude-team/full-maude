@@ -19524,7 +19524,7 @@ fmod MODULE-VARIANTS is
 ----      else metaGenerateVariant(M, T, 0, N), getVariants#(M, T, s N)
 ----      fi .
   
-  eq getRlVariants(M, ({'<_>[T], Subst, N} | VtS), T', nil, AtS)
+  eq getRlVariants(M, ({'@<@_@>@[T], Subst, N} | VtS), T', nil, AtS)
     = (rl getTerm(metaNormalize(M, T)) => getTerm(metaNormalize(M, _<<_(T', Subst))) [AtS] .)
       getRlVariants(M, VtS, T', nil, AtS) .
   eq getRlVariants(M, ({F[T, TL], Subst,N} | VtS), T', Cond, AtS)
@@ -19532,7 +19532,7 @@ fmod MODULE-VARIANTS is
       getRlVariants(M, VtS, T', Cond, AtS) .
   eq getRlVariants(M, empty, T', Cond, AtS) = none .
 
-  eq getEqVariants(M, ({'<_>[T], Subst, N} | VtS), T', nil, AtS)
+  eq getEqVariants(M, ({'@<@_@>@[T], Subst, N} | VtS), T', nil, AtS)
     = (eq getTerm(metaNormalize(M, T)) = getTerm(metaNormalize(M, _<<_(T', Subst))) [AtS] .)
       getEqVariants(M, VtS, T', nil, AtS) .
   eq getEqVariants(M, ({F[T, TL], Subst, N} | VtS), T', Cond, AtS)
