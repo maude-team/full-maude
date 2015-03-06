@@ -3274,8 +3274,8 @@ fmod META-MATCH is
   op metaBuiltInEqual : Module TermList Term Term -> Bool .
   eq metaBuiltInEqual(M,TL,T,T')
    = canonice(M,T) == canonice(M,T') .
-
 endfm
+
 fmod VARIANT-HANDLING is
   pr SUBSTITUTION-HANDLING .
   pr META-MINIMIZE-BINDINGS .
@@ -4004,7 +4004,6 @@ fmod META-E-UNIFICATION is
          and isAssociative(M,F,getTypes(M,TL)) 
       then 1 else 0 fi 
       + howManyAC$$(M,EqS) .
-
 endfm
 
 fmod META-ACU-UNIFICATION is
@@ -17899,7 +17898,7 @@ fmod COMMAND-PROCESSING is
     = V '--> '\s eMetaPrettyPrint(M, T) 
       if eMetaPrettyPrint(M, Sb:Substitution) == nil
       then nil
-      else '; eMetaPrettyPrint(M, Sb:Substitution)
+      else '; '\n eMetaPrettyPrint(M, Sb:Substitution)
       fi .
   eq eMetaPrettyPrint(M, (none).Substitution) = nil . 
 
@@ -18743,7 +18742,7 @@ fmod COMMAND-PROCESSING is
   *** MATCH 
 
   ceq procMatch(ME, M, T, T', QI, I, VDS, DB)
-    *** the number I in search is not a bound, but the number of solutions
+    *** the number I the number of solutions
     = if solveBubblesRl(T, T', M, B, VDS, DB) :: Term
       then procMatch2(addOps(VDS, M), 
              lhs(solveBubblesRl(T, T', M, B, VDS, DB)), 
@@ -18826,7 +18825,7 @@ fmod COMMAND-PROCESSING is
             if Sb? == none
             then 'empty 'substitution
             else eMetaPrettyPrint(M, Sb?)
-            fi
+            fi '\n '\n
             procMatch3(M, T, T', CD, 'match, I, 1))
       else if Sb? == noMatch
            then ('match 
@@ -19851,7 +19850,7 @@ endfm
 
 fmod AX-COHERENCE-COMPLETION is 
   inc UNIT .
-  inc MODULE-HANDLING * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
+----  inc MODULE-HANDLING * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
 
   vars V W : Variable .
   var  C : Constant .
