@@ -10,7 +10,7 @@ set show advisories off .
 fmod BANNER is 
   pr STRING .
   op banner : -> String .
-  eq banner = "Full Maude 2.6.1g December 12th 2013" .
+  eq banner = "Full Maude 2.6.1h December 12th 2013" .
 endfm
 
 ***(

@@ -178,17 +178,17 @@ Variant 2
    op __ : Money Money -> Money [assoc comm id: empty] . 
    subsort Money Item < Marking . 
    op __ : Marking Marking -> Marking [assoc comm id: empty] . 
-   op <<_>> : Marking -> State .
+   op <_> : Marking -> State .
    ops $ q : -> Coin . ops a c : -> Item . var M : Marking .
-   rl [buy-c] : << M $ >> => << M c >> . 
-   rl [buy-a] : << M $ >> => << M a q >> . 
+   rl [buy-c] : < M $ > => < M c > . 
+   rl [buy-a] : < M $ > => < M a q > . 
    eq [change]: q q q q M = $ M [variant] . 
  endm)
 
 ********
 (reduce in META-NARROWING-SEARCH : 
          getVariants(upModule(NARROWING-VENDING-MACHINE-COHERENT), 
-         '<<_>>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]]) .)
+         '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]]) .)
 ***( Output: 
 result VariantFourSet :
 {'<<_>>['__['$.Coin,'$.Coin,'#5:Marking]],
@@ -379,8 +379,8 @@ X:Magma --> a ; Y:Magma --> e
 ************* Section 16.10 *********************
 (reduce in META-NARROWING-SEARCH : 
            metaVariantUnify(upModule(NARROWING-VENDING-MACHINE-COHERENT), 
-            '<<_>>['__['q.Coin,'q.Coin,'X:Marking]], 
-            '<<_>>['__['$.Coin,'Y:Marking]]) .)
+            '<_>['__['q.Coin,'q.Coin,'X:Marking]], 
+            '<_>['__['$.Coin,'Y:Marking]]) .)
 ***( Output:
  (
 	'X:Marking <- '$.Coin ;
@@ -512,8 +512,8 @@ N:Nat --> s(0)
 ************* Section 16.13 *********************
 (red in META-NARROWING-SEARCH :
             metaNarrowSearch(upModule(NARROWING-VENDING-MACHINE-COHERENT),
-              '<<_>>['M:Money],
-              '<<_>>['__['a.Item, 'c.Item]],
+              '<_>['M:Money],
+              '<_>['__['a.Item, 'c.Item]],
               none, '*, 1, unbounded, unbounded) .)
 ***( Output: 
 result ResultTriple :
@@ -554,4 +554,4 @@ result ResultTriple :
 
 ************* Section 16.14 *********************
 
-quit
+----quit
