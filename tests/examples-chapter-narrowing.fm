@@ -14,7 +14,7 @@
   endm)
 
 ********
-(acu coherence completion .)
+(ax coherence completion .)
 ***( Output:
 mod EXCLUSIVE-OR-NOT-COHERENCE is
   sorts Bool Nat NatSet .
@@ -87,8 +87,8 @@ endm
 )***
 
 ********
-(reduce in ACU-COHERENCE-COMPLETION : 
-         acuCohComplete(upModule(EXCLUSIVE-OR-NOT-COHERENCE)) .)
+(reduce in AX-COHERENCE-COMPLETION : 
+         axCohComplete(upModule(EXCLUSIVE-OR-NOT-COHERENCE)) .)
 ***( Output:
 result SModule :
   mod 'EXCLUSIVE-OR-NOT-COHERENCE is
@@ -169,8 +169,8 @@ Variant 2
 ************* Section 16.7 *********************
 
 ********
-(reduce in ACU-COHERENCE-COMPLETION : 
-         acuCohComplete(upModule(NARROWING-VENDING-MACHINE)) .)
+(reduce in AX-COHERENCE-COMPLETION : 
+         axCohComplete(upModule(NARROWING-VENDING-MACHINE)) .)
 
 (mod NARROWING-VENDING-MACHINE-COHERENT is 
    sorts Coin Item Marking Money State . subsort Coin < Money .
@@ -328,13 +328,13 @@ mod RIGHTID-UNIFICATION-EXAMPLE is
 endm
 )***
 
-reduce in  META-NARROWING-SEARCH : 
-           removeIds(upModule(LEFTID-UNIFICATION-EXAMPLE),non-handled) .
+(reduce in FULL-MAUDE : 
+           removeIds(upModule(LEFTID-UNIFICATION-EXAMPLE),non-handled) .)
 ***( Output: *** Currently an execution error ***
 )***
 
-reduce in COMMAND-PROCESSING : 
-           removeIds(upModule(RIGHTID-UNIFICATION-EXAMPLE),non-handled) .
+(reduce in FULL-MAUDE : 
+           removeIds(upModule(RIGHTID-UNIFICATION-EXAMPLE),non-handled) .)
 ***( Output: *** Currently an execution error ***
 )***
 
