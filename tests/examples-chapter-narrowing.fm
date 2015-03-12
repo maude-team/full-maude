@@ -1,149 +1,4 @@
-************* Section 16.5 *********************
-  (mod EXCLUSIVE-OR-NOT-COHERENCE is 
-    sorts Nat NatSet .
-
-    op 0 : -> Nat [ctor] .
-    op s : Nat -> Nat [ctor] .
-    
-    subsort Nat < NatSet .
-    op _*_ : NatSet NatSet -> NatSet [ctor assoc comm] .
-
-    vars X Y Z : [NatSet] .
-    eq [idem] : X * X = 0     [variant] .
-    eq [id]   : X * 0 = X     [variant] .
-  endm)
-
-********
-(ax coherence completion .)
-***( Output:
-mod EXCLUSIVE-OR-NOT-COHERENCE is
-  sorts Bool Nat NatSet .
-  subsort Nat < NatSet .
-  op 0 : -> Nat
-    [ctor] .
-  op _*_ : NatSet NatSet -> NatSet
-    [assoc comm ctor] .
-  op _=/=_ : Universal Universal -> Bool
-    [poly(1 2)prec 51 special(id-hook EqualitySymbol term-hook equalTerm(false)term-hook notEqualTerm(true))] .
-  op _==_ : Universal Universal -> Bool
-    [poly(1 2)prec 51 special(id-hook EqualitySymbol term-hook equalTerm(true)term-hook notEqualTerm(false))] .
-  op _and_ : Bool Bool -> Bool
-    [assoc comm prec 55] .
-  op _implies_ : Bool Bool -> Bool
-    [prec 61 gather(e E)] .
-  op _or_ : Bool Bool -> Bool
-    [assoc comm prec 59] .
-  op _xor_ : Bool Bool -> Bool
-    [assoc comm prec 57] .
-  op false : -> Bool
-    [ctor special(id-hook SystemFalse)] .
-  op if_then_else_fi : Bool Universal Universal -> Universal
-    [poly(2 3 0)special(id-hook BranchSymbol term-hook 1(true)term-hook 2(false))] .
-  op not_ : Bool -> Bool
-    [prec 53] .
-  op s : Nat -> Nat
-    [ctor] .
-  op true : -> Bool
-    [ctor special(id-hook SystemTrue)] .
-  eq A:Bool and A:Bool
-    = A:Bool .
-  eq A:Bool and(B:Bool xor C:Bool)
-    = A:Bool and B:Bool xor A:Bool and C:Bool .
-  eq false and A:Bool
-    = false .
-  eq true and A:Bool
-    = A:Bool .
-  eq A:Bool and A:Bool and X@@@:[Bool]
-    = A:Bool and X@@@:[Bool] .
-  eq A:Bool and(B:Bool xor C:Bool)and X@@@:[Bool]
-    = (A:Bool and B:Bool xor A:Bool and C:Bool)and X@@@:[Bool] .
-  eq false and A:Bool and X@@@:[Bool]
-    = false and X@@@:[Bool] .
-  eq true and A:Bool and X@@@:[Bool]
-    = A:Bool and X@@@:[Bool] .
-  eq A:Bool implies B:Bool
-    = not(A:Bool xor A:Bool and B:Bool) .
-  eq A:Bool or B:Bool
-    = A:Bool and B:Bool xor A:Bool xor B:Bool .
-  eq A:Bool or B:Bool or X@@@:[Bool]
-    = A:Bool and B:Bool xor A:Bool xor B:Bool or X@@@:[Bool] .
-  eq A:Bool xor A:Bool
-    = false .
-  eq false xor A:Bool
-    = A:Bool .
-  eq A:Bool xor A:Bool xor X@@@:[Bool]
-    = false xor X@@@:[Bool] .
-  eq false xor A:Bool xor X@@@:[Bool]
-    = A:Bool xor X@@@:[Bool] .
-  eq not A:Bool
-    = true xor A:Bool .
-  eq X:[NatSet]* 0
-    = X:[NatSet] [label id metadata "variant"] .
-  eq X:[NatSet]* X:[NatSet]
-    = 0 [label idem metadata "variant"] .
-  eq X:[NatSet]* X:[NatSet]* X@@@:[NatSet]
-    = 0 * X@@@:[NatSet] [label idem metadata "variant"] .
-endm
-)***
-
-********
-(reduce in AX-COHERENCE-COMPLETION : 
-         axCohComplete(upModule(EXCLUSIVE-OR-NOT-COHERENCE)) .)
-***( Output:
-result SModule :
-  mod 'EXCLUSIVE-OR-NOT-COHERENCE is
-  nil
-  sorts 'Bool ; 'Nat ; 'NatSet .
-  subsort 'Nat < 'NatSet .
-  op '0 : nil -> 'Nat [ctor] .
-  op '_*_ : 'NatSet 'NatSet -> 'NatSet [assoc comm ctor] .
-  op '_=/=_ : 'Universal 'Universal -> 'Bool [poly(1 2)prec(51)special(
-    id-hook('EqualitySymbol,nil)
-    term-hook('equalTerm,'false.Bool)
-    term-hook('notEqualTerm,'true.Bool))] .
-  op '_==_ : 'Universal 'Universal -> 'Bool [poly(1 2)prec(51)special(
-    id-hook('EqualitySymbol,nil)
-    term-hook('equalTerm,'true.Bool)
-    term-hook('notEqualTerm,'false.Bool))] .
-  op '_and_ : 'Bool 'Bool -> 'Bool [assoc comm prec(55)] .
-  op '_implies_ : 'Bool 'Bool -> 'Bool [gather('e 'E)prec(61)] .
-  op '_or_ : 'Bool 'Bool -> 'Bool [assoc comm prec(59)] .
-  op '_xor_ : 'Bool 'Bool -> 'Bool [assoc comm prec(57)] .
-  op 'false : nil -> 'Bool [ctor special(
-    id-hook('SystemFalse,nil))] .
-  op 'if_then_else_fi : 'Bool 'Universal 'Universal -> 'Universal [poly(2 3 0)special(
-    id-hook('BranchSymbol,nil)
-    term-hook('1,'true.Bool)
-    term-hook('2,'false.Bool))] .
-  op 'not_ : 'Bool -> 'Bool [prec(53)] .
-  op 's : 'Nat -> 'Nat [ctor] .
-  op 'true : nil -> 'Bool [ctor special(
-    id-hook('SystemTrue,nil))] .
-  none
-  eq '_*_['X:`[NatSet`],'0.Nat]= 'X:`[NatSet`] [label('id)metadata("variant")] .
-  eq '_*_['X:`[NatSet`],'X:`[NatSet`]]= '0.Nat [label('idem)metadata("variant")] .
-  eq '_*_['X:`[NatSet`],'X:`[NatSet`],'X@@@:`[NatSet`]]= '_*_['0.Nat,'X@@@:`[NatSet`]] [label('idem)metadata("variant")] .
-  eq '_and_['A:Bool,'A:Bool]= 'A:Bool [none] .
-  eq '_and_['A:Bool,'_xor_['B:Bool,'C:Bool]]= '_xor_['_and_['A:Bool,'B:Bool],'_and_['A:Bool,'C:Bool]] [none] .
-  eq '_and_['false.Bool,'A:Bool]= 'false.Bool [none] .
-  eq '_and_['true.Bool,'A:Bool]= 'A:Bool [none] .
-  eq '_and_['A:Bool,'A:Bool,'X@@@:`[Bool`]]= '_and_['A:Bool,'X@@@:`[Bool`]] [none] .
-  eq '_and_['A:Bool,'_xor_['B:Bool,'C:Bool],'X@@@:`[Bool`]]= '_and_['_xor_['_and_['A:Bool,'B:Bool],'_and_['A:Bool,'C:Bool]],'X@@@:`[Bool`]] [none] .
-  eq '_and_['false.Bool,'A:Bool,'X@@@:`[Bool`]]= '_and_['false.Bool,'X@@@:`[Bool`]] [none] .
-  eq '_and_['true.Bool,'A:Bool,'X@@@:`[Bool`]]= '_and_['A:Bool,'X@@@:`[Bool`]] [none] .
-  eq '_implies_['A:Bool,'B:Bool]= 'not_['_xor_['A:Bool,'_and_['A:Bool,'B:Bool]]] [none] .
-  eq '_or_['A:Bool,'B:Bool]= '_xor_['_and_['A:Bool,'B:Bool],'_xor_['A:Bool,'B:Bool]] [none] .
-  eq '_or_['A:Bool,'B:Bool,'X@@@:`[Bool`]]= '_or_['_xor_['_and_['A:Bool,'B:Bool],'_xor_['A:Bool,'B:Bool]],'X@@@:`[Bool`]] [none] .
-  eq '_xor_['A:Bool,'A:Bool]= 'false.Bool [none] .
-  eq '_xor_['false.Bool,'A:Bool]= 'A:Bool [none] .
-  eq '_xor_['A:Bool,'A:Bool,'X@@@:`[Bool`]]= '_xor_['false.Bool,'X@@@:`[Bool`]] [none] .
-  eq '_xor_['false.Bool,'A:Bool,'X@@@:`[Bool`]]= '_xor_['A:Bool,'X@@@:`[Bool`]] [none] .
-  eq 'not_['A:Bool]= '_xor_['true.Bool,'A:Bool] [none] .
-  none
-endm
-) ***
-
-************* Section 16.6 *********************
+************* Section 16.3 *********************
 (mod NARROWING-VENDING-MACHINE is 
    sorts Coin Item Marking Money State . subsort Coin < Money .
    op empty : -> Money .
@@ -157,245 +12,6 @@ endm
    eq [change]: q q q q = $ [variant] . 
  endm)
 
-********
-(get variants in NARROWING-VENDING-MACHINE : < $ q q X:Marking > .)
-***(Output:
-Variant 1
-{< $ q q X:Marking >,empty substitution}
-Variant 2
-{< $ $ #5:Marking >,X:Marking --> q q #5:Marking}
-)***
-
-************* Section 16.7 *********************
-
-********
-(reduce in AX-COHERENCE-COMPLETION : 
-         axCohComplete(upModule(NARROWING-VENDING-MACHINE)) .)
-
-(mod NARROWING-VENDING-MACHINE-COHERENT is 
-   sorts Coin Item Marking Money State . subsort Coin < Money .
-   op empty : -> Money .
-   op __ : Money Money -> Money [assoc comm id: empty] . 
-   subsort Money Item < Marking . 
-   op __ : Marking Marking -> Marking [assoc comm id: empty] . 
-   op <_> : Marking -> State .
-   ops $ q : -> Coin . ops a c : -> Item . var M : Marking .
-   rl [buy-c] : < M $ > => < M c > . 
-   rl [buy-a] : < M $ > => < M a q > . 
-   eq [change]: q q q q M = $ M [variant] . 
- endm)
-
-********
-(reduce in META-NARROWING-SEARCH : 
-         getVariants(upModule(NARROWING-VENDING-MACHINE-COHERENT), 
-         '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]]) .)
-***( Output: 
-result VariantFourSet :
-{'<_>['__['$.Coin,'$.Coin,'#5:Marking]],
-	'X:Marking <- '__['q.Coin,'q.Coin,'#5:Marking],
-	'#2:State <- '<_>['__['$.Coin,'$.Coin,'#5:Marking]],7}|
-{'<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],(none).Substitution,
-	'#2:State <- '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking]],5}|
-{'<_>['__['$.Coin,'q.Coin,'q.Coin,'empty.Money]],
-	'X:Marking <- 'empty.Money,
-	'#2:State <- '<_>['__['$.Coin,'q.Coin,'q.Coin]],4}
-)***
-
-************* Section 16.8 *********************
- (mod LEFTID-UNIFICATION-EXAMPLE is 
-    sorts Magma Elem . 
-    subsorts Elem < Magma . 
-    op __ : Magma Magma -> Magma [gather (E e) left id: e] . 
-    ops a b c d e : -> Elem .
-  endm)
-
-********
-(remove identity attributes .)
-***(Output:
-mod LEFTID-UNIFICATION-EXAMPLE is
-  sorts Bool Elem Magma .
-  subsort Elem < Magma .
-  op a : -> Elem .
-  op b : -> Elem .
-  op c : -> Elem .
-  op d : -> Elem .
-  op e : -> Elem .
-  op _=/=_ : Universal Universal -> Bool
-    [poly(1 2)prec 51 special(id-hook EqualitySymbol term-hook equalTerm(false)term-hook notEqualTerm(true))] .
-  op _==_ : Universal Universal -> Bool
-    [poly(1 2)prec 51 special(id-hook EqualitySymbol term-hook equalTerm(true)term-hook notEqualTerm(false))] .
-  op __ : Magma Magma -> Magma
-    [gather(E e)] .
-  op _and_ : Bool Bool -> Bool
-    [assoc comm prec 55] .
-  op _implies_ : Bool Bool -> Bool
-    [prec 61 gather(e E)] .
-  op _or_ : Bool Bool -> Bool
-    [assoc comm prec 59] .
-  op _xor_ : Bool Bool -> Bool
-    [assoc comm prec 57] .
-  op false : -> Bool
-    [ctor special(id-hook SystemFalse)] .
-  op if_then_else_fi : Bool Universal Universal -> Universal
-    [poly(2 3 0)special(id-hook BranchSymbol term-hook 1(true)term-hook 2(false))] .
-  op not_ : Bool -> Bool
-    [prec 53] .
-  op true : -> Bool
-    [ctor special(id-hook SystemTrue)] .
-  eq A:Bool and A:Bool
-    = A:Bool .
-  eq A:Bool and(B:Bool xor C:Bool)
-    = A:Bool and B:Bool xor A:Bool and C:Bool .
-  eq false and A:Bool
-    = false .
-  eq true and A:Bool
-    = A:Bool .
-  eq A:Bool implies B:Bool
-    = not(A:Bool xor A:Bool and B:Bool) .
-  eq A:Bool or B:Bool
-    = A:Bool xor B:Bool xor A:Bool and B:Bool .
-  eq A:Bool xor A:Bool
-    = false .
-  eq false xor A:Bool
-    = A:Bool .
-  eq not A:Bool
-    = true xor A:Bool .
-  eq e X:[Magma]
-    = X:[Magma] [label lIdEq1 metadata "variant"] .
-endm
-)***
-
- (mod RIGHTID-UNIFICATION-EXAMPLE is 
-    sorts Magma Elem . 
-    subsorts Elem < Magma . 
-    op __ : Magma Magma -> Magma [gather (e E) right id: e] . 
-    ops a b c d e : -> Elem .
-  endm)
-
-********
-(remove identity attributes .)
-***(Output:
-mod RIGHTID-UNIFICATION-EXAMPLE is
-  sorts Bool Elem Magma .
-  subsort Elem < Magma .
-  op a : -> Elem .
-  op b : -> Elem .
-  op c : -> Elem .
-  op d : -> Elem .
-  op e : -> Elem .
-  op _=/=_ : Universal Universal -> Bool
-    [poly(1 2)prec 51 special(id-hook EqualitySymbol term-hook equalTerm(false)term-hook notEqualTerm(true))] .
-  op _==_ : Universal Universal -> Bool
-    [poly(1 2)prec 51 special(id-hook EqualitySymbol term-hook equalTerm(true)term-hook notEqualTerm(false))] .
-  op __ : Magma Magma -> Magma
-    [gather(e E)] .
-  op _and_ : Bool Bool -> Bool
-    [assoc comm prec 55] .
-  op _implies_ : Bool Bool -> Bool
-    [prec 61 gather(e E)] .
-  op _or_ : Bool Bool -> Bool
-    [assoc comm prec 59] .
-  op _xor_ : Bool Bool -> Bool
-    [assoc comm prec 57] .
-  op false : -> Bool
-    [ctor special(id-hook SystemFalse)] .
-  op if_then_else_fi : Bool Universal Universal -> Universal
-    [poly(2 3 0)special(id-hook BranchSymbol term-hook 1(true)term-hook 2(false))] .
-  op not_ : Bool -> Bool
-    [prec 53] .
-  op true : -> Bool
-    [ctor special(id-hook SystemTrue)] .
-  eq A:Bool and A:Bool
-    = A:Bool .
-  eq A:Bool and(B:Bool xor C:Bool)
-    = A:Bool and B:Bool xor A:Bool and C:Bool .
-  eq false and A:Bool
-    = false .
-  eq true and A:Bool
-    = A:Bool .
-  eq A:Bool implies B:Bool
-    = not(A:Bool xor A:Bool and B:Bool) .
-  eq A:Bool or B:Bool
-    = A:Bool xor B:Bool xor A:Bool and B:Bool .
-  eq A:Bool xor A:Bool
-    = false .
-  eq false xor A:Bool
-    = A:Bool .
-  eq not A:Bool
-    = true xor A:Bool .
-  eq X:[Magma]e
-    = X:[Magma] [label rIdEq1 metadata "variant"] .
-endm
-)***
-
-(reduce in FULL-MAUDE : 
-           removeIds(upModule(LEFTID-UNIFICATION-EXAMPLE),non-handled) .)
-***( Output: *** Currently an execution error ***
-)***
-
-(reduce in FULL-MAUDE : 
-           removeIds(upModule(RIGHTID-UNIFICATION-EXAMPLE),non-handled) .)
-***( Output: *** Currently an execution error ***
-)***
-
-************* Section 16.9 *********************
-(variant unify in NARROWING-VENDING-MACHINE : 
-            < q q X:Marking > =? < $ Y:Marking > .)
-***( Output:
-Solution 1
-X:Marking --> q q Y:Marking
-Solution 2
-X:Marking --> $ #12:Marking ; Y:Marking --> q q #12:Marking
-***)
-
-************* Section 16.9.1 *********************
-(variant unify in LEFTID-UNIFICATION-EXAMPLE : X:Magma a =? Y:Magma a a .)
-***( Output: 
-Solution 1
-X:Magma --> Y:Magma a
-Solution 2
-X:Magma --> a ; Y:Magma --> e
-) ***
-
-(variant unify in LEFTID-UNIFICATION-EXAMPLE : a X:Magma =? a a Y:Magma .)
-***( Output:
-No variant unifier
-) ***
-
-(variant unify in RIGHTID-UNIFICATION-EXAMPLE : X:Magma a =? Y:Magma a a .)
-***( Output:
-No variant unifier
-) ***
-
-(variant unify in RIGHTID-UNIFICATION-EXAMPLE : a X:Magma =? a a Y:Magma .)
-***( Output:
-Solution 1
-X:Magma --> a Y:Magma
-
-Solution 2
-X:Magma --> a ; Y:Magma --> e
-) ***
-
-************* Section 16.10 *********************
-(reduce in META-NARROWING-SEARCH : 
-           metaVariantUnify(upModule(NARROWING-VENDING-MACHINE-COHERENT), 
-            '<_>['__['q.Coin,'q.Coin,'X:Marking]], 
-            '<_>['__['$.Coin,'Y:Marking]]) .)
-***( Output:
- (
-	'X:Marking <- '$.Coin ;
-	'Y:Marking <- '__['q.Coin,'q.Coin])
-|(
-	'X:Marking <- '__['$.Coin,'#12:Marking];
-	'Y:Marking <- '__['q.Coin,'q.Coin,'#12:Marking])
-|(
-	'X:Marking <- '__['q.Coin,'q.Coin,'empty.Money];
-	'Y:Marking <- 'empty.Money)
-|(
-	'X:Marking <- '__['q.Coin,'q.Coin,'Y:Marking])
-) ***
-
-************* Section 16.12 *********************
 (search [1] in NARROWING-VENDING-MACHINE : 
             < M:Money > ~>* < a c > .)
 ***( Output:
@@ -413,50 +29,70 @@ M:Money --> $ q q q
 (search [,5] in NARROWING-VENDING-MACHINE : 
             < M:Money > ~>! < MO':Money a c > .)
 ***( Output:
+No more solutions
+)***
+
+(search [,5] in NARROWING-VENDING-MACHINE : 
+            < C1:Coin C2:Coin C3:Coin C4:Coin > ~>! < M:Money a c > .)
+
+***( Output:
 Solution 1
-M:Money --> $ q q q ; MO':Money --> empty
+C1:Coin --> $ ;
+C2:Coin --> q ;
+C3:Coin --> q ;
+C4:Coin --> q ;
+M:Money --> empty
+
 Solution 2
-M:Money --> $ $ ; MO':Money --> q
+C1:Coin --> q ;
+C2:Coin --> $ ;
+C3:Coin --> q ;
+C4:Coin --> q ;
+M:Money --> empty
+
+Solution 3
+C1:Coin --> q ;
+C2:Coin --> q ;
+C3:Coin --> $ ;
+C4:Coin --> q ;
+M:Money --> empty
+
+Solution 4
+C1:Coin --> q ;
+C2:Coin --> q ;
+C3:Coin --> q ;
+C4:Coin --> $ ;
+M:Money --> empty
 )***
 
 ************* Section 16.12.1 *********************
  (mod LAST-APPEND is
+    sort Success .
+    op success : -> Success .
     sort Nat .
     op 0 : -> Nat .
     op s : Nat -> Nat .
-
     sort NatList .
     op nil : -> NatList .
     op _:_ : Nat NatList -> NatList .
 
-    vars XS YS : NatList .
+    vars XS YS : NatList .  
     vars N M X Y : Nat .
-
-    op append : NatList NatList -> NatList .
+    op append : NatList NatList -> [NatList] .
     rl append(nil, YS) => YS .
     rl append(N : XS, YS) => N : append(XS, YS) .
 
-    op error : -> [Nat] .
-
     op last : NatList -> [Nat] .
-    rl last(XS) 
-    => if append(YS, N : nil) =:= XS 
-       then N 
-       else error 
-       fi 
-    [nonexec] .
+    rl last(XS) => append(YS, N : nil) =:= XS >> N [nonexec] .
 
-    op _=:=_ : Nat Nat -> Bool [comm] .
-    rl N =:= N => true .
-    rl 0 =:= 0 => true .
-    rl s(N) =:= s(M) => N =:= M .
-    rl 0 =:= s(N) => false .
+    op _>>_ : [Success] [Nat] -> [Nat] [frozen (2) strat (1 0)] .
+    eq success >> X:[Nat] = X:[Nat] .
 
-    op _=:=_ : NatList NatList -> Bool [comm] .
-    rl XS =:= XS => true .
-    rl nil =:= nil => true .
-    rl X : XS =:= Y : YS  => X =:= Y and XS =:= YS .
-    rl nil =:= X : XS => false .
+    op _=:=_ : Nat Nat -> [Success] [comm] .
+    rl N =:= N => success .
+
+    op _=:=_ : NatList NatList -> [Success] [comm] .
+    rl XS =:= XS => success .
   endm)
 
 (search [1] in LAST-APPEND : 
@@ -468,40 +104,19 @@ Z:Nat --> s(0)
 
  (mod MEMBERSHIP is
     protecting LAST-APPEND .
- 
     vars XS YS ZS : NatList .
     vars N M X Y : Nat .
-
-    op error : -> [Bool] .
-
-    op member : Nat NatList -> [Bool] .
-    rl member(N,XS) 
-    => if append(YS, N : ZS) =:= XS 
-       then true 
-       else error 
-       fi 
-    [nonexec] .
-
-    op _=:=_ : Nat Nat -> Bool [comm] .
-    rl N =:= N => true .
-    rl 0 =:= 0 => true .
-    rl s(N) =:= s(M) => N =:= M .
-    rl 0 =:= s(N) => false .
-
-    op _=:=_ : NatList NatList -> Bool [comm] .
-    rl XS =:= XS => true .
-    rl nil =:= nil => true .
-    rl X : XS =:= Y : YS  => X =:= Y and XS =:= YS .
-    rl nil =:= X : XS => false .
+    op member : Nat NatList -> [Success] .
+    rl member(N,XS) => append(YS, N : ZS) =:= XS [nonexec] .
   endm)
 
-(search [1] in MEMBERSHIP : member(s(0),0 : s(0): nil) ~>! Z:Bool .)
+(search [1] in MEMBERSHIP : member(s(0),0 : s(0): nil) ~>! success .)
 ***( Output:
 Solution 1
 Z:Bool --> true
 )***
 
-(search [,5] in MEMBERSHIP : member(N:Nat,0 : s(0): nil) ~>! true .)
+(search [,5] in MEMBERSHIP : member(N:Nat,0 : s(0): nil) ~>! success .)
 ***( Output:
 Solution 1
 N:Nat --> 0
@@ -510,18 +125,39 @@ N:Nat --> s(0)
 )***
 
 ************* Section 16.13 *********************
-(red in META-NARROWING-SEARCH :
-            metaNarrowSearch(upModule(NARROWING-VENDING-MACHINE-COHERENT),
+(reduce in FULL-MAUDE :
+            metaNarrowSearch(axCohComplete(upModule(NARROWING-VENDING-MACHINE)),
               '<_>['M:Money],
               '<_>['__['a.Item, 'c.Item]],
-              none, '*, 1, unbounded, unbounded) .)
+              none, '*, unbounded, 1, unbounded) .)
 ***( Output: 
 result ResultTriple :
-  {'<_>['__['a.Item,'c.Item]],'State,
-	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#8:Money <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#9:Marking <- 'a.Item ;
-	'M:Money <- '__['$.Coin,'__['q.Coin,'q.Coin,'q.Coin]]}
+  {'<_>['__['a.Item,'c.Item,'empty.Money]],'State,
+	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'#4:Marking <- '__['a.Item,'empty.Money];
+	'#6:Money <- 'empty.Money ;
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'M:Money <- '__['$.Coin,'__['q.Coin,'q.Coin,'q.Coin,'empty.Money]]}
+)***
+
+(reduce in FULL-MAUDE :
+            metaNarrowSearchPath(axCohComplete(upModule(NARROWING-VENDING-MACHINE)),
+              '<_>['M:Money],
+              '<_>['__['a.Item, 'c.Item]],
+              none, '*, unbounded, 1, unbounded) .)
+
+***( Output: 
+result TraceNarrow :
+  {'<_>['__['%3:Money,'__['a.Item,'q.Coin]]],
+	'#1:Marking <- '%3:Money ;
+	'M:Money <- '__['$.Coin,'%3:Money],
+'State,
+rl '<_>['__['#1:Marking,'$.Coin]]=> '<_>['__['#1:Marking,'__['a.Item,'q.Coin]]] [label('buy-a)] .}
+{'<_>['__['__['a.Item,'#6:Money],'c.Item]],
+	'#4:Marking <- '__['a.Item,'#6:Money];
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'#6:Money],
+'State,
+rl '<_>['__['#4:Marking,'$.Coin]]=> '<_>['__['#4:Marking,'c.Item]] [label('buy-c)] .}
 )***
 
 ************* Section 16.14 *********************
@@ -538,18 +174,19 @@ result ResultTriple :
    eq [change]: q q q q M = $ M [variant] . 
  endm)
 
-(red in META-NARROWING-SEARCH :
+(red in FULL-MAUDE :
             metaParamodulationSearch(upModule(NARROWING-VENDING-MACHINE-NOTOPMOST-COHERENT),
               'M:Money,
               '__['a.Item, 'c.Item],
-              none, '*, 1, unbounded, unbounded) .)
+              none, '*, unbounded, 1, unbounded) .)
 ***( Output: 
 result ResultTriple :
-  {'__['a.Item,'c.Item],'Marking,
-	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#8:Money <- '__['q.Coin,'q.Coin,'q.Coin];
-	'#9:Marking <- 'a.Item ;
-	'M:Money <- '__['c.Item,'__['q.Coin,'q.Coin,'q.Coin]]}
+  {'__['a.Item,'c.Item,'empty.Money],'Marking,
+	'#1:Marking <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'#4:Marking <- '__['a.Item,'empty.Money];
+	'#6:Money <- 'empty.Money ;
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money];
+	'M:Money <- '__['c.Item,'__['q.Coin,'q.Coin,'q.Coin,'empty.Money]]}
 )***
 
 ************* Section 16.14 *********************
