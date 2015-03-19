@@ -14,7 +14,7 @@ mod NARROWING-VM-NOTOP is
     var M : Marking .
     rl [buy-c] : $ => c . 
     rl [buy-a] : $ => a q . 
-    eq [change]: q q q q M = $ M [variant] . 
+    eq [change]: q q q q = $ [variant] . 
 endm
 
 mod NARROWING-VM-NOTOP-COHERENT is
@@ -36,16 +36,51 @@ red in FULL-MAUDE :
               upModule('NARROWING-VM-NOTOP-COHERENT, false),
               'M:Money,
               '__['a.Item, 'c.Item],
-              none, '*, 1, unbounded, unbounded) .
+              none, '*, unbounded, 1, unbounded) .
+---(
+result ResultTriple: {'__['a.Item,'c.Item,'empty.Money],'Marking,
+	'#1:`[State`] <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money] ; 
+	'#4:`[State`] <- '__['a.Item,'empty.Money] ; 
+	'#6:Money <- 'empty.Money ; 
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money] ; 
+	'M:Money <- '__['a.Item,'q.Coin,'__['q.Coin,'q.Coin,'q.Coin,'empty.Money]]}
+---)
 
 red in FULL-MAUDE :
             metaParamodulationSearch(
               axCohComplete(upModule('NARROWING-VM-NOTOP, false)),
               'M:Money,
               '__['a.Item, 'c.Item],
-              none, '*, 1, unbounded, unbounded) .
+              none, '*, unbounded, 1, unbounded) .
+---(
+result ResultTriple: {'__['a.Item,'c.Item,'empty.Money],'Marking,
+	'#1:`[State`] <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money] ; 
+	'#4:`[State`] <- '__['a.Item,'empty.Money] ; 
+	'#6:Money <- 'empty.Money ; 
+	'%3:Money <- '__['q.Coin,'q.Coin,'q.Coin,'empty.Money] ; 
+	'M:Money <- '__['c.Item,'__['q.Coin,'q.Coin,'q.Coin,'empty.Money]]}
+---)
 
-eof
-
-select FULL-MAUDE .
-loop init .
+red in FULL-MAUDE : axCohComplete(upModule('NARROWING-VM-NOTOP, false)) .
+---(
+result SModule: mod 'NARROWING-VM-NOTOP is
+  including 'BOOL .
+  sorts 'Coin ; 'Item ; 'Marking ; 'Money ; 'State .
+  subsort 'Coin < 'Money .
+  subsort 'Item < 'Marking .
+  subsort 'Marking < 'State .
+  subsort 'Money < 'Marking .
+  op '$ : nil -> 'Coin [none] .
+  op '__ : 'Marking 'Marking -> 'Marking [assoc comm id('empty.Money)] .
+  op '__ : 'Money 'Money -> 'Money [assoc comm id('empty.Money)] .
+  op 'a : nil -> 'Item [none] .
+  op 'c : nil -> 'Item [none] .
+  op 'empty : nil -> 'Money [none] .
+  op 'q : nil -> 'Coin [none] .
+  none
+  eq '__['q.Coin,'q.Coin,'q.Coin,'q.Coin,'X@@@:`[State`]] = '__['$.Coin,'X@@@:`[State`]] [variant
+    label('change)] .
+  rl '__['$.Coin,'X@@@:`[State`]] => '__['c.Item,'X@@@:`[State`]] [label('buy-c)] .
+  rl '__['$.Coin,'X@@@:`[State`]] => '__['a.Item,'q.Coin,'X@@@:`[State`]] [label('buy-a)] .
+endm
+---)
