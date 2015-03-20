@@ -84,3 +84,116 @@ result SModule: mod 'NARROWING-VM-NOTOP is
   rl '__['$.Coin,'X@@@:`[State`]] => '__['a.Item,'q.Coin,'X@@@:`[State`]] [label('buy-a)] .
 endm
 ---)
+
+red "--------------------------------------------------------------------------" .
+
+red in FULL-MAUDE :
+            upModule('NARROWING-VM-NOTOP-COHERENT, false) .
+---(
+result SModule: mod 'NARROWING-VM-NOTOP-COHERENT is
+  including 'BOOL .
+  sorts 'Coin ; 'Item ; 'Marking ; 'Money ; 'State .
+  subsort 'Coin < 'Money .
+  subsort 'Item < 'Marking .
+  subsort 'Marking < 'State .
+  subsort 'Money < 'Marking .
+  op '$ : nil -> 'Coin [none] .
+  op '__ : 'Marking 'Marking -> 'Marking [assoc comm id('empty.Money)] .
+  op '__ : 'Money 'Money -> 'Money [assoc comm id('empty.Money)] .
+  op 'a : nil -> 'Item [none] .
+  op 'c : nil -> 'Item [none] .
+  op 'empty : nil -> 'Money [none] .
+  op 'q : nil -> 'Coin [none] .
+  none
+  eq '__['q.Coin,'q.Coin,'q.Coin,'q.Coin,'M:Marking] = '__['$.Coin,'M:Marking]
+    [variant label('change)] .
+  rl '__['$.Coin,'M:Marking] => '__['M:Marking,'__['q.Coin,'a.Item]] [label(
+    'buy-a)] .
+  rl '__['$.Coin,'M:Marking] => '__['c.Item,'M:Marking] [label('buy-c)] .
+endm
+---)
+
+red in FULL-MAUDE :
+            axCohComplete(upModule('NARROWING-VM-NOTOP, false)) .
+---(
+result SModule: mod 'NARROWING-VM-NOTOP is
+  including 'BOOL .
+  sorts 'Coin ; 'Item ; 'Marking ; 'Money ; 'State .
+  subsort 'Coin < 'Money .
+  subsort 'Item < 'Marking .
+  subsort 'Marking < 'State .
+  subsort 'Money < 'Marking .
+  op '$ : nil -> 'Coin [none] .
+  op '__ : 'Marking 'Marking -> 'Marking [assoc comm id('empty.Money)] .
+  op '__ : 'Money 'Money -> 'Money [assoc comm id('empty.Money)] .
+  op 'a : nil -> 'Item [none] .
+  op 'c : nil -> 'Item [none] .
+  op 'empty : nil -> 'Money [none] .
+  op 'q : nil -> 'Coin [none] .
+  none
+  eq '__['q.Coin,'q.Coin,'q.Coin,'q.Coin,'X@@@:`[State`]] = '__['$.Coin,
+    'X@@@:`[State`]] [variant label('change)] .
+  rl '__['$.Coin,'X@@@:`[State`]] => '__['c.Item,'X@@@:`[State`]] [label(
+    'buy-c)] .
+  rl '__['$.Coin,'X@@@:`[State`]] => '__['a.Item,'q.Coin,'X@@@:`[State`]] [
+    label('buy-a)] .
+endm
+---)
+
+red in FULL-MAUDE :
+            metaParamodulationSearch(
+mod 'NARROWING-VM-NOTOP is
+  including 'BOOL .
+  sorts 'Coin ; 'Item ; 'Marking ; 'Money ; 'State .
+  subsort 'Coin < 'Money .
+  subsort 'Item < 'Marking .
+  subsort 'Marking < 'State .
+  subsort 'Money < 'Marking .
+  op '$ : nil -> 'Coin [none] .
+  op '__ : 'Marking 'Marking -> 'Marking [assoc comm id('empty.Money)] .
+  op '__ : 'Money 'Money -> 'Money [assoc comm id('empty.Money)] .
+  op 'a : nil -> 'Item [none] .
+  op 'c : nil -> 'Item [none] .
+  op 'empty : nil -> 'Money [none] .
+  op 'q : nil -> 'Coin [none] .
+  none
+  eq '__['q.Coin,'q.Coin,'q.Coin,'q.Coin,'X@@@:State] = '__['$.Coin,
+    'X@@@:State] [variant label('change)] .
+  rl '__['$.Coin,'X@@@:State] => '__['c.Item,'X@@@:State] [label(
+    'buy-c)] .
+  rl '__['$.Coin,'X@@@:State] => '__['a.Item,'q.Coin,'X@@@:State] [
+    label('buy-a)] .
+endm
+,
+              'M:Money,
+              '__['a.Item, 'c.Item],
+              none, '*, unbounded, 1, unbounded) .
+
+red in FULL-MAUDE :
+            metaParamodulationSearch(
+mod 'NARROWING-VM-NOTOP is
+  including 'BOOL .
+  sorts 'Coin ; 'Item ; 'Marking ; 'Money ; 'State .
+  subsort 'Coin < 'Money .
+  subsort 'Item < 'Marking .
+  subsort 'Marking < 'State .
+  subsort 'Money < 'Marking .
+  op '$ : nil -> 'Coin [none] .
+  op '__ : 'Marking 'Marking -> 'Marking [assoc comm id('empty.Money)] .
+  op '__ : 'Money 'Money -> 'Money [assoc comm id('empty.Money)] .
+  op 'a : nil -> 'Item [none] .
+  op 'c : nil -> 'Item [none] .
+  op 'empty : nil -> 'Money [none] .
+  op 'q : nil -> 'Coin [none] .
+  none
+  eq '__['q.Coin,'q.Coin,'q.Coin,'q.Coin,'X@@@:`[State`]] = '__['$.Coin,
+    'X@@@:`[State`]] [variant label('change)] .
+  rl '__['$.Coin,'X@@@:`[State`]] => '__['a.Item,'q.Coin,'X@@@:`[State`]] [
+    label('buy-a)] .
+  rl '__['$.Coin,'X@@@:`[State`]] => '__['c.Item,'X@@@:`[State`]] [label(
+    'buy-c)] .
+endm
+,
+              'M:Money,
+              '__['a.Item, 'c.Item],
+              none, '*, unbounded, 2, unbounded) .
