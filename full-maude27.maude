@@ -663,7 +663,7 @@ fmod SUBSTITUTION-HANDLING is
   --- Remove Variables from list ----------------------
   op _setMinus_ : TermList TermList -> TermList .
   eq (TL1,T,TL2) setMinus (TL1',T,TL2') 
-   = (TL1,TL2) setMinus (TL1',TL2') .
+   = (TL1,TL2) setMinus (TL1',T,TL2') .
   eq TL setMinus TL' = TL [owise] .
 
   --- Variables ---
@@ -737,6 +737,10 @@ fmod SUBSTITUTION-HANDLING is
   op valid-occur-check? : Substitution -> Bool .
   eq valid-occur-check?(Subst)
    = not (dom Subst inVars (rangeVars(Subst))) .
+
+  op extract-bindings : Substitution -> TermList .
+  eq extract-bindings(none) = empty .
+  eq extract-bindings(V <- T ; Subst) = (T,extract-bindings(Subst)) .
 endfm
 
 fmod TERMSET is
@@ -3017,6 +3021,7 @@ fmod RESULT-CONTEXT-SET is
   protecting RENAMING .
   protecting SUBSTITUTIONSET .
   protecting UNIFICATIONTRIPLESET .
+  protecting MODULE-HANDLING .
 
   vars T T' TS CtTS : Term .
   var TP : Type .
@@ -3162,12 +3167,14 @@ fmod RESULT-CONTEXT-SET is
   op _<<_ : TraceNarrow UnificationTriple -> TraceNarrow .
   eq (nil).TraceNarrow << {Subst,Subst',N}
    = (nil).TraceNarrow .
-  eq (Tr:TraceNarrow {T$:Term,none,TP$:Type,R:Rule}) --- Subst none here is special 
+  eq (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule}) --- Subst none here is special 
      << {Subst,Subst',N}
-   = (Tr:TraceNarrow {T$:Term << (Subst ; Subst'),Subst ; Subst',TP$:Type,R:Rule}) .
-  eq (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule})
-     << {Subst,Subst',N}
-   = (Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule}) [owise] .
+   = (Tr:TraceNarrow {T$:Term << (Subst ; Subst'),S:Substitution .. (Subst ; Subst'),TP$:Type,R:Rule}) .
+
+  op canonice : Module TraceNarrow -> TraceNarrow .
+  eq canonice(M, (nil).TraceNarrow) = nil .
+  eq canonice(M, Tr:TraceNarrow {T$:Term,S:Substitution,TP$:Type,R:Rule})
+   = {canonice(M,T$:Term),canonice(M,S:Substitution),TP$:Type,R:Rule} canonice(M, Tr:TraceNarrow) .
 
   op toTriple : Module ResultContextSet -> ResultTripleSet .
   eq toTriple(M, empty ) = empty .
@@ -3274,8 +3281,8 @@ fmod META-MATCH is
   op metaBuiltInEqual : Module TermList Term Term -> Bool .
   eq metaBuiltInEqual(M,TL,T,T')
    = canonice(M,T) == canonice(M,T') .
-endfm
 
+endfm
 fmod VARIANT-HANDLING is
   pr SUBSTITUTION-HANDLING .
   pr META-MINIMIZE-BINDINGS .
@@ -3840,56 +3847,65 @@ fmod META-E-UNIFICATION is
   ***** Variant Generation
 
   op getVariants : Module Term -> VariantFourSet .
-  eq getVariants(M,T) = getVariants(M,T,highestVar(T) + 1,reducible BuiltInUnify) .
+  eq getVariants(M,T) = getVariants(M,T,highestVar(T) + 1) .
+
+  op getVariants : Module Term Nat -> VariantFourSet .
+  eq getVariants(M,T,NextVar) = getVariants(M,T,NextVar,reducible BuiltInUnify) .
+
+  op getVariants : Module Term Nat TermList -> VariantFourSet .
+  eq getVariants(M,T,NextVar,TL) = getVariants(M,T,NextVar,reducible BuiltInUnify,TL) .
 
   op getVariants : Module Term Nat EFlags -> VariantFourSet .
-  eq getVariants(M,T,NextVar,EF)
+  eq getVariants(M,T,NextVar,EF) = getVariants(M,T,NextVar,EF,empty) .
+
+  op getVariants : Module Term Nat EFlags TermList -> VariantFourSet .
+  eq getVariants(M,T,NextVar,EF,TL)
    = unrigidife(qid(NextVar),
       getVariants*(
           getM(rigidifeRigid(M,qid(NextVar),T)),
           getTL(rigidifeRigid(M,qid(NextVar),T)),
-          NextVar + 1,EF
+          NextVar + 1,EF,TL
       )
      ) .
 
-  op getVariants* : Module Term Nat EFlags -> VariantFourSet .
-  eq getVariants*(M,T,NextVar,EF)
+  op getVariants* : Module Term Nat EFlags TermList -> VariantFourSet .
+  eq getVariants*(M,T,NextVar,EF,TL)
    = if howMany(onlyEqsVariant(M),T) == 0 
      then {T,none,none,NextVar}
-     else if getVariants**(M,T,NextVar,EF) :: VariantFourSet
+     else if getVariants**(M,T,NextVar,EF,TL) :: VariantFourSet
              and
-             getVariants**(M,T,NextVar,EF) =/= empty
-          then getVariants**(M,T,NextVar,EF)
+             getVariants**(M,T,NextVar,EF,TL) =/= empty
+          then getVariants**(M,T,NextVar,EF,TL)
           else {T,none,none,NextVar}
           fi
      fi .
 
-  op getVariants** : Module Term Nat EFlags -> VariantFourSet .
-  eq getVariants**(M,T,NextVar,EF)
+  op getVariants** : Module Term Nat EFlags TermList -> VariantFourSet .
+  eq getVariants**(M,T,NextVar,EF,TL)
    = minimizeBindingsTerm(M,Vars(T),NextVar,
-            getVariants***(M,T,NextVar,empty,0)
+            getVariants***(M,T,NextVar,empty,0,TL)
      ) .
 
-  op getVariants*** : Module Term Nat VariantFourSet Nat -> VariantFourSet .
-  eq getVariants***(M,T,NextVar,VTS,N)
-   = if metaGetVariant(M,T,empty,NextVar,N) == noVariant
+  op getVariants*** : Module Term Nat VariantFourSet Nat TermList -> VariantFourSet .
+  eq getVariants***(M,T,NextVar,VTS,N,TL)
+   = if metaGetVariant(M,T,TL,NextVar,N) == noVariant
      then VTS
      else getVariants***$(M,T,NextVar,VTS,N,
-             metaGetVariant(M,T,empty,NextVar,N))
+             metaGetVariant(M,T,TL,NextVar,N),TL)
      fi .
 
-  op getVariants***$ : Module Term Nat VariantFourSet Nat Variant -> VariantFourSet .
-  eq getVariants***$(M,T,NextVar,VTS,N,{T2:Term,S:Substitution,NV2:Nat})
+  op getVariants***$ : Module Term Nat VariantFourSet Nat Variant TermList -> VariantFourSet .
+  eq getVariants***$(M,T,NextVar,VTS,N,{T2:Term,S:Substitution,NV2:Nat},TL)
    = getVariants***$$(M,T,NextVar,VTS,N,{T2:Term,S:Substitution,NV2:Nat},
-           split({S:Substitution,NV2:Nat},NextVar)  ) .
+           split({S:Substitution,NV2:Nat},NextVar),TL) .
 
-  op getVariants***$$ : Module Term Nat VariantFourSet Nat Variant UnificationTriple -> VariantFourSet .
+  op getVariants***$$ : Module Term Nat VariantFourSet Nat Variant UnificationTriple TermList -> VariantFourSet .
   eq getVariants***$$(M,T,NextVar,VTS,N,
          {T2:Term,S:Substitution,NV2:Nat},
-         {S1:Substitution,S2:Substitution,NV2:Nat})
+         {S1:Substitution,S2:Substitution,NV2:Nat},TL)
    = getVariants***(M,T,NextVar,
              VTS | {T2:Term,S1:Substitution,S2:Substitution,NV2:Nat},
-             N + 1) .
+             N + 1,TL) .
 
   sort PairGeneralize .
   op {_,_} : TermList Nat -> PairGeneralize .
@@ -4004,6 +4020,7 @@ fmod META-E-UNIFICATION is
          and isAssociative(M,F,getTypes(M,TL)) 
       then 1 else 0 fi 
       + howManyAC$$(M,EqS) .
+
 endfm
 
 fmod META-ACU-UNIFICATION is
@@ -5177,9 +5194,11 @@ fmod META-E-NARROWING is
        {T,TP,S,S',[],[],TS,TS,NextVar,Tr:TraceNarrow,B:Flags})
    = if	leastSort(M,TS) :: Type
      then normalize-terms?(M,ON,
-             {canonice(M,T),leastSort(M,TS),S,S',
+             {canonice(M,T),leastSort(M,TS),
+              canonice(M,S),canonice(M,S'),
               [],[],canonice(M,TS),canonice(M,TS),
-              NextVar,Tr:TraceNarrow,B:Flags})
+              NextVar,
+              canonice(M,Tr:TraceNarrow),B:Flags})
      else empty
      fi .
 
@@ -5229,9 +5248,10 @@ fmod META-E-NARROWING is
          and-then
          not computed-normalized-subs in ON)
      then {T,TP,S,S',Ct:Context,CtS:Context,TS:Term,CtTS:Term,NextVar,Tr:TraceNarrow,B:Flags} 
-           << if not anyIdSymbol(M,Subst ; Subst')
-              then {Subst,Subst',N}
-              else {normalizeRls(M,Subst),normalizeRls(M,Subst'),N}
+           << if anyIdSymbol(M,Subst ; Subst')
+              ---then {normalizeRls(M,Subst),normalizeRls(M,Subst'),N}
+              then {canonice(M,Subst),canonice(M,Subst'),N}
+              else {Subst,Subst',N}
               fi
      else (empty).ResultContextSet
      fi .
@@ -5593,13 +5613,14 @@ fmod META-NARROWING-SEARCH is
          RT | RTS)
    = if isSolution?(M,TOrig,T',QQ,BN,Sol,ON,RTSSol,RT)
         and-then
-        auxMetaUnify(M,ON,getCTTerm(RT),T',getNextVar(RT)) =/= empty *** Is actual term an instance of T'?
+        auxMetaUnifyCheck(M,ON,getCTTerm(RT),T',getNextVar(RT)) =/= empty *** Is actual term an instance of T'?
      then *** This is a solution
           metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,
                   B,dec(BN),dec(Sol),
                   ON,
                   if Sol == unbounded or-else Sol == 1
-                  then RT << auxMetaUnify(M,ON,getCTTerm(RT),T',getNextVar(RT))
+                  then rebuildTypeAndDiscardErroneousCheck(M,ON,
+                          RT <<(M,ON) auxMetaUnifyCheck(M,ON,getCTTerm(RT),T',getNextVar(RT)))
                   else empty
                   fi 
                   | RTSSol,
@@ -5608,6 +5629,12 @@ fmod META-NARROWING-SEARCH is
 	  metaNarrowSearchCheck(M,TOrig,T',SCond,QQ,
              B,BN,Sol,ON,RTSSol,RTS',RTS)
      fi .
+
+  op auxMetaUnifyCheck : Module TypeOfNarrowing Term Term Nat ~> UnificationTripleSet .
+  eq auxMetaUnifyCheck(M,ON,T,T',N) = auxMetaUnify(M,ON,T,T',N) .
+
+  op rebuildTypeAndDiscardErroneousCheck : Module TypeOfNarrowing ResultContextSet -> ResultContextSet .
+  eq rebuildTypeAndDiscardErroneousCheck(M,ON,RTS) = rebuildTypeAndDiscardErroneous(M,ON,RTS) .
 
   op isSolution? : Module Term Term  
                    TypeOfRelation Bound Bound TypeOfNarrowing
@@ -20989,7 +21016,7 @@ endm
 
 loop init .
 
-trace exclude FULL-MAUDE .
+--- trace exclude FULL-MAUDE .
 
 ---- set show loop stats on .
 ---- set show loop timing on .
