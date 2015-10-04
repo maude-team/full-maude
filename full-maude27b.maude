@@ -19795,8 +19795,8 @@ fmod MODULE-VARIANTS is
   ---- it constructs the corresponding variant equations
   
   eq removeIds(M, Which) ---- Which may be either all or non-handled 
-    = if nonValidAttrs(getOps(M), owise idem) ---- iter
-      then unitError('The 'module 'uses 'non-supported 'attributes '`(owise 'or  'idem`). '\n)
+    = if nonValidAttrs(getOps(M), owise idem) ----  iter
+      then unitError('The 'module 'uses 'non-supported 'attributes '`(owise 'or 'idem`). '\n)
       else if singleVbleInLHSs(getRls(M))
            then unitError('The 'module 'contains 'rules 'with 'single 'variables 'in 'their 'left-hand 'sides. '\n)
            else if singleVbleInLHSs(getEqs(M))
@@ -20113,7 +20113,7 @@ fmod MODULE-VARIANTS is
 
   eq removeLonelyAssocs(M) 
     = if $anyLonelyAssoc(getOps(M))
-      then if nonValidAttrs(getOps(M), owise idem) ----  iter
+      then if nonValidAttrs(getOps(M), owise idem) ---- iter
            then unitError('The 'module 'uses 'non-supported 'attributes '`(owise 'or 'idem`). '`))
            else if singleVbleInLHSs(getRls(M))
                 then unitError('The 'module 'contains 'rules 'with 'single 'variables 'in 'their 'left-hand 'sides. '`))
