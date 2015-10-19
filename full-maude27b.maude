@@ -42,6 +42,10 @@ endfm
 
 ---- Main changes and bugs fixed:
 ----
+---- - Oct 19th, 2015
+----   - bug in the search command on OO modules (reported by Pete Olveczky)
+---- - Oct 12th, 2015
+----   - iter supported by built-in unification, checks adjusted accordingly
 ---- - Feb 18th, 2015
 ----   - An operator <_[,_]*> was added to the modules for narrowing. It has been 
 ----     renamed as @<@_[,_]*@>@ to avoid clashes with user-defined operators. 
@@ -17960,9 +17964,7 @@ fmod COMMAND-PROCESSING is
   op getContext : MatchPair ~> Context .
   eq getContext({S:[Substitution], C:[Context]}) = C:[Context] .
 
-
-
-  vars T T' T'' T''' : Term .
+  vars T T' T'' T''' OT : Term .
   var  TL : TermList .
   vars DB DB' DB'' : Database .
   var  DB? : [Database] .
@@ -19037,22 +19039,21 @@ fmod COMMAND-PROCESSING is
 
   eq prepSearchPattern(T) = term(prepSearchPattern(T, 0)) .
 
-  eq prepSearchPattern('<_:_|_>[O, Ct, T], I)
-    = < '<_:_|_>[O, qid("V#" + string(I, 10) + ":" + string(getName(Ct))),
+  eq prepSearchPattern('<_:_|_>[OT, Ct, T], I)
+    = < '<_:_|_>[OT, qid("V#" + string(I, 10) + ":" + string(getName(Ct))),
            '_`,_[term(prepSearchPattern(T, s s I)), 
                  qid("V#" + string(s I, 10) + ":AttributeSet")]] ;
         index(prepSearchPattern(T, s s I)) > .
-  eq prepSearchPattern('<_:_|`>[O, Ct], I)
-    = < '<_:_|_>[O, qid("V#" + string(I, 10) + ":" + string(getName(Ct))),
+  eq prepSearchPattern('<_:_|`>[OT, Ct], I)
+    = < '<_:_|_>[OT, qid("V#" + string(I, 10) + ":" + string(getName(Ct))),
            qid("V#" + string(s I, 10) + ".AttributeSet")] ;
         s I > .
   eq prepSearchPattern(F[TL], I)
-    = < F[term(prepSearchPattern(TL, I))] ;
-        index(prepSearchPattern(TL, I)) >
+    = < F[term(prepSearchPattern(TL, I))] ; index(prepSearchPattern(TL, I)) >
     [owise] .
 
   eq prepSearchPattern(F, I) = < F ; I > .
-  eq prepSearchPattern(Ct, I) = < Ct ; I > .
+  ----eq prepSearchPattern(Ct, I) = < Ct ; I > .
 
   ceq prepSearchPattern((T, TL), I)
     = < (term(prepSearchPattern(T, I)), 
