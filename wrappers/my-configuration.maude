@@ -1,0 +1,8 @@
+---- as CONFIGURATION, but with the operator __ defined at the kind level
+
+mod MY-CONFIGURATION is
+  pr CONFIGURATION .
+  
+  op __ : Configuration Configuration ~> Configuration [ditto] .
+endm
+

@@ -1,0 +1,71 @@
+mod ACCOUNT is
+  inc CONFIGURATION .
+  pr NAT .
+  
+  ---- class Person | cash : Nat, account : Oid .
+  sort Person . subsort Person < Cid .
+  op Person : -> Person [ctor] .
+  op cash`:_ : Nat -> Attribute [ctor] .
+  op account`:_ : Oid -> Attribute [ctor] .
+
+  ---- class BankAccount | balance : Nat, client : Oid .
+  sort BankAccount . subsort BankAccount < Cid .
+  op BankAccount : -> BankAccount [ctor] .
+  op balance`:_ : Nat -> Attribute [ctor] .
+  op client`:_ : Oid -> Attribute [ctor] .
+
+  ---- Messages
+  sort MsgCnts .
+  op (to_,_ from_) : Oid MsgCnts Oid -> Msg [ctor] .
+  op withdraw_ : Nat -> MsgCnts .
+  op money_ : Nat -> MsgCnts . 
+  op deposit_ : Nat -> MsgCnts .
+  op transfer_to_ : Nat Oid -> MsgCnts .
+ 
+  vars O1 O2 O3 O4 : Oid .
+  vars N M N' M' X : Nat .
+  var  VPerson : Person .
+  vars VBankAccount VBankAccount' : BankAccount .
+  var  Atts : AttributeSet .  
+
+  rl [spontaneous-withdraw] :
+    < O1 : VPerson | account : O2, Atts >
+    =>
+    < O1 : VPerson | account : O2, Atts >
+    (to O2, withdraw 50 from O1) .
+
+  crl [spontaneous-deposit] :
+    < O1 : VPerson | cash : N, account : O2, Atts >
+    =>
+    < O1 : VPerson | cash : sd(N, 50), account : O2, Atts >
+    (to O2, deposit 50 from O1) 
+    if N >= 50 .
+
+  crl [withdraw] :
+    < O1 : VBankAccount | balance : N, client : O2, Atts >
+    (to O1, withdraw M from O2)
+    =>
+    < O1 : VBankAccount | balance : sd(N, M), client : O2, Atts >
+    (to O2, money M from O1)
+    if N >= M .
+
+  rl [deposit] :
+    < O1 : VBankAccount | balance : N, client : O2, Atts >
+    (to O1, deposit M from O2)
+    =>
+    < O1 : VBankAccount | balance : (N + M), client : O2, Atts > .
+
+  rl [money] :
+    < O1 : VPerson | cash : N, account : O2, Atts >
+    (to O1, money M from O2) 
+    =>
+    < O1 : VPerson | cash : (N + M), account : O2, Atts > .
+
+  crl [transfer] :
+    < O1 : VBankAccount | balance : N, client : O2 >
+    (to O1, transfer M to O3 from O2)
+    =>
+    < O1 : VBankAccount | balance : sd(N, M), client : O2 >
+    (to O3, deposit M from O1)
+    if N >= M .
+endm

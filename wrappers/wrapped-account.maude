@@ -1,0 +1,147 @@
+load wrapper.maude .
+load account.maude
+
+view A from CLIENT-SERVER to ACCOUNT is
+  ---- class Server to BankAccount .
+  sort Server to BankAccount .
+  sort ServerId to Oid .
+  op Server to BankAccount .
+  ---- class Client to Person .
+  ---- attr Client . assoc-serv to account .
+  sort Client to Person .
+  sort ClientId to Oid .
+  op Client to Person .
+  op assoc-serv`:_ to account`:_ .
+
+  var S : ServerId .
+  var C : ClientId .
+  
+  op (to S, request from C) to term (to S, withdraw 50 from C) . ---- new variable in the target 
+  op (to C, response from S) to term (to C, money 50 from S) .   ---- new variable in the target
+  ---- what about other messages? transfer_to_ ... 
+endv
+
+mod TEST-WRAPPER is
+  pr WRAPPER{A} .
+  ops c1 s1 m1 m2 : -> Oid .
+endm
+
+frew [10] < m1 : ClientWrapper | cc : (< c1 : Person | cash : 0, account : s1 >), conn : empty, held : null > .
+frew [10] < m2 : ServerWrapper | sc : (< s1 : BankAccount | balance : 100, client : c1,  >), conn : empty, seed : 0 > .
+frew [10] < m1 : ClientWrapper | cc : (< c1 : Person | cash : 0, account : s1 >), conn : empty, held : null >
+          < m2 : ServerWrapper | sc : (< s1 : BankAccount | balance : 100, client : c1,  >), conn : empty, seed : 0 > .
+
+
+
+eof
+load my_conf.maude ---- __ defined at the kind level, otherwise Maude gives a warning for mbs
+
+view Oid from TRIV to MY-CONF is
+  sort Elt to Oid .
+endv
+
+mod C-S is
+  pr SET{Oid} .
+
+  var  C : ClientId .
+  var  VClient : Client .
+  var  S : ServerId .
+  var  VServer : Server .
+  vars O O1 O2 : Oid .
+  vars Atts Atts1 Atts2 : AttributeSet .
+  var  Conf : [Configuration] . ---- __ defined at the kind level, otherwise Maude gives a warning for mbs
+  vars ServerIds ClientIds : Set{Oid} .
+
+
+  ---- Good  Configurations
+  sort GoodConfig . 
+  subsorts GoodConfig < Configuration .
+  cmb Conf : GoodConfig if isGoodConfig(Conf) .
+  
+
+  ---- -------------------
+  ---- Predicates
+  ---- -------------------
+  op isGoodConfig : Configuration ~> Bool .
+  op wellFormed : Configuration ~> Bool .
+  op wellFormed : Configuration Set{Oid} Set{Oid} ~> Bool .
+  op noReapeatedIds : Configuration ~> Bool .
+  op noDanglingRefs : Configuration ~> Bool .
+  op getIds : Configuration ~> Set{Oid} .
+  op getServerIds : Configuration ~> Set{Oid} .
+  op getClientIds : Configuration ~> Set{Oid} .
+  
+  eq isGoodConfig(Conf) 
+    = wellFormed(Conf)
+      and
+      noReapeatedIds(Conf) 
+      and 
+      noDanglingRefs(Conf) .
+
+  eq wellFormed(Conf) 
+    = wellFormed(Conf, getServerIds(Conf), getClientIds(Conf)) .
+  
+  eq wellFormed(< C : VClient | assoc-serv : S > Conf, ServerIds, ClientIds) 
+    = wellFormed(Conf, ServerIds, ClientIds) .
+  eq wellFormed(< S : VServer | none > Conf, ServerIds, ClientIds) 
+    = wellFormed(Conf, ServerIds, ClientIds) .
+  eq wellFormed((to S, request from C) Conf, ServerIds, ClientIds) 
+    = S in ServerIds 
+      and 
+      C in ClientIds
+      and 
+      wellFormed(Conf, ServerIds, ClientIds) .
+  eq wellFormed((to C, response from S) Conf, ServerIds, ClientIds) 
+    = S in getServerIds(Conf) 
+      and 
+      C in getClientIds(Conf) 
+      and 
+      wellFormed(Conf, ServerIds, ClientIds) .
+  eq wellFormed(none, ServerIds, ClientIds) = true . 
+
+  eq noReapeatedIds(< C : VClient | assoc-serv : S, Atts > Conf) 
+    = not(C in getIds(Conf)) 
+      and 
+      noReapeatedIds(Conf) . 
+  eq noReapeatedIds(< S : VServer | Atts > Conf) 
+    = not(S in getIds(Conf)) 
+      and 
+      noReapeatedIds(Conf) .
+  eq noReapeatedIds((to S, request from C) Conf) = noReapeatedIds(Conf) .
+  eq noReapeatedIds((to C, response from S) Conf) = noReapeatedIds(Conf) .
+  eq noReapeatedIds(none) = true .
+
+  eq noDanglingRefs(< C : VClient | assoc-serv : S, Atts > Conf) 
+    = S in getServerIds(Conf) 
+      and 
+      noDanglingRefs(Conf) .
+  eq noDanglingRefs(< S : VServer | Atts > Conf) 
+    = noDanglingRefs(Conf) .
+  eq noDanglingRefs((to S, request from C) Conf) 
+    = noDanglingRefs(Conf) .
+  eq noDanglingRefs((to C, response from S) Conf) 
+    = noDanglingRefs(Conf) .
+  eq noDanglingRefs(none) = true .
+
+  eq getIds(< C : VClient | assoc-serv : S, Atts > Conf) 
+    = (C, getIds(Conf)) .
+  eq getIds(< S : VServer | Atts > Conf) = (S, getIds(Conf)) .
+  eq getIds((to S, request from C) Conf) = getIds(Conf) .
+  eq getIds((to C, response from S) Conf) = getIds(Conf) .
+  eq getIds(none) = empty .
+
+  eq getServerIds(< C : VClient | assoc-serv : S, Atts > Conf) 
+    = getServerIds(Conf) .
+  eq getServerIds(< S : VServer | Atts > Conf) = (S, getServerIds(Conf)) .
+  eq getServerIds((to S, request from C) Conf) = getServerIds(Conf) .
+  eq getServerIds((to C, response from S) Conf) = getServerIds(Conf) .
+  eq getServerIds(none) = empty .
+
+  eq getClientIds(< C : VClient | assoc-serv : S, Atts > Conf) 
+    = (C, getClientIds(Conf)) .
+  eq getClientIds(< S : VServer | Atts > Conf) = getClientIds(Conf) .
+  eq getClientIds((to S, request from C) Conf) = getClientIds(Conf) .
+  eq getClientIds((to C, response from S) Conf) = getClientIds(Conf) .
+  eq getClientIds(none) = empty .
+endm
+
