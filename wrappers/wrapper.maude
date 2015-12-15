@@ -75,7 +75,7 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
   sort MsgContents .
   op to_,_from_ : Oid MsgContents Oid -> Msg [ctor] .
   op connect : -> MsgContents [ctor] .
-  op [_, request] : Cookie -> MsgContents [ctor] . 
+  op [_,_] : Cookie CS$Request -> MsgContents [ctor] . 
   op cookie : Cookie -> MsgContents [ctor] .
 
   var  C : CS$ClientId .
@@ -90,11 +90,13 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
   vars Cks : Map{Oid, Cookie} .
   var  N : Nat .
   var  Conf : Configuration .
+  var  Request : CS$Request .
+  var  Response : CS$Response .
  
   ---- Rules
   rl [create-conn] : 
     < O : VClientWrapper | 
-        cc : (< C : VClient | assoc-serv : S, Atts1 > (to S, request from C) Conf), 
+        cc : (< C : VClient | assoc-serv : S, Atts1 > (to S, Request from C) Conf), 
         conn : empty, 
         held : null, 
         Atts2 >
@@ -102,13 +104,13 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
     < O : VClientWrapper | 
         cc : (< C : VClient | assoc-serv : S, Atts1 > Conf), 
         conn : empty, 
-        held : (to S, request from C), 
+        held : (to S, Request from C), 
         Atts2 >
     (to S, connect from C) .
 
   rl [add-cookie] : 
     < O : VClientWrapper | 
-        cc : (< C : VClient | assoc-serv : S, Atts1 > (to S, request from C) Conf), 
+        cc : (< C : VClient | assoc-serv : S, Atts1 > (to S, Request from C) Conf), 
         conn : (S |-> Ck), 
         held : null, 
         Atts2 >
@@ -118,7 +120,7 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
         conn : (S |-> Ck), 
         held : null, 
         Atts2 >
-    (to S, [Ck, request] from C) .
+    (to S, [Ck, Request] from C) .
 
   rl [accept-req] :
     < O : VServerWrapper | 
@@ -126,10 +128,10 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
         seed : N, 
         conn : ((C |-> Ck), Cks), 
         Atts2 >
-    (to S, [Ck, request] from C) 
+    (to S, [Ck, Request] from C) 
     =>
     < O : VServerWrapper | 
-        sc : (< S : VServer | Atts1 > (to S, request from C) Conf), 
+        sc : (< S : VServer | Atts1 > (to S, Request from C) Conf), 
         seed : N,
         conn : ((C |-> Ck), Cks), 
         Atts2 > .
@@ -139,11 +141,11 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
         cc : (< C : VClient | assoc-serv : S, Atts1 > Conf), 
         conn : ((S |-> Ck), Cks), 
         Atts2 >
-    (to C, response from S)
+    (to C, Response from S)
     =>
     < O : VClientWrapper | 
         cc : (< C : VClient | assoc-serv : S, Atts1 >
-             (to C, response from S) 
+             (to C, Response from S) 
               Conf), 
         conn : ((S |-> Ck), Cks), 
         Atts2 > .
@@ -168,7 +170,7 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
     < O : ClientWrapper | 
         cc : (< C : VClient | assoc-serv : S, Atts1 > Conf), 
         conn : empty, 
-        held : (to S, request from C), 
+        held : (to S, Request from C), 
         Atts2 >
     (to C, cookie(Ck) from S)
     =>
@@ -177,5 +179,6 @@ mod WRAPPER{CS :: CLIENT-SERVER} is
         conn : (S |-> Ck), 
         held : null, 
         Atts2 >
-    (to S, [Ck, request] from C) .
+    (to S, [Ck, Request] from C) .
 endm
+

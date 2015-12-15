@@ -15,12 +15,13 @@ mod ACCOUNT is
   op client`:_ : Oid -> Attribute [ctor] .
 
   ---- Messages
-  sort MsgCnts .
+  sort MsgCnts MsgCntsRequest MsgCntsResponse .
+  subsorts MsgCntsRequest MsgCntsResponse < MsgCnts .
   op (to_,_ from_) : Oid MsgCnts Oid -> Msg [ctor] .
-  op withdraw_ : Nat -> MsgCnts .
-  op money_ : Nat -> MsgCnts . 
-  op deposit_ : Nat -> MsgCnts .
-  op transfer_to_ : Nat Oid -> MsgCnts .
+  op withdraw_ : Nat -> MsgCntsRequest .
+  op money_ : Nat -> MsgCntsResponse . 
+  op deposit_ : Nat -> MsgCntsRequest .
+  op transfer_to_ : Nat Oid -> MsgCntsRequest .
  
   vars O1 O2 O3 O4 : Oid .
   vars N M N' M' X : Nat .
@@ -28,11 +29,12 @@ mod ACCOUNT is
   vars VBankAccount VBankAccount' : BankAccount .
   var  Atts : AttributeSet .  
 
-  rl [spontaneous-withdraw] :
-    < O1 : VPerson | account : O2, Atts >
+  crl [spontaneous-withdraw] :
+    < O1 : VPerson | cash : N, account : O2, Atts >
     =>
-    < O1 : VPerson | account : O2, Atts >
-    (to O2, withdraw 50 from O1) .
+    < O1 : VPerson | cash : N, account : O2, Atts >
+    (to O2, withdraw 50 from O1) 
+    if N <= 50 .
 
   crl [spontaneous-deposit] :
     < O1 : VPerson | cash : N, account : O2, Atts >
