@@ -6373,6 +6373,8 @@ fmod HELP is
       '\t '\t string2qidList("Shows the module with the assoc (if not with comm) attributes removed using a variant-based transformation.") '\n
       '\t string2qidList("(ax coherence completion") '\s string2qidList("[<module-expr.>]") '\s string2qidList(".)") '\n
       '\t '\t string2qidList("Shows the module resulting from completing for coherence for the different combinations of axioms.") '\n .
+      '\t string2qidList("(help .)") '\n
+      '\t '\t string2qidList("Shows this help information.") '\n .
 endfm
 
 
