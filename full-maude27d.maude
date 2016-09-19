@@ -9526,7 +9526,8 @@ fmod DATABASE is
     = db(< ME ; U ; U' ; U'' ; U3 ; VDS ; (MNS . pd(X :: ME)) ; VES > MIS, 
           MNS', VIS, VES', MNS'', MNS3, MNS4, QIL) .
   eq setUpModExpDeps(pd(X :: ME), DB)
-    = warning(DB, ('\r 'Error: '\o 'Module header2QidList(ME) 'not 'in 'database. '\n))
+    = warning(DB, ('\r 'Error: 
+                   '\o 'Module header2QidList(ME) 'not 'in 'database. '\n))
     [owise] .
 
 ---- This could be a bug in Core Maude.
