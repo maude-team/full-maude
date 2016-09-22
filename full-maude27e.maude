@@ -2725,31 +2725,41 @@ fmod MODULE-HANDLING is
       endfm) .
 
   op changeNonSupportedAttr* : OpDeclSet -> OpDeclSet .
-  eq changeNonSupportedAttr*((op F : TPL -> TP [assoc id(T) AtS] .) OPDS)
-   = changeNonSupportedAttr*((op F : TPL -> TP [assoc AtS] .) OPDS) .
-  eq changeNonSupportedAttr*((op F : TPL -> TP [assoc left-id(T) AtS] .) OPDS)
-   = changeNonSupportedAttr*((op F : TPL -> TP [assoc AtS] .) OPDS) .
-  eq changeNonSupportedAttr*((op F : TPL -> TP [assoc right-id(T) AtS] .) OPDS)
-   = changeNonSupportedAttr*((op F : TPL -> TP [assoc AtS] .) OPDS) .
+ ceq changeNonSupportedAttr*((op F : TPL -> TP [assoc id(T) AtS] .) OPDS)
+   = changeNonSupportedAttr*((op F : TPL -> TP [assoc AtS] .) OPDS) 
+  if not comm in AtS .
+ ceq changeNonSupportedAttr*((op F : TPL -> TP [assoc left-id(T) AtS] .) OPDS)
+   = changeNonSupportedAttr*((op F : TPL -> TP [assoc AtS] .) OPDS) 
+  if not comm in AtS .
+ ceq changeNonSupportedAttr*((op F : TPL -> TP [assoc right-id(T) AtS] .) OPDS)
+   = changeNonSupportedAttr*((op F : TPL -> TP [assoc AtS] .) OPDS) 
+  if not comm in AtS .
   eq changeNonSupportedAttr*(OPDS) 
    = OPDS [owise] .
 
   op changeNonSupportedAttr* : OpDeclSet EquationSet -> EquationSet .
-  eq changeNonSupportedAttr*((op F : TP1 TP2 -> TP [assoc id(T) AtS] .) OPDS,EqS)
+ ceq changeNonSupportedAttr*((op F : TP1 TP2 -> TP [assoc id(T) AtS] .) OPDS,EqS)
    = changeNonSupportedAttr*(OPDS,
        (eq F[addType TP1 ToVar 'X,T] = addType TP1 ToVar 'X [variant] .)
        (eq F[T,addType TP2 ToVar 'X] = addType TP2 ToVar 'X [variant] .)
-       EqS) .
-  eq changeNonSupportedAttr*((op F : TP1 TP2 -> TP [assoc left-id(T) AtS] .) OPDS,EqS)
+       EqS)
+  if not comm in AtS .
+ ceq changeNonSupportedAttr*((op F : TP1 TP2 -> TP [assoc left-id(T) AtS] .) OPDS,EqS)
    = changeNonSupportedAttr*(OPDS,
        (eq F[T,addType TP2 ToVar 'X] = addType TP2 ToVar 'X [variant] .)
-       EqS) .
-  eq changeNonSupportedAttr*((op F : TP1 TP2 -> TP [assoc right-id(T) AtS] .) OPDS,EqS)
+       EqS) 
+  if not comm in AtS .
+ ceq changeNonSupportedAttr*((op F : TP1 TP2 -> TP [assoc right-id(T) AtS] .) OPDS,EqS)
    = changeNonSupportedAttr*(OPDS,
        (eq F[addType TP1 ToVar 'X,T] = addType TP1 ToVar 'X [variant] .)
-       EqS) .
+       EqS) 
+  if not comm in AtS .
   eq changeNonSupportedAttr*(OPDS,EqS) 
    = EqS [owise] .
+
+  op _in_ : Attr AttrSet -> Bool .
+  eq X:Attr in X:Attr XS:AttrSet = true .
+  eq X:Attr in XS:AttrSet = false [owise] .
 
 endfm
 
