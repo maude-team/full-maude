@@ -42,6 +42,8 @@ endfm
 
 ---- Main changes and bugs fixed:
 ----
+---- - Jan 24, 2019
+----   - Add vu-narrow and fvu-narrow commands and leave search_~>_ for experimentation
 ---- - May 19th, 2016
 ----   - Adapted to the new syntax for variants in Alpha109
 ---- - Feb 4th, 2016
@@ -1311,9 +1313,10 @@ fmod MODULE-HANDLING is
   var US : UnificationTripleSet .
 
   *** canonice  ******************************
-  op canonice : Module Term -> Term .
+  op canonice : Module TermList -> TermList .
 ---  eq canonice(M,T) = getTerm(metaReduce(eraseRls(eraseEqs(M)),T)) .
-  eq canonice(M,T) = getTerm(metaNormalize(M,T)) .
+  eq canonice(M,(empty).TermList) = empty .
+  eq canonice(M,(T,TL)) = (getTerm(metaNormalize(M,T)),canonice(M,TL)) .
 
   op canonice : Module Substitution -> Substitution .
   eq canonice(M,(none).Substitution) = none .
@@ -5521,6 +5524,7 @@ fmod META-NARROWING-SEARCH is
   vars Ct Ct' CtS CtS' : Context .
   var ON : TypeOfNarrowing .
   vars QQ QQ' : TypeOfRelation .
+  var QI : Qid .
   vars NextVar NextVar' : Nat .
 
   var SCond : SubstitutionCond .
@@ -5531,8 +5535,6 @@ fmod META-NARROWING-SEARCH is
   op metaNarrowSearch : Module Term Term SubstitutionCond
                         TypeOfRelation Bound Bound Bound
                         -> ResultTripleSet .
----- TEMPORARY BRIDGE TO THE BUILT-IN NARROWING
----(
   eq metaNarrowSearch(M,T,T',SCond,QQ,BN,B,Sol)
    = if (BN == unbounded and-then Sol =/= unbounded)
         or-else
@@ -5540,23 +5542,25 @@ fmod META-NARROWING-SEARCH is
      then metaNarrowSearch*(M,T,T',SCond,QQ,Sol,B,Sol)
      else metaNarrowSearch*(M,T,T',SCond,QQ,BN,B,Sol)
      fi .
----)
-  op metaNarrowSearch : Module Term Term SubstitutionCond
-                        TypeOfRelation Bound Bound Bound Nat
-                        -> ResultTripleSet .
-  eq metaNarrowSearch(M, T, T', Sb, QQ, BN, B, Sol)
-    = metaNarrowSearch(M, T, T', Sb, QQ, BN, B, Sol, 0) .
 
-  eq metaNarrowSearch(M, T, T', Sb, QQ, BN, B, Sol, N)
-    = if metaNarrowingSearch(M, T, T', [QQ], BN, 'none, N) == failure
+  op metaVUNarrow : Module Term Term SubstitutionCond
+                    Qid Bound Bound Bound
+                 -> ResultTripleSet .
+  eq metaVUNarrow(M, T, T', Sb, QI, BN, B, Sol)
+    = metaVUNarrow(M, T, T', Sb, QI, BN, B, Sol, 0) .
+
+  op metaVUNarrow : Module Term Term SubstitutionCond
+                        Qid Bound Bound Bound Nat
+                        -> ResultTripleSet .
+  eq metaVUNarrow(M, T, T', Sb, QI, BN, B, Sol, N)
+    = if metaNarrowingSearch(M, T, T', QI, BN, 'none, N) == failure
       then empty
-      else narrowingSearchResult2ResultTriple(metaNarrowingSearch(M, T, T', [QQ], BN, 'none, N)) |
-           metaNarrowSearch(M, T, T', Sb, QQ, BN, B, Sol, s N)
+      else narrowingSearchResult2ResultTriple(metaNarrowingSearch(M, T, T', QI, BN, 'none, N)) |
+           metaVUNarrow(M, T, T', Sb, QI, BN, B, Sol, s N)
       fi .
 
   op narrowingSearchResult2ResultTriple : NarrowingSearchResult -> ResultTriple .
   eq narrowingSearchResult2ResultTriple({T,Ty,Sb,Q,Sb',Q'}) = {T, Ty, Sb} .
----- TEMPORARY BRIDGE TO THE BUILT-IN ANRROWING
 
   op metaNarrowSearch* : Module Term Term SubstitutionCond
                          TypeOfRelation Bound Bound Bound
@@ -6227,7 +6231,17 @@ fmod COMMANDS is
   op search_=>+_. : @Bubble@ @Bubble@ -> @Command@ .
   op search_=>!_. : @Bubble@ @Bubble@ -> @Command@ .
 
-  *** search commands
+  *** narrowing search commands
+  op vu-narrow_=>1_. : @Bubble@ @Bubble@ -> @Command@ .
+  op vu-narrow_=>*_. : @Bubble@ @Bubble@ -> @Command@ .
+  op vu-narrow_=>+_. : @Bubble@ @Bubble@ -> @Command@ .
+  op vu-narrow_=>!_. : @Bubble@ @Bubble@ -> @Command@ .
+  
+  op fvu-narrow_=>1_. : @Bubble@ @Bubble@ -> @Command@ .
+  op fvu-narrow_=>*_. : @Bubble@ @Bubble@ -> @Command@ .
+  op fvu-narrow_=>+_. : @Bubble@ @Bubble@ -> @Command@ .
+  op fvu-narrow_=>!_. : @Bubble@ @Bubble@ -> @Command@ .
+
   op search_~>1_. : @Bubble@ @Bubble@ -> @Command@ .
   op search_~>*_. : @Bubble@ @Bubble@ -> @Command@ .
   op search_~>+_. : @Bubble@ @Bubble@ -> @Command@ .
@@ -18283,6 +18297,24 @@ fmod COMMAND-PROCESSING is
   op procSearch2 : Module Term Term Condition Qid Bound Bound -> QidList .
   op procSearch3 : Module Term Term Condition Qid Bound Nat Bound -> QidList .
 
+  op procVUNarrow : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
+  op solveBubblesVUNarrowL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesVUNarrowL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesVUNarrowR : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesVUNarrowR1 : Module Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesVUNarrowR2 : Module Term Term Qid Bound Bound OpDeclSet -> QidList .
+  op procVUNarrow2 : Module Term Term Condition Qid Bound Bound -> QidList .
+  op procVUNarrow3 : Module Nat TermList ResultTripleSet -> QidList .
+
+  op procFVUNarrow : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
+  op solveBubblesFVUNarrowL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesFVUNarrowL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesFVUNarrowR : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesFVUNarrowR1 : Module Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
+  op solveBubblesFVUNarrowR2 : Module Term Term Qid Bound Bound OpDeclSet -> QidList .
+  op procFVUNarrow2 : Module Term Term Condition Qid Bound Bound -> QidList .
+  op procFVUNarrow3 : Module Nat TermList ResultTripleSet -> QidList .
+
   op procNarrowSearch : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
   op solveBubblesNarrowSearchL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
   op solveBubblesNarrowSearchL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
@@ -18408,6 +18440,24 @@ fmod COMMAND-PROCESSING is
     = procSearch(ME, M, 'bubble[T], 'bubble[T'], '+, unbounded, unbounded, VS, DB) .
   eq procCommand('search_=>!_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
     = procSearch(ME, M, 'bubble[T], 'bubble[T'], '!, unbounded, unbounded, VS, DB) .
+
+  eq procCommand('vu-narrow_=>1_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '+, unbounded, 1, VS, DB) .
+  eq procCommand('vu-narrow_=>*_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '*, unbounded, unbounded, VS, DB) .
+  eq procCommand('vu-narrow_=>+_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '+, unbounded, unbounded, VS, DB) .
+  eq procCommand('vu-narrow_=>!_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '!, unbounded, unbounded, VS, DB) .
+
+  eq procCommand('fvu-narrow_=>1_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procFVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '+, unbounded, 1, VS, DB) .
+  eq procCommand('fvu-narrow_=>*_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procFVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '*, unbounded, unbounded, VS, DB) .
+  eq procCommand('fvu-narrow_=>+_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procFVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '+, unbounded, unbounded, VS, DB) .
+  eq procCommand('fvu-narrow_=>!_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
+    = procFVUNarrow(ME, M, 'bubble[T], 'bubble[T'], '!, unbounded, unbounded, VS, DB) .
 
   eq procCommand('search_~>1_.['bubble[T], 'bubble[T']], ME, M, VS, DB)
     = procNarrowSearch(ME, M, 'bubble[T], 'bubble[T'], '+, unbounded, 1, VS, DB) .
@@ -18917,6 +18967,233 @@ fmod COMMAND-PROCESSING is
       else nil
       fi .
 
+-------------------
+*** Equal to procSearch except replacing metaSearch by metaNarrowSearch
+
+  ceq procVUNarrow(ME, M, T, T', QI, D, D', VDS, DB)
+    *** D is a bound on the number of solutions, and D' is a bound on the depth of the vu-narrow command
+    = if solveBubblesRl(T, T', M, B, VDS, DB) :: Term
+      then procVUNarrow2(addOps(VDS, M),
+             lhs(solveBubblesRl(T, T', M, B, VDS, DB)),
+             rhs(solveBubblesRl(T, T', M, B, VDS, DB)), nil, QI, D, D')
+      else solveBubblesVUNarrowL(M, T, T', QI, D, D', B, VDS, DB)
+      fi
+    if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
+
+  eq solveBubblesVUNarrowL(M, 'bubble[QI], T, QI, D, D', B, VDS, DB)
+    = if solveBubbles('bubble[QI], M, B, VDS, DB) :: Term
+      then solveBubblesVUNarrowR(M, solveBubbles('bubble[QI], M, B, VDS, DB), T, QI, D, D', B, VDS, DB)
+      else ('\r 'Error: '\o 'no 'parsing 'for downQidList(QI) '\n)
+      fi .
+  eq solveBubblesVUNarrowL(M, 'bubble['__[TL]], T, QI, D, D', B, VDS, DB)
+    = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
+      then solveBubblesVUNarrowR(M, solveBubbles('bubble['__[TL]], M, B, VDS, DB), T, QI, D, D', B, VDS, DB)
+      else if metaParse(GRAMMAR-SEARCH, downQidList('__[TL, ''..Qid]), '@SearchNuPart@) :: ResultPair
+           then solveBubblesVUNarrowL1(
+                  M,
+                  getTerm(
+                    metaParse(GRAMMAR-SEARCH, downQidList('__[TL, ''..Qid]),
+                      '@SearchNuPart@)),
+                  T, QI, D, D', B, VDS, DB)
+           else solveBubblesVUNarrowR(
+                  getModule(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)),
+                  getTerm(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)),
+                  T,
+                  QI,
+                  getBound(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)),
+                  D',
+                  getBool(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)),
+                  getVars(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)),
+                  getDatabase(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)))
+           fi
+      fi .
+
+  eq solveBubblesVUNarrowL1(M, '`[`,_`]_.['token[T], T'], T'', QI, D, D', B, VDS, DB)
+    = if downNat(downMetaNat(T)) :: Nat
+         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+      then solveBubblesVUNarrowR(
+             getModule(solveBubblesRed(T', M, B, VDS, DB)),
+             getTerm(solveBubblesRed(T', M, B, VDS, DB)),
+             T'', QI, D,
+             downNat(downMetaNat(T)),
+             B,
+             getVars(solveBubblesRed(T', M, B, VDS, DB)),
+             DB)
+      else ('\r 'Error: '\o 'Incorrect 'command. '\n)
+      fi .
+  eq solveBubblesVUNarrowL1(M, '`[_`,_`]_.['token[T], 'token[T'], T''], T''', QI, D, D', B, VDS, DB)
+    = if downNat(downMetaNat(T)) :: Nat
+         and-then downNat(downMetaNat(T')) :: Nat
+         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+      then solveBubblesVUNarrowR(
+             getModule(solveBubblesRed(T'', M, B, VDS, DB)),
+             getTerm(solveBubblesRed(T'', M, B, VDS, DB)),
+             T''', QI,
+             downNat(downMetaNat(T)),
+             downNat(downMetaNat(T')),
+             B,
+             getVars(solveBubblesRed(T'', M, B, VDS, DB)),
+             DB)
+      else ('\r 'Error: '\o 'Incorrect 'command. '\n)
+      fi .
+
+  eq solveBubblesVUNarrowR(M, T, T', QI, D, D', B, VDS, DB)
+    = solveBubblesVUNarrowR1(
+        M,
+        addOps(
+          op '_s.t._. : leastSort(M, T) '@Condition@ -> 'PatternCondition [none] .
+          op '_such`that_. : leastSort(M, T) '@Condition@ -> 'PatternCondition [none] .,
+          addSorts('PatternCondition, addInfoConds(M))),
+        T,
+        T',
+        QI,
+        D,
+        D',
+        B,
+        VDS,
+        DB) .
+  eq solveBubblesVUNarrowR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[OpDeclSet], DB:[Database])
+    = qidError('\r 'Error: '\o 'Incorrect 'use 'of 'the 'vu-narrow 'command. '\n) .
+
+  ceq solveBubblesVUNarrowR1(M, M', T, 'bubble[QI], QI', D, D', B, VDS, DB)
+    = if T?:[Term] :: Term
+      then procVUNarrow2(M, T, T?:[Term], nil, QI', D, D')
+      else ('\r 'Error: '\o 'Incorrect 'use 'of 'the 'vu-narrow 'command. '\n)
+      fi
+    if T?:[Term] := solveBubbles('bubble[QI], M, B, VDS, DB) .
+  ceq solveBubblesVUNarrowR1(M, M', T, 'bubble['__[TL]], QI, D, D', B, VDS, DB)
+    = if T?:[Term] :: Term
+      then procVUNarrow2(M, T, T?:[Term], nil, QI, D, D')
+      else if metaParse(M', downQidList('__[TL, ''..Qid]), 'PatternCondition)
+                :: ResultPair
+           then solveBubblesVUNarrowR2(M, T,
+                  getTerm(
+                    metaParse(M', downQidList('__[TL, ''..Qid]),
+                      'PatternCondition)),
+                  QI, D, D', VDS)
+           else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'vu-narrow 'command. '\n
+           fi
+      fi
+    if T?:[Term] := solveBubbles('bubble['__[TL]], M, B, VDS, DB) .
+
+  eq solveBubblesVUNarrowR2(M, T, QI, QI', D, I, VDS)
+    = procVUNarrow2(M, T, constsToVars(QI, VDS), nil, QI', D, I) .
+  eq solveBubblesVUNarrowR2(M, T, F[T], QI, D, I, VDS)
+    = procVUNarrow2(M, T, constsToVars(F[T], VDS), nil, QI, D, I) .
+  eq solveBubblesVUNarrowR2(M, T, F[T', T''], QI, D, I, VDS)
+    = if F == '_s.t._. or F == '_such`that_.
+      then procVUNarrow2(M, T, T', parseCond(T'', VDS), QI, D, I)
+      else procVUNarrow2(M, T, constsToVars(F[T', T''], VDS), nil, QI, D, I)
+      fi .
+  eq solveBubblesVUNarrowR2(M, T, F[T', T'', TL], QI, D, I, VDS)
+    = procVUNarrow2(M, T, constsToVars(F[T', T'', TL], VDS), nil, QI, D, I) .
+
+----  op axCohComplete : SModule -> SModule .       ---- Defined later in module AX-COHERENCE-COMPLETION
+
+  ceq procVUNarrow2(M, T, T', CD, QI, D, D')
+    = if Mx:[Module] :: Module and RTS:[ResultTripleSet] :: ResultTripleSet
+      then ('vu-narrow
+            if D == unbounded and D' == unbounded
+            then nil
+            else '\s '`[
+                 if D == unbounded
+                 then nil
+                 else qid(string(D, 10))
+                 fi
+                 if D' == unbounded
+                 then nil
+                 else '`, qid(string(D', 10))
+                 fi
+                 '`] '\s
+            fi
+            'in eMetaPrettyPrint(getName(M)) ':
+            eMetaPrettyPrint(M, T) '\s qid("~>" + string(QI)) '\s
+            eMetaPrettyPrint(M, T'') '.
+            procVUNarrow3(M, 0, Vars((T,T')), RTS:[ResultTripleSet])
+            if D =/= unbounded and-then D' == unbounded and-then | RTS:[ResultTripleSet] | < D
+            then procVUNarrow2RT(M, T, T', CD, QI, D, D',RTS:[ResultTripleSet],1)
+            else nil
+            fi
+            ('\n '\n 'No 'more 'solutions. '\n))
+      else if RTS:[ResultTripleSet] == empty
+           then ('vu-narrow
+                if D == unbounded and D' == unbounded
+                then nil
+                else '\s '`[
+                     if D == unbounded
+                     then nil
+                     else qid(string(D, 10))
+                     fi
+                     if D' == unbounded
+                     then nil
+                     else '`, qid(string(D', 10))
+                     fi
+                     '`] '\s
+                fi
+                'in eMetaPrettyPrint(getName(M)) ':
+                   eMetaPrettyPrint(M, T)
+                   '\s qid("~>" + string(QI)) '\s
+                   eMetaPrettyPrint(M, T'') '. '\n '\n
+                   'No 'solution. '\n)
+           else if getMsg(Mx:[Module]) :: QidList
+	        then getMsg(Mx:[Module])
+		else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'vu-narrow 'command. '\n
+		fi
+           fi
+      fi
+    if T'' := prepSearchPattern(T')
+       /\ Mx:[Module] := removeIds(axCohComplete(M), non-handled)
+       /\ RTS:[ResultTripleSet]
+          := upDown(M,
+              metaVUNarrow(
+                 Mx:[Module],
+                 T,
+                 T'',
+                 none,
+		 QI,
+                 D',
+                 D,
+                 unbounded)
+              |> (T,T'')
+             ) .
+
+  op procVUNarrow2RT : Module Term Term Condition Qid Bound Bound ResultTripleSet Nat -> QidList .
+  ceq procVUNarrow2RT(M, T, T', CD, QI, D, D',RTS',J)
+    = nil
+   if | RTS' | == D .
+  ceq procVUNarrow2RT(M, T, T', CD, QI, D, D',RTS',J)
+    = if RTS:[ResultTripleSet] :: ResultTripleSet
+      then (procVUNarrow3(M, | RTS' |, Vars((T,T')), RTS:[ResultTripleSet])
+            procVUNarrow2RT(M, T, T', CD, QI, D, D',RTS' | RTS:[ResultTripleSet],J + 1) )
+      else nil
+      fi
+    if | RTS' | < D
+       /\ T'' := prepSearchPattern(T')
+       /\ (RTS' | RTS:[ResultTripleSet])
+          := upDown(M,
+              metaVUNarrow(
+                 removeIds(axCohComplete(M), non-handled),
+                 T,
+                 T'',
+                 none,
+                 QI,
+                 D',
+                 D + J,
+                 unbounded)
+              |> (T,T'')
+             ) .
+
+  eq procVUNarrow3(M, I, TL:TermList, empty)
+   = nil .
+  eq procVUNarrow3(M, I, TL:TermList, {T:Term,TP:Type,S:Substitution} | RTS:ResultTripleSet)
+    = ('\n '\n 'Solution qid(string(I + 1, 10))
+       if (S:Substitution |> TL:TermList) == none
+       then '\n 'empty 'substitution
+       else '\n eMetaPrettyPrint(M, S:Substitution |> TL:TermList)
+       fi
+       procVUNarrow3(M, I + 1, TL:TermList, RTS:ResultTripleSet)) .
+
+-------------------
 -------------------
 *** Equal to procSearch except replacing metaSearch by metaNarrowSearch
 
@@ -20649,13 +20926,24 @@ mod DATABASE-HANDLING is
         ((F == 'search_=>*_.) or-else
         ((F == 'search_=>+_.) or-else
         ((F == 'search_=>!_.) or-else
+        ((F == 'vu-narrow_=>_.)  or-else
+        ((F == 'vu-narrow_=>1_.) or-else
+        ((F == 'vu-narrow_=>*_.) or-else
+        ((F == 'vu-narrow_=>+_.) or-else
+        ((F == 'vu-narrow_=>!_.) or-else
+        ((F == 'fvu-narrow_=>_.)  or-else
+        ((F == 'fvu-narrow_=>1_.) or-else
+        ((F == 'fvu-narrow_=>*_.) or-else
+        ((F == 'fvu-narrow_=>+_.) or-else
+        ((F == 'fvu-narrow_=>!_.) or-else
         ((F == 'search_~>_.)  or-else
         ((F == 'search_~>1_.) or-else
         ((F == 'search_~>*_.) or-else
         ((F == 'search_~>+_.) or-else
         ((F == 'search_~>!_.) or-else
         ((F == 'match_<=?_.)  or-else
-         (F == 'xmatch_<=?_.))))))))))) .
+         (F == 'xmatch_<=?_.))))))))))))))))))))) .
+
 
   rl [select] :
      < O : X@DatabaseClass | db : DB, input : ('select_.[T]), output : QIL, default : ME, Atts >
