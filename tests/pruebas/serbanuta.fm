@@ -15,8 +15,13 @@ trace include FULL-MAUDE .
 trace select procModule4 .
 trace select parseDecl .
 
-(fmod X is sort A B . subsort A < B . op 0 : -> A . op s : B -> B . mb
-s(0) : A . endfm)
+(fmod X is
+  sort A B .
+  subsort A < B .
+  op 0 : -> A .
+  op s : B -> B .
+  mb s(0) : A .
+ endfm)
 
 (show module .)
 
@@ -24,8 +29,13 @@ s(0) : A . endfm)
 ----re-initialize the loop to continue.  if I use a conditional
 ----membership, though, it works:
 
-(fmod X is sort A B . subsort A < B . op 0 : -> A . op s : B -> B .
-cmb s(0) : A . endfm)
+(fmod Y is
+  sort A B .
+  subsort A < B .
+  op 0 : -> A .
+  op s : B -> B .
+  cmb s(0) : A .
+ endfm)
 
 (show module .)
 
@@ -42,12 +52,26 @@ cmb s(0) : A . endfm)
 ----Thank you,
 ----- traian serbanuta
 ----sample script exhibiting the problem:
-(fmod X is sort A B . subsort A < B . op 0 : -> A . op s : B -> B . mb
-s(0) : A . endfm)
+
+(fmod W is
+  sort A B .
+  subsort A < B .
+  op 0 : -> A .
+  op s : B -> B .
+  mb s(0) : A .
+ endfm)
+
 ***> next two don't work
 (show module .)
 (show modules .)
 ----loop init .
-(fmod X is sort A B . subsort A < B . op 0 : -> A . op s : B -> B .
-cmb s(0) : A if 0 = 0 . endfm)
+
+(fmod Z is
+  sort A B .
+  subsort A < B .
+  op 0 : -> A .
+  op s : B -> B .
+  cmb s(0) : A if 0 = 0 .
+ endfm)
+
 (show module .)

@@ -63,9 +63,7 @@ endom)
 
 (rew init .)
 
-eof
-
-(search init =>* C:Configuration s.t. not 1lider .)
+(search init =>* C:Configuration s.t. not 1lider(C:Configuration) .)
 
 (omod PROPS is
   pr LIDER .

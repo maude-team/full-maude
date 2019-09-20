@@ -3,34 +3,36 @@ set show loop stats off .
 set show timing off .
 set show loop timing off .
 
-load ../../AAM/sample-files-2.4/rew-seq-extended-rent-a-car-store.fm
-load ../../AAM/sample-files-2.4/rew-seq-rent-a-car-store.fm
-load ../../AAM/sample-files-2.4/check-rrobin.fm
-load ../../AAM/sample-files-2.4/saving-account.fm
-load ../../AAM/sample-files-2.4/generic-set-list.fm
-load ../../AAM/sample-files-2.4/nat-plus.fm
-load ../../AAM/sample-files-2.4/oo-stack.fm
-load ../../AAM/sample-files-2.4/oo-stack2.fm
-load ../../AAM/sample-files-2.4/path.fm
-load ../../AAM/sample-files-2.4/person-record.fm
-load ../../AAM/sample-files-2.4/pfun.fm
-load ../../AAM/sample-files-2.4/polynomial.fm
-load ../../AAM/sample-files-2.4/power-ex.fm
-load ../../AAM/sample-files-2.4/set-max.fm
-load ../../AAM/sample-files-2.4/only-book/8-puzzle.fm
-load ../../AAM/sample-files-2.4/only-book/df-abstract-bakery-check.fm
+load sample-files-2.7/rew-seq-extended-rent-a-car-store.fm
+load sample-files-2.7/rew-seq-rent-a-car-store.fm
+load sample-files-2.7/check-rrobin.fm
+load sample-files-2.7/saving-account.fm
+load sample-files-2.7/generic-set-list.fm
+load sample-files-2.7/nat-plus.fm
+load sample-files-2.7/oo-stack.fm
+load sample-files-2.7/oo-stack2.fm
+load sample-files-2.7/path.fm
+load sample-files-2.7/person-record.fm
+load sample-files-2.7/pfun.fm
+load sample-files-2.7/polynomial.fm
+load sample-files-2.7/power-ex.fm
+load sample-files-2.7/set-max.fm
+load sample-files-2.7/only-book/8-puzzle.fm
+load sample-files-2.7/only-book/df-abstract-bakery-check.fm
   set show loop stats off .
   set show loop timing off .
-load ../../AAM/sample-files-2.4/only-book/leftist-trees.fm
-load ../../AAM/sample-files-2.4/only-book/oo-blocks-world.fm
-load ../../AAM/sample-files-2.4/only-book/spreadsheet.fm
-load ../../AAM/sample-files-2.4/only-book/spreedsheet-asynch.fm
+load sample-files-2.7/only-book/leftist-trees.fm
+load sample-files-2.7/only-book/oo-blocks-world.fm
+load sample-files-2.7/only-book/spreadsheet.fm
+load sample-files-2.7/only-book/spreedsheet-asynch.fm
 
-load ../../AAM/sample-files-2.4/narrowing-vending-machine.fm
-load ../../AAM/sample-files-2.4/last-append.fm
-load ../../AAM/sample-files-2.4/leftid-unification-example.fm
-load ../../AAM/sample-files-2.4/rightid-unification-example.fm
-load ../../AAM/sample-files-2.4/id-unification-example.fm
+load sample-files-2.7/narrowing-vending-machine.fm
+select FULL-MAUDE .
+loop init .
+load sample-files-2.7/last-append.fm
+load sample-files-2.7/leftid-unification-example.fm
+load sample-files-2.7/rightid-unification-example.fm
+load sample-files-2.7/id-unification-example.fm
 
 load pruebas/basic-nat-list.fm
 load pruebas/triple-list.fm
@@ -53,15 +55,14 @@ load pruebas/pita.fm
 load pruebas/summation-core-maude-modules.fm
 ----load pruebas/getVariants-my-nat.fm
 load pruebas/getVariants-my-nat-set.fm
+select FULL-MAUDE .
+loop init .
 load pruebas/a.fm
 
-load ../../PeopleShared/Olveczky/phils.fm                   --- bug in search command (March 9th, 2009) 
-load ../../PeopleShared/Olveczky/separation.fm              --- bug in search command (March 9th, 2009)
 load pruebas/serbanuta.fm                       --- bug in mb/cmbs (March 9th, 2009)
 
-load pruebas/exa-search.maude
-
-load ../../FormalTools/CRC-samples/philosophers/dining-phils.fm
+----load pruebas/exa-search.maude
+----load ../../FormalTools/CRC-samples/philosophers/dining-phils.fm
 
 load pruebas/gen-tree.fm
 load pruebas/list-test.fm
@@ -74,4 +75,3 @@ load bug-reports/riesco/network.fm
 load bug-reports/riesco/nspk.fm
 load bug-reports/riesco/prueba.fm
 load bug-reports/riesco/show-view.fm
-

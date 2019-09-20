@@ -4,6 +4,23 @@ fmod FOO is
   eq f = g .
 endfm
 
+fmod CHANGE-NAME is
+  pr META-LEVEL .
+  op setName : Module ModuleExpression -> Module .
+  vars ME ME' : ModuleExpression .
+  var IL : ImportList .
+  var SS : SortSet .
+  var SSDS : SubsortDeclSet .
+  var OPDS : OpDeclSet .
+  var MAS : MembAxSet .
+  var EqS : EquationSet .
+  var RlS : RuleSet .
+  eq setName(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm, ME')
+    = fmod ME' is IL sorts SS . SSDS OPDS MAS EqS endfm .
+  eq setName(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm, ME')
+    = mod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS endm .
+ endfm
+
 red in META-LEVEL : upModule('FOO, false) .
 
 select FULL-MAUDE .
@@ -20,25 +37,13 @@ loop init .
         none
         eq 'f.Foo = 'g.Foo [none] .
       endfm .)
-      
+
 (show module FOO .)
 
 (red in FOO : f .)
 
-(fmod CHANGE-NAME is
-  pr META-LEVEL . 
-  op setName : Module ModuleExpression -> Module .
-  vars ME ME' : ModuleExpression .
-  var IL : ImportList .
-  var SS : SortSet .
-  var SSDS : SubsortDeclSet .
-  var OPDS : OpDeclSet .
-  var MAS : MembAxSet .
-  var EqS : EquationSet .
-  eq setName(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm, ME') 
-    = fmod ME' is IL sorts SS . SSDS OPDS MAS EqS endfm .
- endfm)
- 
+(select CHANGE-NAME .)
+
 (load setName(upModule('NAT, true), 'MY-NAT) .)
 
 (show module MY-NAT .)
@@ -77,25 +82,9 @@ loop init .
          < B : Account | bal : N' + M >
       if N >= M .
   endom)
- 
-(fmod CHANGE-NAME is
-  pr META-LEVEL . 
-  op setName : Module ModuleExpression -> Module .
-  vars ME ME' : ModuleExpression .
-  var IL : ImportList .
-  var SS : SortSet .
-  var SSDS : SubsortDeclSet .
-  var OPDS : OpDeclSet .
-  var MAS : MembAxSet .
-  var EqS : EquationSet .
-  var RlS : RuleSet .
-  eq setName(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm, ME') 
-    = fmod ME' is IL sorts SS . SSDS OPDS MAS EqS endfm .
-  eq setName(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm, ME') 
-    = mod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS endm .
- endfm)
- 
+
+(select CHANGE-NAME .)
+
 (load setName(upModule(ACCOUNT), 'MY-ACCOUNT) .)
 
 (show module MY-ACCOUNT .)
- 

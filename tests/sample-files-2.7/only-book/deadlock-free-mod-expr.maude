@@ -6,11 +6,11 @@
   set show advisories off .
 
   load deadlock-freedom.maude
-  
-  fmod DEADLOCK-FREE-BANNER is 
+
+  fmod DEADLOCK-FREE-BANNER is
     pr STRING .
     op deadlock-free-banner : -> String .
-    eq deadlock-free-banner 
+    eq deadlock-free-banner
       = "DEADLOCK-FREE mod. expr. available Oct. 28th 2008" .
   endfm
 
@@ -23,13 +23,13 @@
     pr META-LEVEL .
     pr META-FULL-MAUDE-SIGN .
     pr UNIT .
-  
+
     op DEADLOCK-FREE-GRAMMAR : -> FModule .
-  
-    eq DEADLOCK-FREE-GRAMMAR 
+
+    eq DEADLOCK-FREE-GRAMMAR
       = addImports((including 'DEADLOCK-FREE-SIGN .), GRAMMAR) .
   endfm
-  
+
   fmod DEADLOCK-FREE-EXPR is
     inc MOD-EXPR .
     pr INST-EXPR-EVALUATION .
@@ -42,27 +42,27 @@
     vars DB DB' : Database .
     vars T T' T'' : Term .
     var  IL : ImportList .
-    var  VEPS : Set{Tuple{ViewExp,ViewExp}} .
+    var  VEPS : Set{Tuple{ViewExpression,ViewExpression}} .
     var  X : Qid .
     var  S : Sort .
     vars ME ME' : ModuleExpression .
     var  DT : Default{Term} .
     vars U U' M DM : Module .
     vars MNS MNS' MNS'' MNS3 MNS4 : Set{ModuleName} .
-    vars VES VES' : Set{ViewExp} .
+    vars VES VES' : Set{ViewExpression} .
     var  MIS : Set{ModuleInfo} .
     var  VIS : Set{ViewInfo} .
     var  QIL : QidList .
     var  VDS : OpDeclSet .
 
-  *** As for TUPLE, the equation for the \texttt{evalModExp} is reduced to the 
-  *** creation of a new module. A module expression POW[n]{Nat} produces a 
+  *** As for TUPLE, the equation for the \texttt{evalModExp} is reduced to the
+  *** creation of a new module. A module expression POW[n]{Nat} produces a
   *** module
   ***
   *** fmod POW[n]{X :: TRIV} is
   ***   inc TUPLE[n]{X, X, ..., X} .
   *** endfm
-  *** 
+  ***
   *** which is then instantiated by the Nat view.
 
   *** Some auxiliary functions are defined in order
@@ -71,60 +71,60 @@
     op DEADLOCK-FREE`[_,_`] : ModuleExpression Sort -> ModuleExpression .
 
     ceq evalModExp(DEADLOCK-FREE[ME, S], PDL, DB)
-      = if unitInDb(DEADLOCK-FREE[ME', S], DB') 
+      = if unitInDb(DEADLOCK-FREE[ME', S], DB')
         then < DB' ; DEADLOCK-FREE[ME', S] >
         else < evalModule(
                  setName(
                    deadlock-free(getFlatModule(ME', DB'), S),
-                   DEADLOCK-FREE[ME', S]), 
+                   DEADLOCK-FREE[ME', S]),
                  none, DB') ;
                DEADLOCK-FREE[ME', S] >
-        fi 
+        fi
       if ME' := modExp(evalModExp(ME, PDL, DB))
          /\ DB' := database(evalModExp(ME, PDL, DB)) .
 
-  *** The equations for the \texttt{header2QidList}, 
-  *** \texttt{parseModExp}, \texttt{prepHeader}, and 
+  *** The equations for the \texttt{header2QidList},
+  *** \texttt{parseModExp}, \texttt{prepHeader}, and
   *** \texttt{setUpModExpDeps} functions on the $n$-tuple module
   *** expression are as follows:
 
-    eq parseModExp('DEADLOCK-FREE`[_`,_`][T, T']) 
+    eq parseModExp('DEADLOCK-FREE`[_`,_`][T, T'])
       = DEADLOCK-FREE[parseModExp(T), parseType(T')] .
 
-    eq solveUps('upModule['DEADLOCK-FREE`[_`,_`][T, T']], DB) 
+    eq solveUps('upModule['DEADLOCK-FREE`[_`,_`][T, T']], DB)
       = solveUpsModExp('upModule['DEADLOCK-FREE`[_`,_`][T, T']], DB) .
-    eq solveUps('upTerm['DEADLOCK-FREE`[_`,_`][T, T'], 'bubble[T'']], DB) 
+    eq solveUps('upTerm['DEADLOCK-FREE`[_`,_`][T, T'], 'bubble[T'']], DB)
       = solveUpsModExp('upTerm['DEADLOCK-FREE`[_`,_`][T, T'], 'bubble[T'']], DB) .
 
     eq labelInModExp(X, DEADLOCK-FREE[ME, S]) = false .
 
-    eq header2Qid(DEADLOCK-FREE[ME, S]) 
+    eq header2Qid(DEADLOCK-FREE[ME, S])
       = qid("DEADLOCK-FREE[" + string(header2Qid(ME)) + ", " + string(S) + "]") .
-    eq header2QidList(DEADLOCK-FREE[ME, S]) 
+    eq header2QidList(DEADLOCK-FREE[ME, S])
       = ('DEADLOCK-FREE '`[ header2QidList(ME) '`, S '`]) .
 
-    eq prepModExp(DEADLOCK-FREE[ME, S], VEPS) 
+    eq prepModExp(DEADLOCK-FREE[ME, S], VEPS)
       = DEADLOCK-FREE[prepModExp(ME, VEPS), S] .
 
-    eq setUpModExpDeps(DEADLOCK-FREE[ME, S], 
-         db(< ME ; DT ; U ; U' ; M ; VDS ; MNS ; VES > MIS, 
+    eq setUpModExpDeps(DEADLOCK-FREE[ME, S],
+         db(< ME ; DT ; U ; U' ; M ; VDS ; MNS ; VES > MIS,
             MNS', VIS, VES', MNS'', MNS3, MNS4, QIL))
-      = db(< ME ; DT ; U ; U' ; M ; VDS ; MNS . DEADLOCK-FREE[ME, S] ; VES > MIS, 
+      = db(< ME ; DT ; U ; U' ; M ; VDS ; MNS . DEADLOCK-FREE[ME, S] ; VES > MIS,
            MNS', VIS, VES', MNS'', MNS3, MNS4, QIL) .
-    eq setUpModExpDeps(DEADLOCK-FREE[ME, S], 
-         db(< ME ; DM ; U ; U' ; M ; VDS ; MNS ; VES > MIS, 
+    eq setUpModExpDeps(DEADLOCK-FREE[ME, S],
+         db(< ME ; DM ; U ; U' ; M ; VDS ; MNS ; VES > MIS,
             MNS', VIS, VES', MNS'', MNS3, MNS4, QIL))
-      = db(< ME ; DM ; U ; U' ; M ; VDS ; MNS . DEADLOCK-FREE[ME, S] ; VES > MIS, 
+      = db(< ME ; DM ; U ; U' ; M ; VDS ; MNS . DEADLOCK-FREE[ME, S] ; VES > MIS,
            MNS', VIS, VES', MNS'', MNS3, MNS4, QIL) .
     eq setUpModExpDeps(DEADLOCK-FREE[ME, S], DB)
-      = warning(DB, 
+      = warning(DB,
           '\r 'Error: '\o 'Module header2QidList(ME) 'not 'in 'database. '\n)
       [owise] .
   endfm
 
-*** Redefinition of the FULL-MAUDE module. The init rule now creates an 
-*** instance of class Unifier. The init rule now takes Unifier objects, and for them 
-*** it uses UNIFICATION-GRAMMAR instead of GRAMMAR to parse inputs. 
+*** Redefinition of the FULL-MAUDE module. The init rule now creates an
+*** instance of class Unifier. The init rule now takes Unifier objects, and for them
+*** it uses UNIFICATION-GRAMMAR instead of GRAMMAR to parse inputs.
 
 mod FULL-MAUDE is
   pr DATABASE-HANDLING .
@@ -157,43 +157,43 @@ mod FULL-MAUDE is
   rl [init] :
      init
      => [nil,
-         < o : DeadlockFree | 
+         < o : DeadlockFree |
             db : initialDatabase,
-            input : nilTermList, output : nil, 
+            input : nilTermList, output : nil,
             default : 'CONVERSION >,
          ('\t string2qidList(deadlock-free-banner) '\n)] .
 
   rl [in] :
-    [QI QIL, 
-     < O : X@DeadlockFree | 
-         db : DB, input : nilTermList, output : nil, default : ME, Atts >, 
+    [QI QIL,
+     < O : X@DeadlockFree |
+         db : DB, input : nilTermList, output : nil, default : ME, Atts >,
      QIL']
     => if metaParse(DEADLOCK-FREE-GRAMMAR, QI QIL, '@Input@) :: ResultPair
-       then [nil, 
-             < O : X@DeadlockFree | db : DB, 
+       then [nil,
+             < O : X@DeadlockFree | db : DB,
                  input : getTerm(metaParse(DEADLOCK-FREE-GRAMMAR, QI QIL, '@Input@)),
-                 output : nil, default : ME, Atts >, 
-              QIL'] 
-       else [nil, 
-             < O : X@DeadlockFree | db : DB, input : nilTermList, 
-                 output : ('\r 'Warning: 
+                 output : nil, default : ME, Atts >,
+              QIL']
+       else [nil,
+             < O : X@DeadlockFree | db : DB, input : nilTermList,
+                 output : ('\r 'Warning:
                            printSyntaxError(
-                             metaParse(DEADLOCK-FREE-GRAMMAR, QI QIL, '@Input@), 
-                             QI QIL) 
+                             metaParse(DEADLOCK-FREE-GRAMMAR, QI QIL, '@Input@),
+                             QI QIL)
                            '\n
-                           '\r 'Error: '\o 'No 'parse 'for 'input. '\n), 
-                 default : ME, Atts >, 
-             QIL'] 
+                           '\r 'Error: '\o 'No 'parse 'for 'input. '\n),
+                 default : ME, Atts >,
+             QIL']
        fi .
 
   rl [out] :
-    [QIL, 
-     < O : X@DeadlockFree | 
-         db : DB, input : TL, output : (QI QIL'), default : ME, Atts >, 
+    [QIL,
+     < O : X@DeadlockFree |
+         db : DB, input : TL, output : (QI QIL'), default : ME, Atts >,
      QIL'']
-    => [QIL, 
-        < O : X@DeadlockFree | 
-            db : DB, input : TL, output : nil, default : ME, Atts >, 
+    => [QIL,
+        < O : X@DeadlockFree |
+            db : DB, input : TL, output : nil, default : ME, Atts >,
         (QI QIL' QIL'')] .
 endm
 
@@ -222,10 +222,10 @@ set show advisories on .
 ---)
   load model-checker.maude
   load bakery.maude
-  
+
   select FULL-MAUDE .
   loop init .
-  
+
 ---(
   rewrites: 184 in 0ms cpu (2ms real) (~ rewrites/second)
 	DEADLOCK-FREE mod. expr. available Oct. 28th 2008
@@ -241,7 +241,7 @@ set show advisories on .
 ---)
 
   (show rls DF-BAKERY .)
-    
+
 ---(
 rewrites: 259 in 30ms cpu (33ms real) (8633 rewrites/second)
 
@@ -268,4 +268,3 @@ rewrites: 259 in 30ms cpu (33ms real) (8633 rewrites/second)
     if not Y:Nat < X:Nat = true [label p1_wait] .
 ---)
 ---)
-  

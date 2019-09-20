@@ -1,0 +1,33 @@
+(th T{X :: TRIV} is
+   sort T{X} .
+   op t : -> T{X} .
+endth)
+
+(mod M{X :: TRIV} is
+   sort M{X} .
+   op m : -> M{X} .
+endm)
+
+(view MasT{X :: TRIV} from T{X} to M{X} is
+   sort T{X} to M{X} .
+   op t to m .
+endv)
+
+(fmod FOO is
+  pr LIST{MasT{Nat}} .
+ endfm)
+
+(red 0 .)
+
+eof
+
+No da ningún error, pero no da el típico mensaje de "Introduced view...".
+Tampoco funciona esto:
+
+(view Bool from TRIV to BOOL is
+   sort Elt to Bool .
+endv)
+(view MasT from T{Bool} to M{Bool} is
+   sort T{Bool} to M{Bool} .
+   op t to m .
+endv)

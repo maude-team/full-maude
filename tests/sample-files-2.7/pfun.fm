@@ -4,7 +4,8 @@
 
   load set-kind.fm
   load maybe.fm
-    
+  load view-tuple.fm
+
  (fmod PFUN{X :: TRIV, Y :: TRIV} is
     pr SET-KIND{Tuple{X, Y}} .
     pr SET{X} + SET{Y} .

@@ -4,7 +4,7 @@
    op g : -> Foo{X} .
    eq f(X:X$Elt) = g .
  endfm)
- 
+
 (red in FOO{Int} : f(3) .)
 
 ---- the renaming don't reach the core maude modules
@@ -15,7 +15,7 @@
 (fmod BAR is
   pr QID + FOO{Qid} .
  endfm)
- 
+
 (red f('q) .)
 
 (show module .)
@@ -29,7 +29,7 @@
 (fmod BAZ is
   pr QID + FOO{Qid} + BAR .
  endfm)
- 
+
 (red f('q) .)
 
 (show module .)

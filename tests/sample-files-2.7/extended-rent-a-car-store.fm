@@ -32,7 +32,7 @@
   class OccasionalCust .
   class PreferredCust .
   subclasses OccasionalCust PreferredCust Staff < Customer .
- 
+
   class Car | available : Bool .
   class EconomyCar .
   class MidSizeCar .
@@ -51,8 +51,8 @@
   var  Dscnts : PFun{Tuple{Cid, Cid}, Int} .
   var  Rts : PFun{Cid, Int} .
   var  Pmnts : PFun{Oid, Int} .
-  
-  rl [new-day] : 
+
+  rl [new-day] :
     < O : Calendar | date : F >
     => < O : Calendar | date : F + 1 > .
 
@@ -69,8 +69,8 @@
        < A : Rental | pickUpDate : Today, dueDate : Today + NumDays, car : I,
          deposit : Amnt, customer : U, rate : Rt, discount : Dscnt >
     if not U in US                            *** the customer is not suspended
-       /\ Rt := Rts[class(< I : Car | >)]
-       /\ Dscnt := Dscnts[(class(< U : Customer | >), class(< I : Car | >))]
+       /\ Rt := Rts[getClass(< I : Car | >)]
+       /\ Dscnt := Dscnts[(getClass(< U : Customer | >), getClass(< I : Car | >))]
        /\ Amnt := (Rt + - Dscnt) * NumDays
        /\ M >= Amnt                         *** enough cash to make a deposit
     [nonexec] .
@@ -110,7 +110,7 @@
                      fi) >
        < C : Calendar | >
     if Ddt < Today                          *** it is returned late
-       /\ Amnt := ((Rt + - Dscnt) * (Ddt + - Ppdt)) 
+       /\ Amnt := ((Rt + - Dscnt) * (Ddt + - Ppdt))
              + ((((Rt + - Dscnt) * (Today + - Ddt)) * (100 + Pnlt)) quo 100) .
 
   crl [pay-debt] :
@@ -128,10 +128,10 @@
     < U : Customer | debt : M >
     => < V : Store | suspended : (U, US) >
        < U : Customer | >
-    if (not U in US) and M > 0 .
+    if (not U in US) /\ M > 0 .
 
   crl [suspend-late-returns] :
-    < V : Store | suspended : US, cars : (I, IS), 
+    < V : Store | suspended : US, cars : (I, IS),
                   customers : (U, SS), calendar : C >
     < U : Customer | >
     < I : Car | >
@@ -142,11 +142,11 @@
        < I : Car | >
        < A : Rental | >
        < C : Calendar | >
-    if (not U in US) and F < Today .
+    if (not U in US) /\ F < Today .
 
   crl [upgrade-to-preferred] :
     < U : OccasionalCust | cash : M, debt : N >
-    < V : Store | threshold : Thrshld, payments : Pmnts, 
+    < V : Store | threshold : Thrshld, payments : Pmnts,
                   customers : (U, SS), calendar : C >
     < C : Calendar | date : Today >
     => < U : PreferredCust | cash : M, debt : N >

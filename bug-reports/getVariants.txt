@@ -1,0 +1,143 @@
+---- Problem detected
+---- The getVariants operation is returning a wrong equation.
+---- The reduction below requests the variant of equation
+---- eq '_*_['N':NzNat,'N?:`[Nat`],'_+_['M':NzNat,'K':NzNat]] = '_+_['_*_['N?:`[Nat`],'_*_['N':NzNat,
+----     'M':NzNat]],'_*_['N?:`[Nat`],'_*_['N':NzNat,'K':NzNat]]] [label('NAT-ACU-09)] .
+---- and gets the equation
+---- eq '_*_['N':NzNat,'#3:`[Rat`],'_+_['M':NzNat,'K':NzNat]] = '_+_['_*_['N':NzNat,'M':NzNat,
+----     'N?:`[Rat`]],'_*_['N':NzNat,'K':NzNat,'N?:`[Rat`]]] [label('NAT-ACU-09)] .
+---- Notice the replacement of variable 'N?:`[Nat`] with '#3:`[Rat`] in the lefthand side.
+---- When the equation is later used Maude reports the following warning:
+---- Warning: <automatic>: variable N?:[Rat] is used before it is bound in equation:
+
+---- I'm using Alpha115 with the latest Full Maude
+---(
+MacBook-Pro-de-Paco:MFE duran$ ~/Maude/Alpha115/maude-Yices2.darwin64 src/FM/full-maude27f.maude
+		     \||||||||||||||||||/
+		   --- Welcome to Maude ---
+		     /||||||||||||||||||\
+	   Maude alpha115 built: Aug 11 2017 19:57:09
+	    Copyright 1997-2017 SRI International
+		   Sat Sep 22 11:58:10 2018
+
+	    Full Maude 2.7f November 20th 2017
+---)
+
+red getVariants(fmod 'RAT-ACU is
+  nil
+  sorts 'Int ; 'Nat ; 'NzInt ; 'NzNat ; 'NzNeg ; 'NzPosRat ; 'NzRat ; 'PosRat ; 'Rat ; 'Truth ; 'Tuple ; 'Zero
+    .
+  subsort 'Int < 'Rat .
+  subsort 'Nat < 'Int .
+  subsort 'Nat < 'PosRat .
+  subsort 'NzInt < 'Int .
+  subsort 'NzInt < 'NzRat .
+  subsort 'NzNat < 'Nat .
+  subsort 'NzNat < 'NzInt .
+  subsort 'NzNat < 'NzPosRat .
+  subsort 'NzNeg < 'Int .
+  subsort 'NzNeg < 'NzInt .
+  subsort 'NzPosRat < 'NzRat .
+  subsort 'NzPosRat < 'PosRat .
+  subsort 'NzRat < 'Rat .
+  subsort 'PosRat < 'Rat .
+  subsort 'Zero < 'Nat .
+  op '-_ : 'Int -> 'Int [none] .
+  op '-_ : 'NzInt -> 'NzInt [none] .
+  op '-_ : 'NzNat -> 'NzNeg [ctor] .
+  op '-_ : 'Rat -> 'Rat [none] .
+  op '0 : nil -> 'Zero [ctor] .
+  op '1 : nil -> 'NzNat [ctor] .
+  op '@<@_@>@ : '`[Rat`] -> '`[Tuple`] [none] .
+  op '_*_ : 'Int 'Int -> 'Int [assoc comm] .
+  op '_*_ : 'Nat 'Nat -> 'Nat [assoc comm] .
+  op '_*_ : 'NzInt 'NzInt -> 'NzInt [assoc comm] .
+  op '_*_ : 'NzNat 'NzNat -> 'NzNat [assoc comm] .
+  op '_*_ : 'NzRat 'NzRat -> 'NzRat [assoc comm] .
+  op '_*_ : 'Rat 'Rat -> 'Rat [assoc comm] .
+  op '_+_ : 'Int 'Int -> 'Int [assoc comm] .
+  op '_+_ : 'Nat 'Nat -> 'Nat [assoc comm ctor] .
+  op '_+_ : 'NzNat 'NzNat -> 'NzNat [assoc comm ctor] .
+  op '_+_ : 'PosRat 'PosRat -> 'PosRat [assoc comm] .
+  op '_+_ : 'Rat 'Rat -> 'Rat [assoc comm] .
+  op '_/\_ : 'Truth 'Truth -> 'Truth [none] .
+  op '_\/_ : 'Truth 'Truth -> 'Truth [none] .
+  op '_\_ : 'Nat 'Nat -> 'Nat [none] .
+  op '_~_ : 'Int 'Int -> 'Truth [comm] .
+  op '_~_ : 'Nat 'Nat -> 'Truth [comm] .
+  op '_~_ : 'Rat 'Rat -> 'Truth [comm] .
+  op 'd : 'Nat 'Nat -> 'Nat [comm] .
+  op 'ff : nil -> 'Truth [ctor] .
+  op 'p : 'Int -> 'Int [none] .
+  op 'p : 'NzNat -> 'Nat [none] .
+  op 'quot : 'Int 'NzInt -> 'Int [none] .
+  op 'quot : 'Nat 'NzNat -> 'Nat [none] .
+  op 'tt : nil -> 'Truth [ctor] .
+  op '~ : 'Truth -> 'Truth [none] .
+  none
+  eq '_+_['0.Zero,'X:`[Rat`]] = 'X:`[Rat`] [variant] .
+endfm,
+fmod 'RAT-ACU is
+  nil
+  sorts 'Int ; 'Nat ; 'NzInt ; 'NzNat ; 'NzNeg ; 'NzPosRat ; 'NzRat ; 'PosRat ; 'Rat ; 'Truth ; 'Tuple ; 'Zero
+    .
+  subsort 'Int < 'Rat .
+  subsort 'Nat < 'Int .
+  subsort 'Nat < 'PosRat .
+  subsort 'NzInt < 'Int .
+  subsort 'NzInt < 'NzRat .
+  subsort 'NzNat < 'Nat .
+  subsort 'NzNat < 'NzInt .
+  subsort 'NzNat < 'NzPosRat .
+  subsort 'NzNeg < 'Int .
+  subsort 'NzNeg < 'NzInt .
+  subsort 'NzPosRat < 'NzRat .
+  subsort 'NzPosRat < 'PosRat .
+  subsort 'NzRat < 'Rat .
+  subsort 'PosRat < 'Rat .
+  subsort 'Zero < 'Nat .
+  op '-_ : 'Int -> 'Int [none] .
+  op '-_ : 'NzInt -> 'NzInt [none] .
+  op '-_ : 'NzNat -> 'NzNeg [ctor] .
+  op '-_ : 'Rat -> 'Rat [none] .
+  op '0 : nil -> 'Zero [ctor] .
+  op '1 : nil -> 'NzNat [ctor] .
+  op '@<@_@>@ : '`[Rat`] -> '`[Tuple`] [none] .
+  op '_*_ : 'Int 'Int -> 'Int [assoc comm] .
+  op '_*_ : 'Nat 'Nat -> 'Nat [assoc comm] .
+  op '_*_ : 'NzInt 'NzInt -> 'NzInt [assoc comm] .
+  op '_*_ : 'NzNat 'NzNat -> 'NzNat [assoc comm] .
+  op '_*_ : 'NzRat 'NzRat -> 'NzRat [assoc comm] .
+  op '_*_ : 'Rat 'Rat -> 'Rat [assoc comm] .
+  op '_+_ : 'Int 'Int -> 'Int [assoc comm id('0.Zero)] .
+  op '_+_ : 'Nat 'Nat -> 'Nat [assoc comm ctor id('0.Zero)] .
+  op '_+_ : 'NzNat 'NzNat -> 'NzNat [assoc comm ctor id('0.Zero)] .
+  op '_+_ : 'PosRat 'PosRat -> 'PosRat [assoc comm id('0.Zero)] .
+  op '_+_ : 'Rat 'Rat -> 'Rat [assoc comm id('0.Zero)] .
+  op '_/\_ : 'Truth 'Truth -> 'Truth [none] .
+  op '_\/_ : 'Truth 'Truth -> 'Truth [none] .
+  op '_\_ : 'Nat 'Nat -> 'Nat [none] .
+  op '_~_ : 'Int 'Int -> 'Truth [comm] .
+  op '_~_ : 'Nat 'Nat -> 'Truth [comm] .
+  op '_~_ : 'Rat 'Rat -> 'Truth [comm] .
+  op 'd : 'Nat 'Nat -> 'Nat [comm] .
+  op 'ff : nil -> 'Truth [ctor] .
+  op 'p : 'Int -> 'Int [none] .
+  op 'p : 'NzNat -> 'Nat [none] .
+  op 'quot : 'Int 'NzInt -> 'Int [none] .
+  op 'quot : 'Nat 'NzNat -> 'Nat [none] .
+  op 'tt : nil -> 'Truth [ctor] .
+  op '~ : 'Truth -> 'Truth [none] .
+  none
+  eq '_*_['N':NzNat,'N?:`[Nat`],'_+_['M':NzNat,'K':NzNat]] = '_+_['_*_['N?:`[Nat`],'_*_['N':NzNat,'M':NzNat]],
+    '_*_['N?:`[Nat`],'_*_['N':NzNat,'K':NzNat]]] [label('NAT-ACU-09)] .
+endfm,
+eq '_*_['N':NzNat,'N?:`[Nat`],'_+_['M':NzNat,'K':NzNat]] = '_+_['_*_['N?:`[Nat`],'_*_['N':NzNat,
+    'M':NzNat]],'_*_['N?:`[Nat`],'_*_['N':NzNat,'K':NzNat]]] [label('NAT-ACU-09)] .,
+(narrowing).VariantProcedure) .
+
+---(
+rewrites: 747 in 2ms cpu (3ms real) (302306 rewrites/second)
+result Equation: eq '_*_['N':NzNat,'#3:`[Rat`],'_+_['M':NzNat,'K':NzNat]] = '_+_['_*_['N':NzNat,'M':NzNat,
+    'N?:`[Rat`]],'_*_['N':NzNat,'K':NzNat,'N?:`[Rat`]]] [label('NAT-ACU-09)] .
+---)

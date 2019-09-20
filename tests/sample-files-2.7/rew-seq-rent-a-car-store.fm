@@ -3,7 +3,7 @@
   ---- by the Maude team
 
   load rent-a-car-store-test.fm
-  load rew-seq-test.fm    
+  load rew-seq-test.fm
 
 (down RENT-A-CAR-STORE :
    rew rewSeq(upModule(RENT-A-CAR-STORE-TEST),
@@ -18,4 +18,3 @@ result Configuration :
     140,suspended : true > < 'C2 : Customer | cash : 5000,debt : 0,suspended :
     false >
 ---)
-
