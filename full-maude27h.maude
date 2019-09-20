@@ -7472,11 +7472,11 @@ fmod MOD-NAME is
 
   sort ModuleName .
   subsorts ModuleExpression < ModuleName < Header .
-  op _{_}  : ModuleExpression ParameterDeclList -> Header .
+  op _{_}  : ModuleExpression ParameterDeclList -> Header [ctor] .
   op pd : ParameterDecl -> ModuleName .
   op nullHeader : -> Header .
 
-  op getName : Header -> ModuleExpression .
+----  op getName : Header -> ModuleExpression .
   op getParDecls : Header -> ParameterDeclList .
 
   vars QI QI' : Qid .
@@ -7485,8 +7485,8 @@ fmod MOD-NAME is
   var  PL : NeParameterList .
   var  MN : ModuleName .
 
-  eq getName(ME{PDL}) = ME .
-  eq getName(MN) = MN .
+----  eq getName(ME{PDL}) = ME .
+----  eq getName(MN) = MN .
   eq getParDecls(ME{PDL}) = PDL .
   eq getParDecls(MN) = nil .
 
@@ -7656,7 +7656,7 @@ fmod UNIT is
 
 *** \item Selector functions for the different components of a Module.
 
-  op getName : Module -> Header .
+  op getHeader : Module -> Header .
   op getPars : Module -> ParameterDeclList .
   op getClasses : Module -> ClassDeclSet .
   op getSubclasses : Module -> SubclassDeclSet .
@@ -7765,22 +7765,21 @@ fmod UNIT is
 
 *** Selection functions for units
 
-  eq getName(unitError(QIL)) = ' .
-  eq getName(noModule) = ' .
-  eq getName(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = ME .
-  eq getName(mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = ME .
-  eq getName(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = MN .
-  ----eq getName(th PD is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = PD .
-  eq getName(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm) = ME .
-  eq getName(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm) = ME .
-  eq getName(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth) = MN .
-  eq getName(
+  eq getHeader(unitError(QIL)) = ' .
+  eq getHeader(noModule) = ' .
+  eq getHeader(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = ME .
+  eq getHeader(mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = ME .
+  eq getHeader(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = MN .
+  eq getHeader(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm) = ME .
+  eq getHeader(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm) = ME .
+  eq getHeader(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth) = MN .
+  eq getHeader(
        omod ME is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom)
     = ME .
-  eq getName(
+  eq getHeader(
        omod ME{PDL} is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom)
     = ME .
-  eq getName(
+  eq getHeader(
        oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = MN .
 
@@ -8137,7 +8136,7 @@ fmod UNIT is
         CDS')
     = oth H is IL sorts SS . SSDS CDS' SCDS OPDS MDS MAS EqS RlS endoth .
   eq setClasses(M, CDS)
-    = unitError(header2QidList(getName(M)) 'not 'an 'object-oriented 'module)
+    = unitError(header2QidList(getHeader(M)) 'not 'an 'object-oriented 'module)
     [owise] .
 
   eq setSubclasses(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, SCDS)
@@ -8168,7 +8167,7 @@ fmod UNIT is
        SCDS')
     = oth H is IL sorts SS . SSDS CDS SCDS' OPDS MDS MAS EqS RlS endoth .
   eq setSubclasses(M, SCDS)
-    = unitError(header2QidList(getName(M)) 'not 'an 'object-oriented 'module)
+    = unitError(header2QidList(getHeader(M)) 'not 'an 'object-oriented 'module)
     [owise] .
 
   eq setMsgs(
@@ -8202,7 +8201,7 @@ fmod UNIT is
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, MDS')
     = oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS' MAS EqS RlS endoth .
   eq setMsgs(M, MDS)
-    = unitError(header2QidList(getName(M)) 'not 'an 'object-oriented 'module)
+    = unitError(header2QidList(getHeader(M)) 'not 'an 'object-oriented 'module)
     [owise] .
 
   eq setName(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm, ME')
@@ -8977,9 +8976,9 @@ fmod VIEW is
   eq maps2rens((none).OpMappingSet) = none .
 
 *** projection functions
-  op getName : View -> Qid .
-  eq getName(view VE from ME to ME' is SMS OMS endv) = VE [owise] .
-  eq getName(view VE{PDL} from ME to ME' is SMS OMS endv) = VE .
+----  op getName : View -> Qid .
+----  eq getName(view VE from ME to ME' is SMS OMS endv) = VE [owise] .
+----  eq getName(view VE{PDL} from ME to ME' is SMS OMS endv) = VE .
 
   op getPars : [View] -> ParameterDeclList .
   eq getPars(view VE from ME to ME' is SMS OMS endv) = nil [owise] .
@@ -9657,8 +9656,8 @@ fmod DATABASE is
   op setUpImportDeps : ModuleName ImportList Database -> Database .
 
   eq setUpModuleDeps(U, DB)
-    = setUpImportDeps(getName(U), getImports(U),
-        setUpModExpDeps(getName(U), DB)) .
+    = setUpImportDeps(getHeader(U), getImports(U),
+        setUpModExpDeps(getHeader(U), DB)) .
 
   eq setUpModExpDeps(QI, DB) = DB .
 
@@ -12602,7 +12601,7 @@ fmod EVALUATION is
   op signature : Module -> Module .
   eq signature(unitError(QIL)) = unitError(QIL) .
   eq signature(U)
-    = fmod header2Qid(getName(U)) is
+    = fmod header2Qid(getHeader(U)) is
          convertModuleExpressions(getImports(U))
          sorts getSorts(U) .
          getSubsorts(U)
@@ -12627,7 +12626,7 @@ fmod EVALUATION is
   eq flatModule(unitError(QIL)) = unitError(QIL) .
   eq flatModule(U)
     = if U :: FModule or U :: FTheory
-      then (fmod header2Qid(getName(U)) is
+      then (fmod header2Qid(getHeader(U)) is
                getImports(U)
                sorts getSorts(U) .
                getSubsorts(U)
@@ -12635,7 +12634,7 @@ fmod EVALUATION is
                getMbs(U)
                getEqs(U)
             endfm)
-      else (mod header2Qid(getName(U)) is
+      else (mod header2Qid(getHeader(U)) is
                getImports(U)
                sorts getSorts(U) .
                getSubsorts(U)
@@ -12712,13 +12711,13 @@ fmod EVALUATION is
     = evalModule2(
         setImports(transform(U, DB), nil),
         U',
-        insertVars(getName(U), VDS,
-          insertInternalModule(getName(U), transform(U, DB),
-            insertTopModule(getName(U), U, DB)))) .
+        insertVars(getHeader(U), VDS,
+          insertInternalModule(getHeader(U), transform(U, DB),
+            insertTopModule(getHeader(U), U, DB)))) .
   eq evalModule1(U, U', unitError(QIL), VDS, DB) = warning(DB, QIL) .
 
   eq evalModule2(U, U', DB)
-    = insertFlatModule(getName(U), flatModule(addDecls(U, U')), DB) .
+    = insertFlatModule(getHeader(U), flatModule(addDecls(U, U')), DB) .
   eq evalModule2(unitError(QIL), U, DB) = warning(DB, QIL) .
 
 *** The function \texttt{evalPreModule} has to take care of the bubbles in the
@@ -12776,7 +12775,7 @@ fmod EVALUATION is
     *** VDS : ops corresponding to the vbles in the top unit
     = evalPreModule1(
         setPars(setImports(PU, IL'), PDL'),
-        setName(empty(U), getName(U)),
+        setName(empty(U), getHeader(U)),
         getModules(IL'', DB'),
         setImports(U, nil),
         VDS,
@@ -12809,8 +12808,8 @@ fmod EVALUATION is
         solveBubblesMod(PU, getOps(U), M,
           included('META-MODULE, getImports(PU), DB), VDS, DB),
         U, M,
-        insertVars(getName(PU), VDS,
-          insertTopModule(getName(PU),
+        insertVars(getHeader(PU), VDS,
+          insertTopModule(getHeader(PU),
             solveBubblesMod(PU, getOps(U), M,
               included('META-MODULE, getImports(PU), DB), VDS, DB), DB))) .
 
@@ -12818,9 +12817,9 @@ fmod EVALUATION is
     *** PU : top module without bubbles
     *** U  : everything below
     *** M  : complete signature
-    = insertFlatModule(getName(PU),
+    = insertFlatModule(getHeader(PU),
         flatModule(setImports(transform(addDecls(PU, U), DB), nil)),
-        insertInternalModule(getName(PU), transform(PU, DB), DB)) .
+        insertInternalModule(getHeader(PU), transform(PU, DB), DB)) .
   eq evalPreModule3(unitError(QIL), U, M, DB) = warning(DB, QIL) .
 endfm
 
@@ -14555,9 +14554,9 @@ fmod INST-EXPR-EVALUATION is
   eq unitInstAux(noModule, unitError(QIL), VDS, SMS, OMS, PDL, PDL', IL, IL', VE, VEPS, PDL'', DB)
     = warning(DB, QIL) .
   eq unitInstAux(U, M, VDS, SMS, OMS, (X :: ME, PDL), PDL', IL, IL', empty, VEPS, PDL'', DB)
-    = warning(DB, '\r 'Error: '\o 'Incorrect 'module header2QidList(getName(U)) '. '\n) .
+    = warning(DB, '\r 'Error: '\o 'Incorrect 'module header2QidList(getHeader(U)) '. '\n) .
   eq unitInstAux(U, M, VDS, SMS, OMS, nil, PDL, IL, IL', (QI, VE, PL), VEPS, PDL', DB)
-    = warning(DB, '\r 'Error: '\o 'Incorrect 'module header2QidList(getName(U)) '. '\n) .
+    = warning(DB, '\r 'Error: '\o 'Incorrect 'module header2QidList(getHeader(U)) '. '\n) .
   eq unitInstAux(U, M, VDS, SMS, OMS, PDL, PDL', IL, IL', PL, VEPS, PDL'', DB)
     = DB
     [owise] .
@@ -16928,7 +16927,7 @@ fmod DECL-META-PRETTY-PRINT is
   ---- error handling
 ---(
   eq metaPrettyPrint(M, T, POS:PrintOptionSet)
-    = 'Module getName(M) 'contains 'errors. .
+    = 'Module getHeader(M) 'contains 'errors. .
 ---)
 
   eq eMetaPrettyPrint(U, T) = metaPrettyPrint(U, T) . ----, mixfix flat format) .
@@ -17835,7 +17834,7 @@ fmod UNIT-PROCESSING is
     if PDR := parseDecl(T', PU, U, VDS) .
   ceq procModule4(T, F[TL], PU, U, VDS, DB)
     = evalPreModule(preModule(PDR), unit(PDR), vars(PDR),
-        insTermModule(getName(U), T, DB))
+        insTermModule(getHeader(U), T, DB))
     if F =/= '__
        /\ PDR := parseDecl(F[TL], PU, U, VDS) .
   eq procModule4(T, T', unitError(QIL), V:[Module], V:[OpDeclSet], DB)
@@ -18292,7 +18291,7 @@ fmod COMMAND-PROCESSING is
   ceq procLoad(T, ME, M, VDS, DB)
     = if downTerm(T:[Term], emptyFModule) =/= emptyFModule
       then << evalModule(downModule(T:[Term]), none, DB) ;
-              'Introduced 'module header2Qid(getName(downModule(T:[Term]))) '\n >>
+              'Introduced 'module header2Qid(getHeader(downModule(T:[Term]))) '\n >>
       else << DB ; '\r 'Error: '\o 'Incorrect 'metamodule. '\n >>
       fi
     if T:[Term] := getTerm(metaReduce(M, solveBubbles(T, M, true, VDS, DB))) .
@@ -18582,7 +18581,7 @@ fmod COMMAND-PROCESSING is
   ceq procRed(ME, M, T, VDS, DB)
     = if metaReduce(getModule(TM), getTerm(TM)) :: ResultPair
       then ('\b 'reduce 'in
-            '\o eMetaPrettyPrint(getName(getModule(TM))) '\b ': '\o '\n '\s '\s
+            '\o eMetaPrettyPrint(getHeader(getModule(TM))) '\b ': '\o '\n '\s '\s
             eMetaPrettyPrint(getModule(TM), getTerm(TM)) '\n
             '\b 'result '\o '\s
             eMetaPrettyPrint(getType(metaReduce(getModule(TM), getTerm(TM))))
@@ -18657,7 +18656,7 @@ fmod COMMAND-PROCESSING is
 
   ceq procRew(ME, M, T, VDS, DB)
     = if RP :: ResultPair
-      then ('\b 'rewrite 'in '\o eMetaPrettyPrint(getName(getModule(TMVB)))
+      then ('\b 'rewrite 'in '\o eMetaPrettyPrint(getHeader(getModule(TMVB)))
             '\b ': '\o '\n '\s '\s
             eMetaPrettyPrint(getModule(TMVB), getTerm(TMVB)) '\n
             '\b 'result '\o '\s
@@ -18729,7 +18728,7 @@ fmod COMMAND-PROCESSING is
 
   ceq procFrew(ME, M, T, D, I, VDS, DB)
     = if RP :: ResultPair
-      then ('\b 'frewrite 'in '\o eMetaPrettyPrint(getName(getModule(TMVBN)))
+      then ('\b 'frewrite 'in '\o eMetaPrettyPrint(getHeader(getModule(TMVBN)))
             '\b ': '\o  '\n '\s '\s
             eMetaPrettyPrint(getModule(TMVBN), getTerm(TMVBN)) '\n
             '\b 'result '\o '\s eMetaPrettyPrint(getType(RP))
@@ -18959,7 +18958,7 @@ fmod COMMAND-PROCESSING is
                  fi
                  '`] '\s
             fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T) '\s qid("=>" + string(QI)) '\s
             eMetaPrettyPrint(M, T'') '. '\n '\n
             'Solution '1 '\n
@@ -18983,7 +18982,7 @@ fmod COMMAND-PROCESSING is
                  fi
                  '`] '\s
             fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
                  eMetaPrettyPrint(M, T)
                  '\s qid("=>" + string(QI)) '\s
                  eMetaPrettyPrint(M, T'') '. '\n '\n
@@ -19153,7 +19152,7 @@ fmod COMMAND-PROCESSING is
                  fi
                  '`] '\s
             fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T) '\s qid("~>" + string(QI)) '\s
             eMetaPrettyPrint(M, T'') '.
             procVUNarrow3(M, 0, Vars((T,T')), RTS:[ResultTripleSet])
@@ -19177,7 +19176,7 @@ fmod COMMAND-PROCESSING is
                      fi
                      '`] '\s
                 fi
-                'in eMetaPrettyPrint(getName(M)) ':
+                'in eMetaPrettyPrint(getHeader(M)) ':
                    eMetaPrettyPrint(M, T)
                    '\s qid("~>" + string(QI)) '\s
                    eMetaPrettyPrint(M, T'') '. '\n '\n
@@ -19388,7 +19387,7 @@ fmod COMMAND-PROCESSING is
                  fi
                  '`] '\s
             fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T) '\s qid("~>" + string(QI)) '\s
             eMetaPrettyPrint(M, T'') '.
             procNarrowSearch3(M, 0, Vars((T,T')), RTS:[ResultTripleSet])
@@ -19412,7 +19411,7 @@ fmod COMMAND-PROCESSING is
                      fi
                      '`] '\s
                 fi
-                'in eMetaPrettyPrint(getName(M)) ':
+                'in eMetaPrettyPrint(getHeader(M)) ':
                    eMetaPrettyPrint(M, T)
                    '\s qid("~>" + string(QI)) '\s
                    eMetaPrettyPrint(M, T'') '. '\n '\n
@@ -19597,7 +19596,7 @@ fmod COMMAND-PROCESSING is
     = if Sb? :: Substitution
       then ('match
             if I == 0 then nil else '\s '`[ qid(string(I, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T) '\s '<=? '\s eMetaPrettyPrint(M, T') '. '\n '\n
             'Solution '1 '\n
             if Sb? == none
@@ -19611,7 +19610,7 @@ fmod COMMAND-PROCESSING is
                  then nil
                  else '\s '`[ qid(string(I, 10)) '`] '\s
                  fi
-                 'in eMetaPrettyPrint(getName(M)) ':
+                 'in eMetaPrettyPrint(getHeader(M)) ':
                        eMetaPrettyPrint(M, T) '\s '<=? '\s
                        eMetaPrettyPrint(M, T') '. '\n '\n
                        'No 'solution. '\n)
@@ -19623,7 +19622,7 @@ fmod COMMAND-PROCESSING is
     = if MP? :: MatchPair
       then ('xmatch
             if I == 0 then nil else '\s '`[ qid(string(I, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T) '\s '<=? '\s eMetaPrettyPrint(M, T') '. '\n '\n
             'Solution '1 '\n
             if gTSubstitution(MP?) == none
@@ -19637,7 +19636,7 @@ fmod COMMAND-PROCESSING is
                  then nil
                  else '\s '`[ qid(string(I, 10)) '`] '\s
                  fi
-                 'in eMetaPrettyPrint(getName(M)) ':
+                 'in eMetaPrettyPrint(getHeader(M)) ':
                       eMetaPrettyPrint(M, T) '\s '<=? '\s
                       eMetaPrettyPrint(M, T') '. '\n '\n
                       'No 'solution. '\n)
@@ -19707,7 +19706,7 @@ fmod COMMAND-PROCESSING is
     = if UP? :: UnificationPair?
       then ('unify
             if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, UP) '\n '\n
             if UP? == noUnifier
             then 'No 'unifier
@@ -19851,7 +19850,7 @@ fmod COMMAND-PROCESSING is
     = if X:[SubstitutionSet] :: SubstitutionSet
       then ('id-unify
             if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T =? T')
             if X:[SubstitutionSet] == empty
             then '\n 'No 'unifier
@@ -19892,7 +19891,7 @@ fmod COMMAND-PROCESSING is
     = if X:[SubstitutionSet] :: SubstitutionSet
       then ('variant 'unify
             if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T =? T')
             if X:[SubstitutionSet] == empty
             then '\n 'No 'variant 'unifier
@@ -19945,7 +19944,7 @@ fmod COMMAND-PROCESSING is
     = if X:[SubstitutionSet] :: SubstitutionSet
       then ('variant 'unify
             if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T =? T')
             if X:[SubstitutionSet] == empty
             then '\n 'No 'asymmetric 'unifier
@@ -19997,7 +19996,7 @@ fmod COMMAND-PROCESSING is
     = if X:[VariantFourSet] :: VariantFourSet
       then ('get 'variants
             if D == unbounded then nil else '\s '`[ qid(string(D, 10)) '`] '\s fi
-            'in eMetaPrettyPrint(getName(M)) ':
+            'in eMetaPrettyPrint(getHeader(M)) ':
             eMetaPrettyPrint(M, T)
             if X:[VariantFourSet] == empty
             then '\n 'No 'variant
