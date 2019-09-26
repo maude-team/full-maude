@@ -1,0 +1,36 @@
+mod HANOI is
+  protecting NAT-LIST .
+
+  sorts Post Hanoi Game .
+  subsort Post < Hanoi .
+
+  op (_) [_] : Nat NatList -> Post [ctor] .
+  op empty   : -> Hanoi [ctor] .
+  op __      : Hanoi Hanoi -> Hanoi [ctor assoc comm id: empty] .
+
+  vars S T D1 D2 N : Nat .
+  vars L1 L2       : NatList .
+  vars H H'        : Hanoi .
+
+  crl [move] : (S) [L1 D1] (T) [L2 D2] => (S) [L1] (T) [L2 D2 D1] if D2 > D1 .
+  rl  [move] : (S) [L1 D1] (T) [nil]   => (S) [L1] (T) [D1] .
+
+  op <_,_> : Hanoi Nat -> Game [ctor] .
+  crl [step] : < H, N > => < H', s(N) > if H => H' .
+endm
+
+---- rew (0)[3 2 1] (1)[nil] (2)[nil] .
+
+srew [3] in HANOI : (0)[3 2 1] (1)[nil] (2)[nil] using move .
+
+eof
+  Solution 1
+  rewrites: 1 in 0ms cpu (0ms real) (~ rewrites/second)
+  result Hanoi: (0)[3 2] (1)[1] (2)[nil]
+
+  Solution 2
+  rewrites: 2 in 0ms cpu (1ms real) (~ rewrites/second)
+  result Hanoi: (0)[3 2] (1)[nil] (2)[1]
+
+  No more solutions.
+  rewrites: 2 in 0ms cpu (1ms real) (~ rewrites/second)
