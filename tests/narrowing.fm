@@ -128,13 +128,13 @@ loop init .
  (search [1] in NARROWING-VENDING-MACHINE :
             < M:Money > ~>* < a c > .)
 
- (reduce in COMMAND-PROCESSING :
+ (reduce in DATABASE-HANDLING :
             metaNarrowSearch(axCohComplete(upModule(NARROWING-VENDING-MACHINE)),
               '<_>['M:Money],
               '<_>['__['a.Item, 'c.Item]],
               none, '*, unbounded, 1, unbounded) .)
 
- (reduce in COMMAND-PROCESSING :
+ (reduce in DATABASE-HANDLING :
             metaNarrowSearchPath(axCohComplete(upModule(NARROWING-VENDING-MACHINE)),
               '<_>['M:Money],
               '<_>['__['a.Item, 'c.Item]],

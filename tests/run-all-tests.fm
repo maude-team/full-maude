@@ -2,8 +2,11 @@ set show stats off .
 set show loop stats off .
 set show timing off .
 set show loop timing off .
+load trace.maude
 
+----(
 load sample-files-2.7/rew-seq-extended-rent-a-car-store.fm
+eof
 load sample-files-2.7/rew-seq-rent-a-car-store.fm
 load sample-files-2.7/check-rrobin.fm
 load sample-files-2.7/saving-account.fm
@@ -48,12 +51,12 @@ load pruebas/renombramiento-ops-parciales.fm
 load pruebas/search-commands.fm
 load pruebas/unification.fm
 load pruebas/builtin-renaming.maude
-----load pruebas/db.maude
+load pruebas/db.maude
 load pruebas/mb-test.maude
 load pruebas/ocl.maude
 load pruebas/pita.fm
 load pruebas/summation-core-maude-modules.fm
-----load pruebas/getVariants-my-nat.fm
+load pruebas/getVariants-my-nat.fm
 load pruebas/getVariants-my-nat-set.fm
 select FULL-MAUDE .
 loop init .
@@ -66,12 +69,18 @@ load pruebas/serbanuta.fm                       --- bug in mb/cmbs (March 9th, 2
 
 load pruebas/gen-tree.fm
 load pruebas/list-test.fm
+load pruebas/vistas-parametrizadas.fm
+
 
 load narrowing.fm
-
+load model-checker.maude
+select FULL-MAUDE .
+loop init .
 load bug-reports/riesco/class-no-attributes.fm
 load bug-reports/riesco/lider.fm
 load bug-reports/riesco/network.fm
+----)
 load bug-reports/riesco/nspk.fm
+eof
 load bug-reports/riesco/prueba.fm
 load bug-reports/riesco/show-view.fm

@@ -1,0 +1,5 @@
+(red in SET{Tuple{Nat, Bool}} : empty .)
+
+(fmod FOO is pr SET{Tuple{Nat, Bool}} . endfm)
+
+(show module .)

@@ -9,7 +9,7 @@
 ----if I load full-maude and input
 
 
-----set trace on .
+set trace off .
 set trace select on .
 trace include FULL-MAUDE .
 trace select procModule4 .

@@ -1,0 +1,8 @@
+(mod CANCEL-NAT is
+  pr NAT .
+  rl [cancel] : N:Nat => 0 .
+ endm)
+
+(srew s(0) using cancel .)
+
+(srew 1 using top(cancel) .)

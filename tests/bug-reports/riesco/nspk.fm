@@ -1,3 +1,35 @@
+(fmod FOO is
+  sort Foo .
+  op f_ : Foo -> Foo .
+  op =_ : Foo -> Foo .
+  ops a b : -> Foo .
+  eq f = a = b .
+endfm)
+
+(fmod FOO is
+  sort Foo .
+  op f_ : Foo -> Foo .
+  op =_ : Foo -> Foo .
+  ops a b : -> Foo .
+  eq (f = a) = b .
+endfm)
+
+(fmod FOO is
+  sorts Foo .
+  op _=_ : Foo Foo -> Bool [comm] .
+  op f : Foo -> Foo .
+  vars N M : Foo .
+  eq f(N) = f(M) = N = M .
+endfm)
+
+(fmod FOO is
+  sorts Foo .
+  op _=_ : Foo Foo -> Bool [comm] .
+  op f : Foo -> Foo .
+  vars N M : Foo .
+  eq (f(N) = f(M)) = N = M .
+endfm)
+
 (fmod PNAT is
   including BOOL .
 
@@ -12,10 +44,10 @@
   op s : PNat -> PNzNat [ctor] .
   op z : -> PZero [ctor] .
 
-  eq (V:PNat = V:PNat) = true [metadata "built-in in CafeOBJ"] .
-  eq (V:PNzNat = V:PNzNat) = true [metadata "built-in in CafeOBJ"] .
-  eq (V:PZero = V:PZero) = true [metadata "built-in in CafeOBJ"] .
+  eq V:PNat = V:PNat = true [metadata "built-in in CafeOBJ"] .
+  eq V:PNzNat = V:PNzNat = true [metadata "built-in in CafeOBJ"] .
+  eq V:PZero = V:PZero = true [metadata "built-in in CafeOBJ"] .
 
-  eq (z = s(N:PNat)) = false .
-  eq (s(N:PNat) = s(M:PNat)) = (N:PNat = M:PNat) .
+  eq z = s(N:PNat) = false .
+  eq s(N:PNat) = s(M:PNat) = (N:PNat = M:PNat) .
 endfm)

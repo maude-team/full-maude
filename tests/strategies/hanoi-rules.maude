@@ -1,0 +1,53 @@
+mod HANOI-RULES is
+  protecting NAT-LIST .
+
+  sorts Post Hanoi Game .
+  subsort Post < Hanoi .
+
+  op (_) [_] : Nat NatList -> Post [ctor] .
+  op empty   : -> Hanoi [ctor] .
+  op __      : Hanoi Hanoi -> Hanoi [ctor assoc comm id: empty] .
+
+  vars S T D1 D2 N : Nat .
+  vars L1 L2       : NatList .
+  vars H H'        : Hanoi .
+
+  crl [move] : (S) [L1 D1] (T) [L2 D2] => (S) [L1] (T) [L2 D2 D1] if D2 > D1 .
+  rl  [move] : (S) [L1 D1] (T) [nil]   => (S) [L1] (T) [D1] .
+
+  op  <_,_>    : Hanoi Nat -> Game [ctor] .
+  crl [step]   : < H, N > => < H', s(N) > if H => H' .
+  rl  [cancel] : N => 0 [nonexec] .
+  rl  [inc]    : N => s(N) [nonexec] .
+endm
+
+---- rew (0)[3 2 1] (1)[nil] (2)[nil] .
+
+srew [3] in HANOI : (0)[3 2 1] (1)[nil] (2)[nil] using move .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using move[T <- 2] .
+srew [3] < (0)[3 2 1] (1)[nil] (2)[nil], 0 > using step{all} .
+set print mixfix off .
+srew s(0) using cancel .
+srew s(0) using top(cancel) .
+set print mixfix on .
+srew (0)[nil] (1)[nil] (2)[3 2 1] using match (N)[3 2 1] H s.t. N =/= 0 .
+srew (0)[nil] (1)[nil] (2)[3 2 1] using xmatch (0)[nil] (2)[3 2 1] .
+srew (0)[nil] (1)[nil] (2)[3 2 1] using match (0)[nil] (2)[3 2 1] .
+srew (0)[nil] (1)[nil] (2)[3 2 1] using amatch 3 L1 1 .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using move ; move .
+srew (0)[3 2] (1)[1] (2)[nil] using move[S <- 0] | move[T <- 0] .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using move * .
+srew (0)[3 2 1] using idle .
+srew (0)[3 2 1] using fail .
+srew (0)[3 2] (1)[1] (2)[nil] using (move[T <- 2] ? idle : move) * .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using move[S <- 0] ! .
+srew (0)[3] (1)[1] (2)[2] using test(move[S <- 0]) .
+srew (0)[3] (1)[1] (2)[2] using test(move[S <- 1]) .
+srew [1] < (0)[3 2 1] (1) [nil] (2)[nil] , 0 >
+        using (matchrew < H, N > by H using move, N using top(inc)) * ;
+            amatch (2)[3 2 1] .
+srew 1 using inc .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using one(move * ; amatch (2)[3 2 1]) .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using move * ; amatch (2)[3 2 1] .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using one(move) * .
+srew (0)[3 2 1] (1)[nil] (2)[nil] using moveAll(0, 2, 3) .

@@ -1,0 +1,25 @@
+load hanoi-rules.fm
+
+(fmod HANOI-AUX is
+  protecting SET{Nat} .
+
+  op third : Nat Nat ~> Nat .
+
+  vars N M K : Nat .
+
+  ceq third(N, M) = K if N, M, K := 0, 1, 2 .
+endfm)
+
+(smod HANOI-SOLVE is
+  protecting HANOI-RULES .
+  protecting HANOI-AUX .
+  strat moveAll : Nat Nat Nat @ Hanoi .
+  vars S T C M : Nat .
+  sd moveAll(S, S, C) := idle .
+  sd moveAll(S, T, 0) := idle .
+  sd moveAll(S, T, s(C)) := moveAll(S, third(S, T), C) ;
+                            move[S <- S, T <- T] ;
+                            moveAll(third(S, T), T, C) .
+endsm)
+
+(srew (0)[3 2 1] (1)[nil] (2)[nil] using moveAll(0, 2, 3) .)

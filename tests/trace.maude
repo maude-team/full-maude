@@ -1,0 +1,33 @@
+set trace off .
+set trace select on .
+trace select ----solveBubblesCond
+             ----solveBubbles
+             ----procModule4
+             ----parseDecl
+             ----evalPreModule
+             ----solveBubblesMod
+             ----solveBubblesOps
+             ----solveBubblesEq
+             ----metaParse
+             ----breakMb
+             ----breakMbAux
+             ----parseSort
+             ----parseType
+             ----evalViewExpression
+             ----procView
+             ----procView2
+             ----viewInst
+             ----prepViewExpression
+             ----evalModExp
+             ----viewInst
+             ----viewInstAux
+             ----insertView
+             ----maps2rens
+             ----genMapsSorts
+             ----setSortMappings
+             ----setOpMappings
+             ----applyMapsToMaps
+             metaParse
+             .
+set print conceal off .
+----print reveal fmod_is_sorts_.____endfm .

@@ -6,7 +6,7 @@
  subsort X$Elt < NeKSet{X} < KSet{X} .
  op empty : -> KSet{X} [ctor] .
  op _`,_ : KSet{X} KSet{X} ~> KSet{X} [ctor assoc comm id: empty] .
----  mb NS:NeKSet`{X`}, NS':NeKSet`{X`} : NeKSet{X}  .
+---- mb NS:NeKSet`{X`}, NS':NeKSet`{X`} : NeKSet{X}  .
  mb NS:NeKSet`{X`}, NS':NeKSet`{X`} : NeKSet{X} [label AAA] .
 
  vars E E' : X$Elt .

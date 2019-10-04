@@ -1,0 +1,32 @@
+mod CANCEL-NAT is
+  pr NAT .
+  rl [cancel] : N:Nat => 0 .
+endm
+
+srew s(0) using cancel .
+---(
+srewrite in CANCEL-NAT : 1 using cancel .
+
+Solution 1
+rewrites: 1 in 0ms cpu (0ms real) (15625 rewrites/second)
+result Zero: 0
+
+Solution 2
+rewrites: 2 in 0ms cpu (0ms real) (22222 rewrites/second)
+result NzNat: 1
+
+No more solutions.
+rewrites: 2 in 0ms cpu (0ms real) (19801 rewrites/second)
+---)
+
+srew 1 using top(cancel) .
+---(
+srewrite in CANCEL-NAT : 1 using top(cancel) .
+
+Solution 1
+rewrites: 1 in 0ms cpu (0ms real) (45454 rewrites/second)
+result Zero: 0
+
+No more solutions.
+rewrites: 1 in 0ms cpu (0ms real) (22222 rewrites/second)
+---)

@@ -5751,6 +5751,10 @@ view Oid from TRIV to CONFIGURATION is
   sort Elt to Oid .
 endv
 
+view Sort from TRIV to META-LEVEL is
+  sort Elt to Sort .
+endv
+
 view SortMappingSet from TRIV to META-LEVEL is
   sort Elt to SortMappingSet .
 endv
@@ -5809,7 +5813,7 @@ endfm
 
 fmod OPERATOR-ATTRIBUTES is
   sorts @Attr@ @AttrList@ @Hook@ @HookList@ @Bubble@ @UBubble@ @StBubble@
-        @Token@ @NeTokenList@ .
+         @EqLBubble@ @RlLBubble@ @RCBubble@ @RBubble@ @Token@ @NeTokenList@ .
   subsort @Attr@ < @AttrList@ .
   subsort @Hook@ < @HookList@ .
 
@@ -5969,21 +5973,17 @@ fmod STATEMENTS is
   op var_:_. : @NeTokenList@ @Type@ -> @VarDecl@ .
 
   *** membership axiom declaration
-  op mb_:_. : @Bubble@ @Bubble@ -> @MbDecl@ .
-  ----op mb[_]:_:_. : @Token@ @Bubble@ @Bubble@ -> @MbDecl@ .
-  op cmb_:_if_. : @Bubble@ @Sort@ @Bubble@ -> @MbDecl@ .
-  op cmb[_]:_:_if_. : @Token@ @Bubble@ @Sort@ @Bubble@ -> @MbDecl@ .
+  op mb_:_. : @RBubble@ @RBubble@ -> @MbDecl@ .
+  op cmb_:_if_. : @RBubble@ @Sort@ @RBubble@ -> @MbDecl@ .
 
   *** equation declaration
-  op eq_=_. : @Bubble@ @Bubble@ -> @EqDecl@ .
-  op ceq_=_if_. : @Bubble@ @Bubble@ @Bubble@ -> @EqDecl@ .
-  op cq_=_if_. : @Bubble@ @Bubble@ @Bubble@ -> @EqDecl@ .
+  op eq_=_. : @EqLBubble@ @RBubble@ -> @EqDecl@ .
+  op ceq_=_if_. : @EqLBubble@ @RCBubble@ @RBubble@ -> @EqDecl@ .
+  op cq_=_if_. : @EqLBubble@ @RCBubble@ @RBubble@ -> @EqDecl@ .
 
   *** rule declaration
-  *** op rl`[_`]:_=>_. : @Token@ @Bubble@ @Bubble@ -> @RlDecl@ .
-  op rl_=>_. : @Bubble@ @Bubble@ -> @RlDecl@ .
-  *** op crl`[_`]:_=>_if_. : @Token@ @Bubble@ @Bubble@ @Bubble@ -> @RlDecl@ .
-  op crl_=>_if_. : @Bubble@ @Bubble@ @Bubble@ -> @RlDecl@ .
+  op rl_=>_. : @RlLBubble@ @RBubble@ -> @RlDecl@ .
+  op crl_=>_if_. : @RlLBubble@ @RCBubble@ @RBubble@ -> @RlDecl@ .
 
   *** importation declaration
   ops including_. inc_. : @ModExp@ -> @ImportDecl@ .
@@ -8701,11 +8701,12 @@ fmod META-FULL-MAUDE-SIGN is
                (id-hook('Bubble, '1 '-1 '`( '`))
                 op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
                 op-hook('qidSymbol, '<Qids>, nil, 'Qid)
-                id-hook('Exclude, 'eq 'ceq 'rl 'crl 'mb 'cmb 'var 'vars 'endm
-                                  'endfm 'sorts 'subsort 'subsorts
+                id-hook('Exclude, 'eq 'ceq 'rl 'crl 'mb 'cmb 'sd 'csd
+                                  'var 'vars 'strat 'endm
+                                  'endfm 'endsm 'sorts 'subsort 'subsorts
                                   'subclass 'subclasses 'op 'ops
                                   'protecting 'pr 'including 'inc 'extending
-                                  'ctor 'assoc 'comm)))] .
+                                  'ctor 'assoc 'comm '==)))] .
         op 'ububble : 'QidList -> '@UBubble@
              [special(
                (id-hook('Bubble, '1 '-1 '`( '`))
@@ -8717,6 +8718,30 @@ fmod META-FULL-MAUDE-SIGN is
                 op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
                 op-hook('qidSymbol, '<Qids>, nil, 'Qid)
                 id-hook('Exclude, 'using)))] .
+        op 'eqlbubble : 'QidList -> '@EqLBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, '=)))] .
+        op 'rllbubble : 'QidList -> '@RlLBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, '=>)))] .
+        op 'rcbubble : 'QidList -> '@RCBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, 'if)))] .
+        op 'rbubble : 'QidList -> '@RBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, '.)))] .
         none
         none
      endfm) .
@@ -8997,7 +9022,13 @@ fmod PREDEF-UNITS is
              [special(
                (id-hook('Bubble, '1 '-1 '`( '`))
                 op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
-                op-hook('qidSymbol, '<Qids>, nil, 'Qid)))] .
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, 'eq 'ceq 'rl 'crl 'mb 'cmb 'sd 'csd
+                                  'var 'vars 'strat 'endm
+                                  'endfm 'endsm 'sorts 'subsort 'subsorts
+                                  'subclass 'subclasses 'op 'ops
+                                  'protecting 'pr 'including 'inc 'extending
+                                  'ctor 'assoc 'comm '==)))] .
         op 'ububble : 'QidList -> '@UBubble@
              [special(
                (id-hook('Bubble, '1 '-1 '`( '`))
@@ -9009,6 +9040,30 @@ fmod PREDEF-UNITS is
                 op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
                 op-hook('qidSymbol, '<Qids>, nil, 'Qid)
                 id-hook('Exclude, 'using)))] .
+        op 'eqlbubble : 'QidList -> '@EqLBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, '=)))] .
+        op 'rllbubble : 'QidList -> '@RlLBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, '=>)))] .
+        op 'rcbubble : 'QidList -> '@RCBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, 'if)))] .
+        op 'rbubble : 'QidList -> '@RBubble@
+             [special(
+               (id-hook('Bubble, '1 '-1 '`( '`))
+                op-hook('qidListSymbol, '__, 'QidList 'QidList, 'QidList)
+                op-hook('qidSymbol, '<Qids>, nil, 'Qid)
+                id-hook('Exclude, '.)))] .
         none
         none
      endfm) .
@@ -10980,28 +11035,24 @@ fmod UNIT-BUBBLE-PARSING is
 *** shall see how after calling this function the terms corresponding to each
 *** of the bubbles is extracted.
 
-  eq solveBubblesEq('ububble[T], 'ububble[T'], M, B, VDS, DB)
-    = solveBubblesEq('bubble[T], 'bubble[T'], M, B, VDS, DB) .
-  ceq solveBubblesEq('bubble[T], 'bubble[T'], M, B, VDS, DB)
+  ceq solveBubblesEq(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
            then solveUps(constsToVars(getTerm(RP), VDS), DB)
            else constsToVars(getTerm(RP), VDS)
            fi
       else qidError('\r 'Warning:
-                 '\o printSyntaxError(RP, '`( QIL '`) '= '`( QIL' '`)) '\n
+                 '\o printSyntaxError(RP, QIL '= QIL') '\n
                  '\r 'Error: '\o 'no 'parse 'for 'eq QIL '\s '= '\s QIL' '\n)
       fi
     if M' := addOps((VDS
-                     op '_@@@=@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .),
+                     op 'eq_=_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', '`( QIL '`) '@@@=@@@ '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', 'eq QIL '= QIL' '., '@@@) .
 
-  eq solveBubblesCEq('ububble[T], 'ububble[T'], M, B, VDS, DB)
-    = solveBubblesCEq('bubble[T], 'bubble[T'], M, B, VDS, DB) .
-  ceq solveBubblesCEq('bubble[T], 'bubble[T'], M, B, VDS, DB)
+  ceq solveBubblesCEq(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
            then solveUps(constsToVars(getTerm(RP), VDS), DB)
@@ -11012,50 +11063,50 @@ fmod UNIT-BUBBLE-PARSING is
                  '\r 'Error: '\o 'no 'parse 'for 'ceq QIL '\s '= '\s QIL' '\n)
       fi
     if M' := addOps((VDS
-                     op '_@@@=@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .),
+                     op '_=_ : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', '`( QIL '`) '@@@=@@@ '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', QIL '= QIL', '@@@) .
 
   eq solveBubblesRl('ububble[T], 'ububble[T'], M, B, VDS, DB)
-    = solveBubblesRl('bubble[T], 'bubble[T'], M, B, VDS, DB) .
-  ceq solveBubblesRl('bubble[T], 'bubble[T'], M, B, VDS, DB)
+    = solveBubblesRl(T, T', M, B, VDS, DB) .
+  ceq solveBubblesRl(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
            then solveUps(constsToVars(getTerm(RP), VDS), DB)
            else constsToVars(getTerm(RP), VDS)
            fi
       else qidError('\r 'Warning:
-                 '\o printSyntaxError(RP, '`( QIL '`) '=> '`( QIL' '`)) '\n
+                 '\o printSyntaxError(RP, QIL '=> QIL') '\n
                  '\r 'Error: '\o 'no 'parse 'for 'rl QIL '\s '=> '\s QIL' '\n)
       fi
     if M' := addOps((VDS
-                     op '_@@@=>@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .),
+                     op 'rl_=>_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', '`( QIL '`) '@@@=>@@@ '`( QIL' '`), '@@@) .
-  ceq solveBubblesCRl('bubble[T], 'bubble[T'], M, B, VDS, DB)
+       /\ RP := metaParse(M', 'rl QIL '=> QIL' '., '@@@)
+    [owise] .
+  ceq solveBubblesCRl(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
            then solveUps(constsToVars(getTerm(RP), VDS), DB)
            else constsToVars(getTerm(RP), VDS)
            fi
       else qidError('\r 'Warning:
-                 '\o printSyntaxError(RP, '`( QIL '`) '=> '`( QIL' '`)) '\n
+                 '\o printSyntaxError(RP, QIL '=> QIL') '\n
                  '\r 'Error: '\o 'no 'parse 'for 'crl QIL '\s '=> '\s QIL' '\n)
       fi
     if M' := addOps((VDS
-                     op '_@@@=>@@@_ : 'Universal 'Universal -> '@@@ [poly(1 2)] .),
+                     op 'rl_=>_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', '`( QIL '`) '@@@=>@@@ '`( QIL' '`), '@@@) .
+       /\ RP := metaParse(M', 'rl QIL '=> QIL' '., '@@@)
+    [owise] .
 
-  eq solveBubbles2('ububble[T], T?:Type?, M, true, VDS, DB)
-    = solveBubbles2('bubble[T], T?:Type?, M, true, VDS, DB) .
-  ceq solveBubbles2('bubble[T], T?:Type?, M, true, VDS, DB)
+  ceq solveBubbles2(T, T?:Type?, M, true, VDS, DB)
     = if RP :: ResultPair
       then solveUps(constsToVars(getTerm(RP), VDS), DB)
       else qidError('\r 'Warning:
@@ -11064,7 +11115,7 @@ fmod UNIT-BUBBLE-PARSING is
       fi
     if QIL := downQidList(T)
        /\ RP := metaParse(M, QIL, T?:Type?) .
-  ceq solveBubbles2('bubble[T], T?:Type?, M, false, VDS, DB)
+  ceq solveBubbles2(T, T?:Type?, M, false, VDS, DB)
     = if RP :: ResultPair
       then constsToVars(getTerm(RP), VDS)
       else qidError('\r 'Warning: '\o printSyntaxError(RP, QIL) '\n
@@ -11082,6 +11133,10 @@ fmod UNIT-BUBBLE-PARSING is
   eq addInfoConds(M, '@Bubble@ ; SS) = addInfoConds(M, SS) .
   eq addInfoConds(M, '@UBubble@ ; SS) = addInfoConds(M, SS) .
   eq addInfoConds(M, '@StBubble@ ; SS) = addInfoConds(M, SS) .
+  eq addInfoConds(M, '@EqLBubble@ ; SS) = addInfoConds(M, SS) .
+  eq addInfoConds(M, '@RlLBubble@ ; SS) = addInfoConds(M, SS) .
+  eq addInfoConds(M, '@RCBubble@ ; SS) = addInfoConds(M, SS) .
+  eq addInfoConds(M, '@RBubble@ ; SS) = addInfoConds(M, SS) .
   eq addInfoConds(M, S ; SS)
     = addInfoConds(
         addOps(op qid(string(S)) : nil -> '@Sort@ [ctor] .
@@ -11103,9 +11158,7 @@ fmod UNIT-BUBBLE-PARSING is
           else M
           fi)) .
 
-  eq solveBubblesCond('ububble[T], M, M', B, VDS, DB)
-    = solveBubblesCond('bubble[T], M, M', B, VDS, DB) .
-  ceq solveBubblesCond('bubble[T], M, M', B, VDS, DB)
+  ceq solveBubblesCond(T, M, M', B, VDS, DB)
     = if 'Bool in getSorts(M)
          and-then metaParse(M, QIL, 'Bool) :: ResultPair
       then if B
@@ -11209,13 +11262,13 @@ fmod UNIT-BUBBLE-PARSING is
   eq solveBubblesOpsAux(none, M) = none .
 
   eq solveBubblesAts(id('bubble[T]) AtS, TyL, Ty, M)
-    = (id(solveBubbles2('bubble[T], Ty, M, false, none, emptyDatabase))
+    = (id(solveBubbles2(T, Ty, M, false, none, emptyDatabase))
        solveBubblesAts(AtS, TyL, Ty, M)) .
   eq solveBubblesAts(left-id('bubble[T]) AtS, Ty TyL, Ty', M)
-    = (left-id(solveBubbles2('bubble[T], Ty, M, false, none, emptyDatabase))
+    = (left-id(solveBubbles2(T, Ty, M, false, none, emptyDatabase))
        solveBubblesAts(AtS, Ty TyL, Ty', M)) .
   eq solveBubblesAts(right-id('bubble[T]) AtS, TyL Ty, Ty', M)
-    = (right-id(solveBubbles2('bubble[T], Ty, M, false, none, emptyDatabase))
+    = (right-id(solveBubbles2(T, Ty, M, false, none, emptyDatabase))
        solveBubblesAts(AtS, TyL Ty, Ty', M)) .
   eq solveBubblesAts(special(HkL) AtS, TyL, Ty, M)
     = (special(solveBubblesHooks(HkL, Ty, M))
@@ -11249,19 +11302,18 @@ fmod UNIT-BUBBLE-PARSING is
   op pullStmtAttrOutAux : Term TermList AttrSet OpDeclSet -> [Tuple{Term,AttrSet}] .
   op pullLabelOut : Term -> [Tuple{Term,AttrSet}] .
 
-  eq pullStmtAttrOut('bubble[QI], VDS) = {'bubble[QI], none} .
-  eq pullStmtAttrOut('bubble['__[QI, QI']], VDS) = {'bubble['__[QI, QI']], none} .
-  eq pullStmtAttrOut('bubble['__[QI, QI', QI'']], VDS)
-    = {'bubble['__[QI, QI', QI'']], none} .
-  eq pullStmtAttrOut('bubble['__[QI, QI', TL, QI'']], VDS)
+  eq pullStmtAttrOut(QI, VDS) = {QI, none} .
+  eq pullStmtAttrOut('__[QI, QI'], VDS) = {'__[QI, QI'], none} .
+  eq pullStmtAttrOut('__[QI, QI', QI''], VDS) = {'__[QI, QI', QI''], none} .
+  eq pullStmtAttrOut('__[QI, QI', TL, QI''], VDS)
     = if QI'' =/= ''`].Qid
-      then {'bubble['__[QI, QI', TL, QI'']], none}
-      else pullStmtAttrOutAux('bubble['__[QI, QI', TL, QI'']], (QI, QI', TL), none, VDS)
+      then {'__[QI, QI', TL, QI''], none}
+      else pullStmtAttrOutAux('__[QI, QI', TL, QI''], (QI, QI', TL), none, VDS)
       fi .
 
   eq pullStmtAttrOutAux(T, (TL, ''`[.Qid), AtS, VDS)
     = if AtS =/= none
-      then {'bubble['__[TL]], AtS}
+      then {'__[TL], AtS}
       else {T, none}
       fi .
   eq pullStmtAttrOutAux(T, (TL, QI, ''nonexec.Qid), AtS, VDS)
@@ -11296,16 +11348,14 @@ fmod UNIT-BUBBLE-PARSING is
     if downString(downQid(T)) : String .
   eq printArg(empty, VDS) = nil .
 
-  eq pullLabelOut('bubble[QI]) = {'bubble[QI], none} .
-  eq pullLabelOut('bubble['__[QI, QI']]) = {'bubble['__[QI, QI']], none} .
-  eq pullLabelOut('bubble['__[QI, QI', QI'']])
-    = {'bubble['__[QI, QI', QI'']], none} .
-  eq pullLabelOut('bubble['__[QI, QI', QI'', QI3]])
-    = {'bubble['__[QI, QI', QI'', QI3]], none} .
-  eq pullLabelOut('bubble['__[QI, QI', QI'', QI3, TL]])
+  eq pullLabelOut(QI) = {QI, none} .
+  eq pullLabelOut('__[QI, QI']) = {'__[QI, QI'], none} .
+  eq pullLabelOut('__[QI, QI', QI'']) = {'__[QI, QI', QI''], none} .
+  eq pullLabelOut('__[QI, QI', QI'', QI3]) = {'__[QI, QI', QI'', QI3], none} .
+  eq pullLabelOut('__[QI, QI', QI'', QI3, TL])
     = if QI == ''`[.Qid and-then (QI'' == ''`].Qid and-then QI3 == '':.Qid)
-      then {'bubble['__[TL]], label(downQid(QI'))}
-      else {'bubble['__[QI, QI', QI'', QI3, TL]], none}
+      then {'__[TL], label(downQid(QI'))}
+      else {'__[QI, QI', QI'', QI3, TL], none}
       fi .
 
   ops lhs rhs : Term -> Term .
@@ -11320,14 +11370,14 @@ fmod UNIT-BUBBLE-PARSING is
   eq solveBubbles(RlS, M, unitError(QIL), B, VDS, DB) = ruleError(QIL) .
   eq solveBubbles(MAS, M, unitError(QIL), B, VDS, DB) = membAxError(QIL) .
 
-  eq solveBubbles(((eq T = T' [AtS] .) EqS), M, M', B, VDS, DB)
+  eq solveBubbles(((eq 'eqlbubble[T] = 'rbubble[T'] [AtS] .) EqS), M, M', B, VDS, DB)
     = ((eq lhs(solveBubblesEq(term(pullLabelOut(T)), term(pullStmtAttrOut(T', VDS)),
                  M, B, VDS, DB))
           = rhs(solveBubblesEq(term(pullLabelOut(T)), term(pullStmtAttrOut(T', VDS)),
                   M, B, VDS, DB))
             [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T', VDS)) AtS] .)
        solveBubbles(EqS, M, M', B, VDS, DB)) .
-  eq solveBubbles(((ceq T = T' if T'' = 'true.Bool [AtS] .) EqS),
+  eq solveBubbles(((ceq 'eqlbubble[T] = 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] .) EqS),
        M, M', B, VDS, DB)
     = ((ceq lhs(solveBubblesCEq(term(pullLabelOut(T)), T', M, B, VDS, DB))
           = rhs(solveBubblesCEq(term(pullLabelOut(T)), T', M, B, VDS, DB))
@@ -11336,7 +11386,7 @@ fmod UNIT-BUBBLE-PARSING is
        solveBubbles(EqS, M, M', B, VDS, DB)) .
   eq solveBubbles((none).EquationSet, M, M', B, VDS, DB) = none .
 
-  eq solveBubbles(((rl T => T' [AtS] .) RlS), M, M', B, VDS, DB)
+  eq solveBubbles(((rl 'rllbubble[T] => 'rbubble[T'] [AtS] .) RlS), M, M', B, VDS, DB)
     = ((rl lhs(solveBubblesRl(term(pullLabelOut(T)),
                  term(pullStmtAttrOut(T', VDS)), M, B, VDS, DB))
         => rhs(solveBubblesRl(term(pullLabelOut(T)),
@@ -11344,7 +11394,8 @@ fmod UNIT-BUBBLE-PARSING is
              [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T', VDS)) AtS] .)
        solveBubbles(RlS, M, M', B, VDS, DB)) .
   eq solveBubbles(
-       ((crl T => T' if T'' = 'true.Bool [AtS] .) RlS), M, M', B, VDS, DB)
+       ((crl 'rllbubble[T] => 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] .) RlS),
+       M, M', B, VDS, DB)
     = ((crl lhs(solveBubblesCRl(term(pullLabelOut(T)), T', M, B, VDS, DB))
           => rhs(solveBubblesCRl(term(pullLabelOut(T)), T', M, B, VDS, DB))
           if solveBubblesCond(term(pullStmtAttrOut(T'', VDS)), M, M', B, VDS, DB)
@@ -11355,12 +11406,11 @@ fmod UNIT-BUBBLE-PARSING is
 *** In the call to solve the bubbles in membership axioms we add the sort to
 *** which it is constrained to be used as context.
 
-  eq solveBubbles(((mb T : S [AtS] .) MAS), M, M', B, VDS, DB)
+  eq solveBubbles(mb T : S [AtS] . MAS, M, M', B, VDS, DB)
     = ((mb solveBubbles2(term(pullLabelOut(T)), S, M, B, VDS, DB) : S
            [attrSet(pullLabelOut(T)) AtS] .)
        solveBubbles(MAS, M, M', B, VDS, DB)) .
-  eq solveBubbles(((cmb T : S if T' = 'true.Bool [AtS] .) MAS),
-       M, M', B, VDS, DB)
+  eq solveBubbles(cmb T : S if T' = 'true.Bool [AtS] . MAS, M, M', B, VDS, DB)
     = ((cmb solveBubbles2(term(pullLabelOut(T)), S, M, B, VDS, DB) : S
           if solveBubblesCond(T', M, M', B, VDS, DB)
           [attrSet(pullLabelOut(T)) AtS] .)
@@ -13755,7 +13805,7 @@ fmod INST-EXPR-EVALUATION is
   var  QIL : QidList .
   vars M M' PU U U' U'' DM : Module .
   var  Th : OTheory .
-  vars ME ME' ME'' : ModuleExpression .
+  vars ME ME' ME'' ME''' : ModuleExpression .
   var  H : Header .
   vars MN MN' : ModuleName .
   vars MNS MNS' MNS'' MNS3 MNS4 MNS5 : Set{ModuleName} .
@@ -13763,7 +13813,7 @@ fmod INST-EXPR-EVALUATION is
   vars VES VES' : Set{ViewExpression} .
   vars MIS MIS' : Set{ModuleInfo} .
   var  VIS : Set{ViewInfo} .
-  vars DB DB' DB'' : Database .
+  vars DB DB' DB'' DB''' : Database .
   var  PD : ParameterDecl .
   vars PDL PDL' PDL'' PDL3 PDL4 PDL5 : ParameterDeclList .
   var  PDS : Set{ParameterDecl} .
@@ -14653,25 +14703,26 @@ fmod INST-EXPR-EVALUATION is
               setSortMappings(
                 setOpMappings(VI,
                   applyMapsToMaps(
-                    maps2rens(genMapsSorts(getSortSet(getFrom(VI), DB''), VEPS)
-                              genMapsClasses(getClassSet(getFrom(VI), DB''), VEPS)),
+                    maps2rens(genMapsSorts(getSortSet(getFrom(VI), DB'''), VEPS)
+                              genMapsClasses(getClassSet(getFrom(VI), DB'''), VEPS)),
                     maps2rens(SMS
-                              genMapsSorts(getSortSet(getTo(VI), DB''), VEPS)
-                              genMapsClasses(getClassSet(getTo(VI), DB''), VEPS)),
+                              genMapsSorts(getSortSet(getTo(VI), DB'''), VEPS)
+                              genMapsClasses(getClassSet(getTo(VI), DB'''), VEPS)),
                     getOpMappings(VI))),
                 applyMapsToMaps(
-                  maps2rens(genMapsSorts(getSortSet(getFrom(VI), DB''), VEPS)
-                            genMapsClasses(getClassSet(getFrom(VI), DB''), VEPS)),
+                  maps2rens(genMapsSorts(getSortSet(getFrom(VI), DB'''), VEPS)
+                            genMapsClasses(getClassSet(getFrom(VI), DB'''), VEPS)),
                   maps2rens(SMS
-                            genMapsSorts(getSortSet(getTo(VI), DB''), VEPS)
-                            genMapsClasses(getClassSet(getTo(VI), DB''), VEPS)),
+                            genMapsSorts(getSortSet(getTo(VI), DB'''), VEPS)
+                            genMapsClasses(getClassSet(getTo(VI), DB'''), VEPS)),
                   getSortMappings(VI))),
               prepModExp(getTo(VI), VEPS)),
             prepModExp(getFrom(VI), VEPS)),
           PDL),
-        DB'')
-    if < DB'  ; ME'  > := evalModExp(prepModExp(getFrom(VI), VEPS), PDL', DB)
-    /\ < DB'' ; ME'' > := evalModExp(prepModExp(getTo(VI), VEPS), PDL', DB') .
+        DB''')
+    if < DB'  ; ME'  >   := evalModExp(getFrom(VI), PDL', DB)
+    /\ < DB'' ; ME'' >   := evalModExp(getTo(VI), (getPars(VI), PDL'), DB')
+    /\ < DB''' ; ME''' > := evalModExp(prepModExp(getTo(VI), VEPS), (getPars(VI), PDL'), DB'') .
   eq viewInstAux(viewError(QIL), SMS, OMS, TMS, PDL0:[ParameterDeclList], PDL, PL, VEPS, PDL', DB)
     = warning(DB, QIL) .
   eq viewInstAux(VI, SMS, OMS, TMS, (X :: ME, PDL), PDL', empty, VEPS, PDL'', DB)
@@ -16541,100 +16592,82 @@ fmod UNIT-DECL-PARSING is
   eq parseDecl('vars_:_.['neTokenList[T], T'], PU, U, VDS)
     = < PU ; U ; VDS parseVars(downQidList(T), parseType(T')) > .
 
-  eq parseDecl('mb_:_.['bubble['__[''`[.Qid, L, ''`].Qid]], T], PU, U, VDS)
-    = < addMbs((mb getTerm(breakMb(T, VDS)) : getSort(breakMb(T, VDS))
-                  [label(downQid(L)) getAttrSet(breakMb(T, VDS))] .), PU) ; U ; VDS > .
-  eq parseDecl('mb_:_.[T, T'], PU, U, VDS)
-    = < addMbs((mb T : getSort(breakMb(T', VDS)) [getAttrSet(breakMb(T', VDS))] .), PU) ; U ; VDS >
-    [owise] .
-  eq parseDecl('cmb_:_if_.[T, T', T''], PU, U, VDS)
+  eq parseDecl('mb_:_.['rbubble[T], 'rbubble[T']], PU, U, VDS)
+    = < addMbs((mb T : getSort(breakMb(T', VDS)) [getAttrSet(breakMb(T', VDS))] .), PU) ; U ; VDS > .
+  eq parseDecl('cmb_:_if_.['rbubble[T], T', 'rbubble[T'']], PU, U, VDS)
     = < addMbs(
-          (cmb T : getSort(breakMb(T', VDS))
+          (cmb T : parseType(T')
              if term(pullStmtAttrOut(T'', VDS)) = 'true.Bool
              [attrSet(pullStmtAttrOut(T'', VDS))] .), PU) ; U ; VDS > .
-  eq parseDecl('cmb`[_`]:_:_if_.['token[T'''], T, T', T''], PU, U, VDS)
-    = < addMbs(
-          (cmb T : getSort(breakMb(T', VDS))
-             if term(pullStmtAttrOut(T'', VDS)) = 'true.Bool
-             [attrSet(pullStmtAttrOut(T'', VDS)) label(downQid(T'''))] .), PU) ; U ; VDS > .
 
+  op breakMb : Term OpDeclSet -> [Tuple{Sort,AttrSet}] .
+  op breakMbAux : TermList AttrSet OpDeclSet -> [Tuple{Sort,AttrSet}] .
+
+  pr (2TUPLE * (op `(_`,_`) to <_`,_>, op p1_ to getSort, op p2_ to getAttrSet)) {Sort,AttrSet} .
+---(
   sort Tuple{Default{Term},Sort,AttrSet} .
+  op {_,_} : Sort AttrSet -> Tuple{Sort,AttrSet} .
+  op getSort : Tuple{Sort,AttrSet} -> Sort .
+  op getAttrSet : Tuple{DSort,AttrSet} -> AttrSet .
+  eq getSort({S, AtS}) = S .
+  eq getSort({qidError(QIL), AtS}) = qidError(QIL) .
+  eq getAttrSet({S, AtS}) = AtS .
+  eq getAttrSet({qidError(QIL), AtS}) = AtS .
+---)
 
-  op breakMb : Term OpDeclSet -> [Tuple{Default{Term},Sort,AttrSet}] .
-  op breakMbAux : Term TermList AttrSet OpDeclSet -> [Tuple{Default{Term},Sort,AttrSet}] .
-  op {_,_,_} : Default{Term} Sort AttrSet -> Tuple{Default{Term},Sort,AttrSet} .
-  op getTerm : Tuple{Default{Term},Sort,AttrSet} -> Default{Term} .
-  op getSort : Tuple{Default{Term},Sort,AttrSet} -> Sort .
-  op getAttrSet : Tuple{Default{Term},Sort,AttrSet} -> AttrSet .
-  eq getTerm({DT, S, AtS}) = DT .
-  eq getTerm({DT, qidError(QIL), AtS}) = DT .
-  eq getSort({DT, S, AtS}) = S .
-  eq getSort({DT, qidError(QIL), AtS}) = qidError(QIL) .
-  eq getAttrSet({DT, S, AtS}) = AtS .
-  eq getAttrSet({DT, qidError(QIL), AtS}) = AtS .
+  eq breakMb('__[TL, QI], VDS)
+    = if QI == ''`].Qid
+      then breakMbAux(TL, none, VDS)
+      else < parseType(getTerm(metaParse(GRAMMAR, downQidList('__[TL, QI]), '@Sort@))), none >
+      fi .
+----  eq breakMb('sortToken[T], VDS) = < parseType('sortToken[T]), none > [owise] .
+----  eq breakMb('_`{_`}[T, T'], VDS) = < parseType('_`{_`}[T, T']), none > [owise] .
+  eq breakMb(QI, VDS) = < downQid(QI), none > [owise] .
 
-  eq breakMb('bubble['__[QI, QI', TL, QI'']], VDS)
-    = if QI'' =/= ''`].Qid
-      then {getTerm(parseTypeMb('bubble['__[QI, QI', TL, QI'']])),
-            getType(parseTypeMb('bubble['__[QI, QI', TL, QI'']])),
-            none}
-      else breakMbAux('bubble['__[QI, QI', TL, QI'']], (QI, QI', TL), none, VDS)
-      fi .
-  eq breakMb('sortToken[T], VDS) = {null, parseType('sortToken[T]), none} [owise] .
-  eq breakMb('_`{_`}[T, T'], VDS) = {null, parseType('_`{_`}[T, T']), none} [owise] .
-  eq breakMb(T, VDS) = {null, getType(parseTypeMb(T)), none} [owise] .
-
-  eq breakMbAux(T, (TL, ''`[.Qid), AtS, VDS)
-    = if AtS =/= none
-      then {null, getType(parseTypeMb('bubble[TL])), AtS}
-      else {null, T, none}
-      fi .
-  eq breakMbAux(T, (TL, QI, QI', ''`[.Qid), AtS, VDS)
-    = if AtS =/= none
-      then {getTerm(parseTypeMb('bubble['__[TL, QI, QI']])),
-            getType(parseTypeMb('bubble['__[TL, QI, QI']])), AtS}
-      else {getTerm(parseTypeMb(T)), getType(parseTypeMb(T)), none}
-      fi .
-  eq breakMbAux(T, (TL, QI, ''nonexec.Qid), AtS, VDS)
-    = breakMbAux(T, (TL, QI), AtS nonexec, VDS) .
-  eq breakMbAux(T, (TL, QI, ''variant.Qid), AtS, VDS)
-    = breakMbAux(T, (TL, QI), AtS variant, VDS) .
-  eq breakMbAux(T, (TL, QI, ''owise.Qid), AtS, VDS)
-    = breakMbAux(T, (TL, QI), AtS owise, VDS) .
-  eq breakMbAux(T, (TL, QI, ''otherwise.Qid), AtS, VDS)
-    = breakMbAux(T, (TL, QI), AtS owise, VDS) .
-  eq breakMbAux(T, (TL, QI, ''label.Qid, QI'), AtS, VDS)
+  eq breakMbAux((TL, ''`[.Qid), AtS, VDS)
+    = < parseType(getTerm(metaParse(GRAMMAR, downQidList('__[TL]), '@Sort@))), AtS > .
+  eq breakMbAux((TL, QI, ''nonexec.Qid), AtS, VDS)
+    = breakMbAux((TL, QI), AtS nonexec, VDS) .
+  eq breakMbAux((TL, QI, ''variant.Qid), AtS, VDS)
+    = breakMbAux((TL, QI), AtS variant, VDS) .
+  eq breakMbAux((TL, QI, ''owise.Qid), AtS, VDS)
+    = breakMbAux((TL, QI), AtS owise, VDS) .
+  eq breakMbAux((TL, QI, ''otherwise.Qid), AtS, VDS)
+    = breakMbAux((TL, QI), AtS owise, VDS) .
+  eq breakMbAux((TL, QI, ''label.Qid, QI'), AtS, VDS)
     = if downQid(QI') :: Qid
-      then breakMbAux(T, (TL, QI), AtS label(downQid(QI')), VDS)
-      else {null, T, none}
+      then breakMbAux((TL, QI), AtS label(downQid(QI')), VDS)
+      else < qidError('Error: 'Invalid 'label), none >
       fi .
-  eq breakMbAux(T, (TL, QI, ''metadata.Qid, QI'), AtS, VDS)
+  eq breakMbAux((TL, QI, ''metadata.Qid, QI'), AtS, VDS)
     = if downString(downQid(QI')) :: String
-      then breakMbAux(T, (TL, QI), AtS metadata(downString(downQid(QI'))), VDS)
-      else {null, T, none}
+      then breakMbAux((TL, QI), AtS metadata(downString(downQid(QI'))), VDS)
+      else < qidError('Error: 'Invalid 'metadata), none >
       fi .
-  ceq breakMbAux(T, (TL, QI, ''`[.Qid, TL',  ''print.Qid, TL''), AtS, VDS)
-    = breakMbAux(T, (TL, QI, ''`[.Qid, TL'), AtS print(printArg(TL'', VDS)), VDS)
+  ceq breakMbAux((TL, QI, ''`[.Qid, TL', ''print.Qid, TL''), AtS, VDS)
+    = breakMbAux((TL, QI, ''`[.Qid, TL'), AtS print(printArg(TL'', VDS)), VDS)
     if printArg(TL'', VDS) : QidList .
-  eq breakMbAux(T, TL, AtS, VDS)  = {null, T, none} [owise] .
+  eq breakMbAux(TL, AtS, VDS) = < qidError('Error: 'Invalid 'sort), none > [owise] .
 
+---(
   op parseTypeMb : Term ~> ResultPair .
-  eq parseTypeMb('bubble[TL])
+  eq parseTypeMb(T)
     = if metaParse(
            addOps(
              op '_:_ : '@Bubble@ '@Sort@ -> '@TermSort@ [none] .,
              addSorts('@TermSort@, GRAMMAR)),
-           downQidList(TL), '@TermSort@) :: ResultPair
+           downQidList(T), '@TermSort@) :: ResultPair
       then breakTermSort(
              getTerm(
                metaParse(
                  addOps(
                    op '_:_ : '@Bubble@ '@Sort@ -> '@TermSort@ [none] .,
                    addSorts('@TermSort@, GRAMMAR)),
-                 downQidList(TL), '@TermSort@)))
-      else {null, parseType(getTerm(metaParse(GRAMMAR, downQidList(TL), '@Sort@)))}
+                 downQidList(T), '@TermSort@)))
+      else {null, parseType(getTerm(metaParse(GRAMMAR, downQidList(T), '@Sort@)))}
       fi .
-
+---
+)
   op breakTermSort : Term ~> ResultPair .
   eq breakTermSort('_:_[T, T']) = {T, parseType(T')} .
 
@@ -17841,7 +17874,7 @@ fmod UNIT-PROCESSING is
   eq procModule4(T, T', V:[Module], V':[Module], opDeclError(QIL), DB)
     = warning(DB, QIL) .
   eq procModule4(T, F[TL], PU, U, VDS, DB)
-    = warning(DB,'Error: 'no 'parse 'for F 'declaration)
+    = warning(DB,'Error: 'no 'parse 'for F 'declaration '\n)
     [owise] .
 
   ceq procModule4('__[T, T'], PU, U, VDS, DB)
@@ -17855,7 +17888,7 @@ fmod UNIT-PROCESSING is
   eq procModule4(T, PU, unitError(QIL), VDS, DB) = warning(DB, QIL) .
   eq procModule4(T, PU, U, opDeclError(QIL), DB) = warning(DB, QIL) .
   eq procModule4(F[TL], PU, U, VDS, DB)
-    = warning(DB,'Error: 'no 'parse 'for F 'declaration)
+    = warning(DB,'Error: 'no 'parse 'for F 'declaration '\n)
     [owise] .
 
 endfm
@@ -17999,7 +18032,7 @@ fmod VIEW-PROCESSING is
 
   ceq procView(V, DB)
     = insertView(V, DB')
-    if DB' := database(evalModExp(getFrom(V), nil, database(evalModExp(getTo(V), nil, DB)))) .
+    if DB' := database(evalModExp(getFrom(V), nil, database(evalModExp(getTo(V), getPars(V), DB)))) .
 
   ceq procView(T, PV, DB)
     = procViewAux(T, PV,
@@ -18714,7 +18747,8 @@ fmod COMMAND-PROCESSING is
   op GRAMMAR-REW : -> FModule [memo] .
   eq GRAMMAR-REW
     = addSorts('@RewNuPart@ ; '@Token@ ; '@SortToken@ ; '@ViewToken@ ;
-               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@,
+               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@ ;
+               '@EqLBubble@ ; '@RlLBubble@ ; '@RCBubble@ ; '@RBubble@,
         addOps((op '`[_`]_. : '@Token@ '@UBubble@ -> '@RewNuPart@ [none] .),
           BUBBLES)) .
 
@@ -18733,8 +18767,9 @@ fmod COMMAND-PROCESSING is
   op GRAMMAR-SREW : -> FModule [memo] .
   eq GRAMMAR-SREW
     = addSorts('@SRewNuPart@ ; '@Token@ ; '@SortToken@ ; '@ViewToken@ ;
-               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@,
-        addOps((op '_using_. : '@UBubble@ '@StBubble@ -> '@SRewNuPart@ [none] .),
+               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@ ;
+               '@EqLBubble@ ; '@RlLBubble@ ; '@RCBubble@ ; '@RBubble@,
+        addOps((op '_using_. : '@StBubble@ '@UBubble@ -> '@SRewNuPart@ [none] .),
           BUBBLES)) .
 
   eq solveBubblesSRew('ububble[T], M, B, St, D, VDS, DB)
@@ -18744,14 +18779,16 @@ fmod COMMAND-PROCESSING is
       then procSRew2(M, solveBubbles('bubble[QI], M, B, VDS, DB), St, D)
       else ('\r 'Error: '\o 'no 'parsing 'for downQidList(QI) '\n)
       fi .
-  eq solveBubblesSRew('ububble['__[TL]], M, B, St, D, VDS, DB)
+  eq solveBubblesSRew('bubble['__[TL]], M, B, St, D, VDS, DB)
     = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
       then procSRew2(M, solveBubbles('bubble['__[TL]], M, B, VDS, DB), St, D)
       else if metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@) :: ResultPair
            then solveBubblesSRew2(
                   getTerm(metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)),
                   M, B, St, D, VDS, DB)
-           else solveBubblesSRew3(TL, M, B, St, D, VDS, DB)
+           else solveBubblesSRew3(
+                  getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SRewNuPart@)),
+                  M, B, St, D, VDS, DB)
            fi
       fi .
 
@@ -18760,16 +18797,16 @@ fmod COMMAND-PROCESSING is
          and-then metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SRewNuPart@) :: ResultPair
       then solveBubblesSRew3(
              getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SRewNuPart@)),
-               M, B, St, D, VDS, DB)
+             M, B, St, downNat(downMetaNat(T)), VDS, DB)
       else ('\r 'Error: '\o 'no 'parsing 'for downQidList('__[TL, ''..Qid]) '\n)
       fi .
 
-  eq solveBubblesSRew3('_using_.[T, 'stbubble['__[TL]]], M, B, St, D, VDS, DB)
-    = if metaStratParse(M, downQidList('__[TL, ''..Qid])) :: Strategy
-         and-then solveBubblesRed(T, M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
-      then procSRew2(getModule(solveBubblesRed(T, M, B, VDS, DB)),
-                     getTerm(solveBubblesRed(T, M, B, VDS, DB)),
-                     St, D)
+  eq solveBubblesSRew3('_using_.['stbubble[T], 'ububble[T']], M, B, St, D, VDS, DB)
+    = if metaStratParse(M, downQidList(T')) :: Strategy
+         and-then solveBubblesRed('bubble[T], M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+      then procSRew2(getModule(solveBubblesRed('bubble[T], M, B, VDS, DB)),
+                     getTerm(solveBubblesRed('bubble[T], M, B, VDS, DB)),
+                     metaStratParse(M, downQidList(T')), D)
       else ('\r 'Error: '\o 'Incorrect 'command. '\n)
       fi .
 
@@ -18780,12 +18817,14 @@ fmod COMMAND-PROCESSING is
           else '\s '`[ qid(string(D, 10)) '`] '\s
           fi
           'in eMetaPrettyPrint(getHeader(M)) ':
-          eMetaPrettyPrint(M, T) '\s '. '\n '\n
+          eMetaPrettyPrint(M, T) '\s
+          'using
+          metaStratPrettyPrint(M, St, mixfix flat format) '. '\n '\n
       if RP :: ResultPair
       then ('Solution '1 '\n
             '\b 'result '\o '\s eMetaPrettyPrint(getType(RP))
             '\s '\b ': '\o '\n '\s '\s
-            eMetaPrettyPrint(M, getTerm(RP)) '\n)
+            eMetaPrettyPrint(M, getTerm(RP)) '\n '\n)
             procSRew3(M, T, St, D, 1)
       else ('No 'solution. '\n)
       fi)
@@ -18797,13 +18836,13 @@ fmod COMMAND-PROCESSING is
            then ('Solution qid(string(I + 1, 10)) '\n
                  '\b 'result '\o '\s eMetaPrettyPrint(getType(RP))
                  '\s '\b ': '\o '\n '\s '\s
-                 eMetaPrettyPrint(M, getTerm(RP)) '\n)
-                 procSRew3(M, T, St, D, s 1)
+                 eMetaPrettyPrint(M, getTerm(RP)) '\n '\n)
+                 procSRew3(M, T, St, D, s I)
            else ('No 'more 'solutions. '\n)
            fi
       else nil
       fi
-    if RP := metaSRewrite(M, T, St, 0) .
+    if RP := metaSRewrite(M, T, St, I) .
 
   *** FREW
 
@@ -18882,7 +18921,8 @@ fmod COMMAND-PROCESSING is
   op GRAMMAR-FREW : -> FModule [memo] .
   eq GRAMMAR-FREW
     = addSorts('@FrewNuPart@ ; '@Token@ ; '@SortToken@ ; '@ViewToken@ ;
-               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@,
+               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@ ;
+               '@EqLBubble@ ; '@RlLBubble@ ; '@RCBubble@ ; '@RBubble@,
         addOps(
           (op '`[_`]_. : '@Token@ '@UBubble@ -> '@FrewNuPart@ [none] .
            op '`[_`,_`]_. : '@Token@ '@Token@ '@UBubble@ -> '@FrewNuPart@ [none] .),
@@ -18898,7 +18938,8 @@ fmod COMMAND-PROCESSING is
   op GRAMMAR-SEARCH : -> FModule [memo] .
   eq GRAMMAR-SEARCH
     = addSorts('@SearchNuPart@ ; '@Token@ ; '@SortToken@ ; '@ViewToken@ ;
-               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@,
+               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@ ;
+               '@EqLBubble@ ; '@RlLBubble@ ; '@RCBubble@ ; '@RBubble@,
         addOps((op '`[_`,_`]_. : '@Token@ '@Token@ '@UBubble@ -> '@SearchNuPart@ [none] .)
                (op '`[`,_`]_. : '@Token@ '@UBubble@ -> '@SearchNuPart@ [none] .),
           BUBBLES)) .
