@@ -1,0 +1,15 @@
+load hanoi.maude
+
+mod HANOI-COUNT is
+   protecting HANOI .
+   op <_`,_> : Hanoi Nat -> Game [ctor] .
+   vars H H' : Hanoi .
+   var  N : Nat .
+  crl [step] : < H, N > => < H', s N > if H => H' .
+   rl [cancel] : N => 0 [nonexec] .
+   rl [inc] : N => s N [nonexec] .
+endm
+
+srew < (0)[3 2 1] (1)[nil] (2)[nil], 0 > using step{all} .
+
+srew s 0 using cancel .

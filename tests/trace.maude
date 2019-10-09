@@ -8,7 +8,7 @@ trace select ----solveBubblesCond
              ----solveBubblesMod
              ----solveBubblesOps
              ----solveBubblesEq
-             ----metaParse
+             metaParse
              ----breakMb
              ----breakMbAux
              ----parseSort
@@ -27,7 +27,6 @@ trace select ----solveBubblesCond
              ----setSortMappings
              ----setOpMappings
              ----applyMapsToMaps
-             metaParse
              .
-set print conceal off .
+set print conceal on .
 ----print reveal fmod_is_sorts_.____endfm .

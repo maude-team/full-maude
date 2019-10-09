@@ -1,0 +1,9 @@
+(fmod HANOI-AUX is
+  protecting SET{Nat} .
+
+  op third : Nat Nat ~> Nat .
+
+  vars N M K : Nat .
+
+  ceq third(N, M) = K if N, M, K := 0, 1, 2 .
+endfm)

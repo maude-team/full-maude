@@ -1,0 +1,23 @@
+load hanoi.fm
+
+(mod HANOI-COUNT is
+   protecting HANOI .
+   op <_`,_> : Hanoi Nat -> Game [ctor] .
+   vars H H' : Hanoi .
+   var  N : Nat .
+  crl [step] : < H, N > => < H', s N > if H => H' .
+   rl [cancel] : N => 0 [nonexec] .
+   rl [inc] : N => s N [nonexec] .
+ endm)
+
+(srew < (0)[3 2 1] (1)[nil] (2)[nil], 0 > using step{all} .)
+
+(srew s 0 using cancel .)
+
+(srew s 0 using top(cancel) .)
+
+(srew [1] < (0)[3 2 1] (1) [nil] (2)[nil], 0 >
+   using (matchrew < H:Hanoi, N:Nat > by H:Hanoi using move, N:Nat using top(inc)) * ;
+     amatch (2)[3 2 1] .)
+
+(srew 1 using inc .)
