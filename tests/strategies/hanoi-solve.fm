@@ -1,5 +1,7 @@
 load hanoi.fm
+(show module HANOI .)
 load hanoi-aux.fm
+(show module HANOI-AUX .)
 
 load ../trace.maude
 
@@ -14,8 +16,10 @@ load ../trace.maude
   sd moveAll(S, S, C) := idle .
   sd moveAll(S, T, 0) := idle .
   sd moveAll(S, T, s(C)) := moveAll(S, third(S, T), C) ;
-                            move[S <- S, T <- T] ;
-                            moveAll(third(S, T), T, C) .
+                            (move[S <- S, T <- T] ;
+                            moveAll(third(S, T), T, C)) .
 endsm)
 
-(srew (0)[3 2 1] (1)[nil] (2)[nil] using moveAll(0, 2, 3) .)
+(show module HANOI-SOLVE .)
+
+----(srew (0)[3 2 1] (1)[nil] (2)[nil] using moveAll(0, 2, 3) .)

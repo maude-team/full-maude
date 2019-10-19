@@ -5951,13 +5951,13 @@ fmod SIGNATURES is
   op msgs_:`->_. : @NeTokenList@ @Sort@ -> @MsgDecl@ .
 
   *** strategy declarations
-  op strat_@_. : @NeTokenList@ @Type@ -> @OpDecl@ .
+  op strat_@_. : @Token@ @Type@ -> @OpDecl@ .
   op strats_@_. : @NeTokenList@ @Type@ -> @OpDecl@ .
-  op strat_@_`[_`]. : @NeTokenList@ @Type@ @AttrList@ -> @OpDecl@ .
+  op strat_@_`[_`]. : @Token@ @Type@ @AttrList@ -> @OpDecl@ .
   op strats_@_`[_`]. : @NeTokenList@ @Type@ @AttrList@ -> @OpDecl@ .
-  op strat_:_@_. : @NeTokenList@ @TypeList@ @Type@ -> @OpDecl@ .
+  op strat_:_@_. : @Token@ @TypeList@ @Type@ -> @OpDecl@ .
   op strats_:_@_. : @NeTokenList@ @TypeList@ @Type@ -> @OpDecl@ .
-  op strat_:_@_`[_`]. : @NeTokenList@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
+  op strat_:_@_`[_`]. : @Token@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
   op strats_:_@_`[_`]. : @NeTokenList@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
 
 endfm
@@ -7039,10 +7039,10 @@ fmod EXT-TERM is
   op vars : TermList -> QidSet .
 
   eq vars(V) = V .
-  eq vars(C) = none .
+  eq vars(C) = empty .
   eq vars(F[TL]) = vars(TL) .
-  eq vars(empty) = none .
-  eq vars((T, TL)) = vars(T) ; vars(TL) .
+  eq vars(empty) = empty .
+  eq vars((T, TL)) = (vars(T), vars(TL)) .
 
   **** varlist returns the list of variables in a term
   op varlist : Term -> QidList .
@@ -8288,7 +8288,7 @@ fmod UNIT is
     = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls' StDefs endsth .
 
   eq setStratDefs(unitError(QIL), StDefs?) = unitError(QIL) .
-  ----eq setStratDefs(U?, ruleError(QIL) RlS?) = unitError(QIL) .
+  eq setStratDefs(U?, stratDefError(QIL) StDefs?) = unitError(QIL) .
   eq setStratDefs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StDefs)
     = if StDefs == none
       then mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm
@@ -11293,8 +11293,9 @@ fmod UNIT-BUBBLE-PARSING is
   var  At : Attr .
   vars AtS AtS' AtS'' AtS1 AtS2 : AttrSet .
   var  NL : IntList .
-  var  QI QI' QI'' QI3 QI4 QI5 V F L : Qid .
+  vars Q QI QI' QI'' QI3 QI4 QI5 V F L : Qid .
   vars QIL QIL' QIL1 QIL2 QIL3 : QidList .
+  var  Vs : QidSet .
   var  I : Nat .
   var  Hk : Hook .
   var  HkL : HookList .
@@ -11302,14 +11303,15 @@ fmod UNIT-BUBBLE-PARSING is
   var  Eq : Equation .
   var  EqS : EquationSet .
   var  Rl : Rule .
-  var  RlS : RuleSet .
+  var  RlS Rls : RuleSet .
   var  OPD : OpDecl .
   vars OPDS OPDS' OPDS'' VDS : OpDeclSet .
   var  CD? : [Condition] .
   var  Ct : Constant .
   var  RP : [ResultPair] .
   var  St : String .
-  var  SdS : StratDefSet .
+  var  SDfs : StratDefSet .
+  var  SDcs : StratDeclSet .
   var  Strat : Strategy .
   var  Strat? : Strategy? .
 
@@ -11505,12 +11507,13 @@ fmod UNIT-BUBBLE-PARSING is
 *** evaluation of bubbles on a preunit is reduced to calls to the
 *** \texttt{solveBubbles} functions on each of these sTS of declarations.
 
-  op solveBubblesMod : Module OpDeclSet Module Bool OpDeclSet Database -> Module .
+  op solveBubblesMod : Module OpDeclSet RuleSet Module Bool OpDeclSet Database -> Module .
+  op solveBubblesModAux : Module RuleSet Module Module Module Bool OpDeclSet Database -> Module .
 
   op solveBubbles : EquationSet Module [Module] Bool OpDeclSet Database -> EquationSet .
   op solveBubbles : RuleSet Module [Module] Bool OpDeclSet Database -> RuleSet .
   op solveBubbles : MembAxSet Module [Module] Bool OpDeclSet Database -> MembAxSet .
-  op solveBubbles : StratDefSet Module [Module] Bool OpDeclSet Database -> StratDefSet .
+  op solveBubbles : StratDefSet Module [Module] Module Bool OpDeclSet Database -> StratDefSet .
   op solveBubbles : Condition Module Bool OpDeclSet Database -> Condition .
   op solveBubblesOps : OpDeclSet OpDeclSet Module Module -> OpDeclSet .
   op solveBubblesOps : OpDeclSet OpDeclSet Module -> OpDeclSet .
@@ -11518,18 +11521,34 @@ fmod UNIT-BUBBLE-PARSING is
   op solveBubblesAts : AttrSet TypeList Type Module -> AttrSet .
   op solveBubblesHooks : HookList Type Module -> HookList .
 
-  ceq solveBubblesMod(PU, OPDS, M, B, VDS, DB)
-    = setOps(
-        setEqs(
-          setMbs(
-            setRls(
-              setStratDefs(PU,
-                solveBubbles(getStratDefs(PU), M', addInfoConds(M'), B, VDS, DB)),
-              solveBubbles(getRls(PU), M', addInfoConds(M'), B, VDS, DB)),
-            solveBubbles(getMbs(PU), M', addInfoConds(M'), B, VDS, DB)),
-          solveBubbles(getEqs(PU), M', addInfoConds(M'), B, VDS, DB)),
-       solveBubblesOps(getOps(PU), OPDS, M'))
+  ceq solveBubblesMod(PU, OPDS, Rls, M, B, VDS, DB)
+    = solveBubblesModAux(
+        setOps(
+          setEqs(
+            setMbs(
+              setRls(PU,
+                solveBubbles(getRls(PU), M', addInfoConds(M'), B, VDS, DB)),
+              solveBubbles(getMbs(PU), M', addInfoConds(M'), B, VDS, DB)),
+            solveBubbles(getEqs(PU), M', addInfoConds(M'), B, VDS, DB)),
+          solveBubblesOps(getOps(PU), OPDS, M')),
+        Rls, M', M, addInfoConds(M'), B, VDS, DB)
     if M' := addOps(VDS, M) .
+
+  eq solveBubblesModAux(PU, Rls, M, M', M'', B, VDS, DB)
+    = if getStratDcls(PU) == none
+      then PU
+      else setStratDefs(PU,
+             solveBubbles(
+               getStratDefs(PU),
+               addOps(stratDecls2Ops(getStratDcls(PU)), addSorts('@CallStrategy@, M)),
+               setStratDcls(setRls(M', Rls), getStratDcls(PU)),
+               M'', B, VDS, DB))
+      fi .
+
+  op stratDecls2Ops : StratDeclSet -> OpDeclSet .
+  eq stratDecls2Ops(strat QI : TyL @ Ty [AtS] . SDcs)
+    = (op QI : TyL -> '@CallStrategy@ [AtS] .) stratDecls2Ops(SDcs) .
+  eq stratDecls2Ops(none) = none .
 
 *** To avoid the parsing ambiguities in the identity elements we add the sort
 *** of the operator to be used as context in which doing the parsing. We
@@ -11547,15 +11566,11 @@ fmod UNIT-BUBBLE-PARSING is
         OPDS', M, M')
     if not ditto in AtS'
     /\ sameKind(M, TyL Ty, TyL' Ty')
-----    /\ AtS'' := solveBubblesAts(AtS', TyL', Ty', M') .
     /\ AtS'' := AtS' .
   ceq solveBubblesOps(op F : TyL -> Ty [ditto AtS] . OPDS, op F : TyL' -> Ty' [AtS'] . OPDS', M, M')
-    = solveBubblesOps(op F : TyL -> Ty [AtS removeCtorMetadata(AtS'')] . OPDS, op F : TyL' -> Ty' [AtS''] . OPDS', M, M')
+    = solveBubblesOps(op F : TyL -> Ty [AtS removeCtorMetadata(AtS')] . OPDS, op F : TyL' -> Ty' [AtS'] . OPDS', M, M')
     if not ditto in AtS'
-    /\ sameKind(M, TyL Ty, TyL' Ty')
-----       /\ AtS'' := solveBubblesAts(AtS', TyL, Ty, M')
-    /\ AtS'' := AtS' .
-----    [owise] .
+    /\ sameKind(M, TyL Ty, TyL' Ty') .
   eq solveBubblesOps(OPDS, OPDS', M, M')
     = solveBubblesOpsAux(OPDS, M')
     [owise] .
@@ -11678,38 +11693,37 @@ fmod UNIT-BUBBLE-PARSING is
   eq solveBubbles(EqS, M, unitError(QIL), B, VDS, DB) = equationError(QIL) .
   eq solveBubbles(RlS, M, unitError(QIL), B, VDS, DB) = ruleError(QIL) .
   eq solveBubbles(MAS, M, unitError(QIL), B, VDS, DB) = membAxError(QIL) .
-  eq solveBubbles(SdS, M, unitError(QIL), B, VDS, DB) = stratDefError(QIL) .
+  eq solveBubbles(SDfs, M, unitError(QIL), M', B, VDS, DB) = stratDefError(QIL) .
 
-  eq solveBubbles(((eq 'eqlbubble[T] = 'rbubble[T'] [AtS] .) EqS), M, M', B, VDS, DB)
+  eq solveBubbles(eq 'eqlbubble[T] = 'rbubble[T'] [AtS] . EqS, M, M', B, VDS, DB)
     = ((eq lhs(solveBubblesEq(term(pullLabelOut(T)), term(pullStmtAttrOut(T', VDS)),
                  M, B, VDS, DB))
           = rhs(solveBubblesEq(term(pullLabelOut(T)), term(pullStmtAttrOut(T', VDS)),
                   M, B, VDS, DB))
             [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T', VDS)) AtS] .)
        solveBubbles(EqS, M, M', B, VDS, DB)) .
-  eq solveBubbles(((ceq 'eqlbubble[T] = 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] .) EqS),
+  eq solveBubbles(ceq 'eqlbubble[T] = 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] . EqS,
        M, M', B, VDS, DB)
-    = ((ceq lhs(solveBubblesCEq(term(pullLabelOut(T)), T', M, B, VDS, DB))
+    = (ceq lhs(solveBubblesCEq(term(pullLabelOut(T)), T', M, B, VDS, DB))
           = rhs(solveBubblesCEq(term(pullLabelOut(T)), T', M, B, VDS, DB))
           if solveBubblesCond(term(pullStmtAttrOut(T'', VDS)), M, M', B, VDS, DB)
-          [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T'', VDS)) AtS] .)
+          [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T'', VDS)) AtS] .
        solveBubbles(EqS, M, M', B, VDS, DB)) .
   eq solveBubbles((none).EquationSet, M, M', B, VDS, DB) = none .
 
-  eq solveBubbles(((rl 'rllbubble[T] => 'rbubble[T'] [AtS] .) RlS), M, M', B, VDS, DB)
+  eq solveBubbles(rl 'rllbubble[T] => 'rbubble[T'] [AtS] . RlS, M, M', B, VDS, DB)
     = ((rl lhs(solveBubblesRl(term(pullLabelOut(T)),
                  term(pullStmtAttrOut(T', VDS)), M, B, VDS, DB))
         => rhs(solveBubblesRl(term(pullLabelOut(T)),
                  term(pullStmtAttrOut(T', VDS)), M, B, VDS, DB))
              [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T', VDS)) AtS] .)
        solveBubbles(RlS, M, M', B, VDS, DB)) .
-  eq solveBubbles(
-       ((crl 'rllbubble[T] => 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] .) RlS),
+  eq solveBubbles(crl 'rllbubble[T] => 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] . RlS,
        M, M', B, VDS, DB)
-    = ((crl lhs(solveBubblesCRl(term(pullLabelOut(T)), T', M, B, VDS, DB))
+    = (crl lhs(solveBubblesCRl(term(pullLabelOut(T)), T', M, B, VDS, DB))
           => rhs(solveBubblesCRl(term(pullLabelOut(T)), T', M, B, VDS, DB))
           if solveBubblesCond(term(pullStmtAttrOut(T'', VDS)), M, M', B, VDS, DB)
-          [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T'', VDS)) AtS] .)
+          [attrSet(pullLabelOut(T)) attrSet(pullStmtAttrOut(T'', VDS)) AtS] .
        solveBubbles(RlS, M, M', B, VDS, DB)) .
   eq solveBubbles((none).RuleSet, M, M', B, VDS, DB) = none .
 
@@ -11727,14 +11741,20 @@ fmod UNIT-BUBBLE-PARSING is
        solveBubbles(MAS, M, M', B, VDS, DB)) .
   eq solveBubbles((none).MembAxSet, M, M', B, VDS, DB) = none .
 
-  op term2StratCall : Term -> CallStrategy .
-  eq term2StratCall('_`(_`)[F, TL]) = F ( TL ) .
+  op term2StratCall : Term OpDeclSet -> CallStrategy .
+  op term2StratCallAux : TermList OpDeclSet -> TermList .
+  eq term2StratCall(F[TL], VDS) = F ( term2StratCallAux(TL, VDS) ) .
+  eq term2StratCallAux((QI, TL), VDS)
+    = constsToVarsAux(QI, VDS), term2StratCallAux(TL, VDS) .
+  eq term2StratCallAux((F[TL], TL'), VDS)
+    = F[term2StratCallAux(TL, VDS)], term2StratCallAux(TL', VDS)
+    [owise] .
+  eq term2StratCallAux(empty, VDS) = empty [owise] .
 
- ceq solveBubbles(sd 'sdlbubble[T] := 'rbubble[T'] [AtS] . SdS, M, M', B, VDS, DB)
+ ceq solveBubbles(sd 'sdlbubble[T] := 'rbubble[T'] [AtS] . SDfs, M, M', M'', B, VDS, DB)
     = if RP :: ResultPair
       then if Strat? :: Strategy
-           then sd term2StratCall(getTerm(RP)) := Strat?
-                  [AtS1 AtS2 AtS] .
+           then sd term2StratCall(getTerm(RP), VDS) := Strat? [AtS1 AtS2 AtS] .
            else stratDefError('\r 'Warning:
                       '\o printSyntaxError(Strat?, QIL2) '\n
                       '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
@@ -11743,19 +11763,19 @@ fmod UNIT-BUBBLE-PARSING is
                  '\o printSyntaxError(RP, QIL1) '\n
                  '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
       fi
-      solveBubbles(SdS, M, M', B, VDS, DB)
+      solveBubbles(SDfs, M, M', M'', B, VDS, DB)
     if {T1, AtS1} := pullLabelOut(T)
     /\ {T2, AtS2} := pullStmtAttrOut(T', VDS)
     /\ QIL1 := downQidList(T1)
     /\ QIL2 := downQidList(T2)
-    /\ RP := metaParse(M, QIL1, 'CallStrategy)
-    /\ Strat? := metaStratParse(M, vars(VDS), QIL2) .
- ceq solveBubbles(csd 'sdlbubble[T] := 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] . SdS,
-       M, M', B, VDS, DB)
+    /\ RP := metaParse(M, QIL1, '@CallStrategy@)
+    /\ Strat? := metaStratParse(M', vars(VDS), QIL2) .
+ ceq solveBubbles(csd 'sdlbubble[T] := 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] . SDfs,
+       M, M', M'', B, VDS, DB)
     = if RP :: ResultPair
       then if Strat? :: Strategy
-           then csd term2StratCall(getTerm(RP)) := Strat?
-                  if solveBubblesCond(T3, M, M', B, VDS, DB)
+           then csd term2StratCall(getTerm(RP), VDS) := Strat?
+                  if solveBubblesCond(T3, M, M'', B, VDS, DB)
                   [AtS1 AtS2 AtS] .
            else stratDefError('\r 'Warning:
                          '\o printSyntaxError(Strat?, QIL2) '\n
@@ -11765,14 +11785,14 @@ fmod UNIT-BUBBLE-PARSING is
                     '\o printSyntaxError(RP, QIL1) '\n
                     '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
       fi
-      solveBubbles(SdS, M, M', B, VDS, DB)
+      solveBubbles(SDfs, M, M', M'', B, VDS, DB)
     if {T1, AtS1} := pullLabelOut(T)
     /\ {T3, AtS2} := pullStmtAttrOut(T'', VDS)
     /\ QIL1 := downQidList(T1)
     /\ QIL2 := downQidList(T')
-    /\ RP := metaParse(M, QIL1, 'CallStrategy)
-    /\ Strat? := metaStratParse(M, vars(VDS), QIL2) .
-  eq solveBubbles((none).StratDefSet, M, M', B, VDS, DB) = none .
+    /\ RP := metaParse(M, QIL1, '@CallStrategy@)
+    /\ Strat? := metaStratParse(M', vars(VDS), QIL2) .
+  eq solveBubbles((none).StratDefSet, M, M', M'', B, VDS, DB) = none .
 
 *** The parsing process may generate error terms. Since in the
 *** current version of the system Core Maude is generating the appropriate
@@ -13126,12 +13146,12 @@ fmod EVALUATION is
     *** U  : everything below
     *** M  : complete signature
     = evalPreModule3(
-        solveBubblesMod(PU, getOps(U), M,
+        solveBubblesMod(PU, getOps(U), getRls(U), M,
           included('META-MODULE, getImports(PU), DB), VDS, DB),
         U, M,
         insertVars(getHeader(PU), VDS,
           insertTopModule(getHeader(PU),
-            solveBubblesMod(PU, getOps(U), M,
+            solveBubblesMod(PU, getOps(U), getRls(U), M,
               included('META-MODULE, getImports(PU), DB), VDS, DB), DB))) .
 
   eq evalPreModule3(PU, U, M, DB)
@@ -14382,7 +14402,7 @@ fmod INST-EXPR-EVALUATION is
 *** in the declaration of the parameter, which is given as second argument.
 
   pr SET{Tuple{ViewExpression,ViewExpression}}
-       * (op ((_,_)) : ViewExpression ViewExpression
+       * (op `(_`,_`) : ViewExpression ViewExpression
             -> Tuple{ViewExpression,ViewExpression} to <_;_>,
           op p1_ : Tuple{ViewExpression,ViewExpression} -> ViewExpression to 1st,
           op p2_ : Tuple{ViewExpression,ViewExpression} -> ViewExpression to 2nd,
@@ -16967,16 +16987,6 @@ fmod UNIT-DECL-PARSING is
   op breakMbAux : TermList AttrSet OpDeclSet -> [Tuple{Sort,AttrSet}] .
 
   pr (2TUPLE * (op `(_`,_`) to <_`,_>, op p1_ to getSort, op p2_ to getAttrSet)) {Sort,AttrSet} .
----(
-  sort Tuple{Default{Term},Sort,AttrSet} .
-  op {_,_} : Sort AttrSet -> Tuple{Sort,AttrSet} .
-  op getSort : Tuple{Sort,AttrSet} -> Sort .
-  op getAttrSet : Tuple{DSort,AttrSet} -> AttrSet .
-  eq getSort({S, AtS}) = S .
-  eq getSort({qidError(QIL), AtS}) = qidError(QIL) .
-  eq getAttrSet({S, AtS}) = AtS .
-  eq getAttrSet({qidError(QIL), AtS}) = AtS .
----)
 
   eq breakMb('__[TL, QI], VDS)
     = if QI == ''`].Qid
@@ -17012,25 +17022,6 @@ fmod UNIT-DECL-PARSING is
     if printArg(TL'', VDS) : QidList .
   eq breakMbAux(TL, AtS, VDS) = < qidError('Error: 'Invalid 'sort), none > [owise] .
 
----(
-  op parseTypeMb : Term ~> ResultPair .
-  eq parseTypeMb(T)
-    = if metaParse(
-           addOps(
-             op '_:_ : '@Bubble@ '@Sort@ -> '@TermSort@ [none] .,
-             addSorts('@TermSort@, GRAMMAR)),
-           downQidList(T), '@TermSort@) :: ResultPair
-      then breakTermSort(
-             getTerm(
-               metaParse(
-                 addOps(
-                   op '_:_ : '@Bubble@ '@Sort@ -> '@TermSort@ [none] .,
-                   addSorts('@TermSort@, GRAMMAR)),
-                 downQidList(T), '@TermSort@)))
-      else {null, parseType(getTerm(metaParse(GRAMMAR, downQidList(T), '@Sort@)))}
-      fi .
----
-)
   op breakTermSort : Term ~> ResultPair .
   eq breakTermSort('_:_[T, T']) = {T, parseType(T')} .
 
@@ -17080,34 +17071,21 @@ fmod UNIT-DECL-PARSING is
         addMsgs(unfoldMultipleMsgDecl(downQidList(T), nil, parseType(T')), U) ; VDS > .
 
   eq parseDecl('strat_@_.['token[T], T'], PU, U, VDS)
-    = < addStratDcls((strat downQid(T) : nil @ parseType(T') [none] .), PU) ;
-        addStratDcls((strat downQid(T) : nil @ parseType(T') [none] .), U) ;
+    = < addStratDcls(strat downQid(T) : nil @ parseType(T') [none] ., PU) ;
+        U ; ---- addOps(op downQid(T) : nil -> '@CallStrategy@ [none] ., U) ;
         VDS > .
   eq parseDecl('strat_:`@_`[_`].['token[T], T', T''], PU, U, VDS)
-    = < addStratDcls(
-          (strat downQid(T) : nil @ parseType(T') [parsePreAttrs(T'', 0)] .),
-          PU) ;
-          addStratDcls(
-          (strat downQid(T) : nil @ parseType(T') [parseAttrs(T'')] .),
-          U) ;
+    = < addStratDcls(strat downQid(T) : nil @ parseType(T') [parseAttrs(T'')] ., PU) ;
+        U ; ---- addOps(op downQid(T) : nil -> '@CallStrategy@ [parsePreAttrs(T'', 0)] ., U) ;
         VDS > .
   eq parseDecl('strat_:_@_.['token[T], T', T''], PU, U, VDS)
-    = < addStratDcls(
-          (strat downQid(T) : parseTypeList(T') @ parseType(T'') [none] .),
-          PU) ;
-        addStratDcls(
-          (strat downQid(T) : parseTypeList(T') @ parseType(T'') [none] .),
-          U) ;
+    = < addStratDcls(strat downQid(T) : parseTypeList(T') @ parseType(T'') [none] ., PU) ;
+        U ; ---- addOps(op downQid(T) : parseTypeList(T') -> '@CallStrategy@ [none] ., U) ;
         VDS > .
   eq parseDecl('strat_:_@_`[_`].['token[T], T', T'', T3], PU, U, VDS)
-    = < addStratDcls(
-          (strat downQid(T) : parseTypeList(T') @ parseType(T'')
-               [parsePreAttrs(T3, size(parseTypeList(T')))] .), PU) ;
-        addStratDcls(
-          (strat downQid(T) : parseTypeList(T') @ parseType(T'')
-               [parseAttrs(T3)] .), U) ;
+    = < addStratDcls(strat downQid(T) : parseTypeList(T') @ parseType(T'') [parseAttrs(T3)] ., PU) ;
+        U ; ---- addOps(op downQid(T) : parseTypeList(T') -> '@CallStrategy@ [parsePreAttrs(T3, size(parseTypeList(T')))] ., U) ;
         VDS > .
-
   ceq parseDecl('strat_:`@_.[F[TL], T], PU, U, VDS)
     = < PU ; U ; VDS >
     if F =/= 'token .
@@ -17122,44 +17100,27 @@ fmod UNIT-DECL-PARSING is
     if F =/= 'token .
 
   eq parseDecl('strats_@_.['neTokenList[T], T'], PU, U, VDS)
-    = < addStratDcls(
-          unfoldStratDecl(downTypes(T), nil, parseType(T'), none), PU) ;
-        addStratDcls(
-          unfoldStratDecl(downTypes(T), nil, parseType(T'), none), U) ;
+    = < addStratDcls(unfoldStratDecl(downTypes(T), nil, parseType(T'), none), PU) ;
+        U ; ---- addOps(unfoldOpDecl(downTypes(T), nil, '@CallStrategy@, none), U) ;
         VDS > .
   eq parseDecl('strats_@_`[_`].['neTokenList[T], T', T''], PU, U, VDS)
-    = < addStratDcls(
-          unfoldStratDecl(downTypes(T), nil, parseType(T'),
-            parsePreAttrs(T'', 0)),
-          PU) ;
-        addStratDcls(
-          unfoldStratDecl(downTypes(T), nil, parseType(T'),
-            parseAttrs(T'')),
-          U) ;
+    = < addStratDcls(unfoldStratDecl(downTypes(T), nil, parseType(T'), parseAttrs(T'')), PU) ;
+        U ; ---- addOps(unfoldOpDecl(downTypes(T), nil, '@CallStrategy@, parsePreAttrs(T'', 0)), U) ;
         VDS > .
   eq parseDecl('strat_:_@_.['neTokenList[T], T', T''], PU, U, VDS)
-    = < addStratDcls(
-          unfoldStratDecl(downTypes(T), parseTypeList(T'),
-            parseType(T''), none),
-          PU) ;
-        addStratDcls(
-          unfoldStratDecl(downTypes(T), parseTypeList(T'),
-            parseType(T''), none),
-          U) ;
+    = < addStratDcls(unfoldStratDecl(downTypes(T), parseTypeList(T'), parseType(T''), none), PU) ;
+        U ; ---- addOps(unfoldOpDecl(downTypes(T), parseTypeList(T'), '@CallStrategy@, none), U) ;
         VDS > .
   eq parseDecl('strats_:_@_`[_`].['neTokenList[T], T', T'', T3], PU, U, VDS)
-    = < addStratDcls(
-          unfoldStratDecl(downTypes(T), parseTypeList(T'), parseType(T''),
-            parsePreAttrs(T3, size(parseTypeList(T')))), PU) ;
-        addStratDcls(
-          unfoldStratDecl(downTypes(T),
-            parseTypeList(T'), parseType(T''), parseAttrs(T3)), U) ;
+    = < addStratDcls(unfoldStratDecl(downTypes(T), parseTypeList(T'), parseType(T''), parseAttrs(T3)), PU) ;
+        U ; ---- addOps(
+            ----   unfoldOpDecl(downTypes(T), parseTypeList(T'), '@CallStrategy@, parsePreAttrs(T3, size(parseTypeList(T')))), U) ;
         VDS > .
 
   eq parseDecl('sd_:=_.[T, T'], PU, U, VDS)
-    = < addStratDefs((sd T := T' [none] .), PU) ; U ; VDS > .
+    = < addStratDefs(sd T := T' [none] ., PU) ; U ; VDS > .
   eq parseDecl('csd_:=_if_.[T, T', T''], PU, U, VDS)
-    = < addStratDefs((csd T := T' if T'' = 'true.Bool [none] .), PU) ; U ; VDS > .
+    = < addStratDefs(csd T := T' if T'' = 'true.Bool [none] ., PU) ; U ; VDS > .
 endfm
 
 *******************************************************************************
@@ -17394,6 +17355,8 @@ fmod DECL-META-PRETTY-PRINT is
   op eMetaPrettyPrint : Module MembAxSet -> QidList .
   op eMetaPrettyPrint : Module EquationSet -> QidList .
   op eMetaPrettyPrint : Module RuleSet -> QidList .
+  op eMetaPrettyPrint : Module StratDeclSet -> QidList .
+  op eMetaPrettyPrint : Module StratDefSet -> QidList .
   op eMetaPrettyPrint : Module Condition -> QidList .
   op eMetaPrettyPrint : Module Term -> QidList .
 
@@ -17439,6 +17402,11 @@ fmod DECL-META-PRETTY-PRINT is
   var  ADS : AttrDeclSet .
   var  Cond : Condition .
   var  K : Kind .
+  var  StDcls : StratDeclSet .
+  var  StDefs : StratDefSet .
+  var  CS : CallStrategy .
+  var  Strat : Strategy .
+  var  TL : TermList .
 
   --- eq eMetaPrettyPrint(Ty) = Ty .
 
@@ -17556,6 +17524,51 @@ fmod DECL-META-PRETTY-PRINT is
        eMetaPrettyPrint(M, RlS))
     [owise] .
   eq eMetaPrettyPrint(M, (none).RuleSet) = nil .
+
+  eq eMetaPrettyPrint(M, ((strat F : TyL @ Ty [none] .) StDcls))
+    = ('\s '\s
+       '\b 'strat '\o F '\b ': '\o eMetaPrettyPrint(TyL)
+       '\b '@ '\o eMetaPrettyPrint(Ty) '\b '. '\o '\n
+       eMetaPrettyPrint(M, StDcls)) .
+  eq eMetaPrettyPrint(M, ((strat F : TyL @ Ty [AtS] .) StDcls))
+    = ('\s '\s
+       '\b 'strat '\o F '\b ': '\o eMetaPrettyPrint(TyL)
+       '\b '@ '\o eMetaPrettyPrint(Ty) '\n
+       '\s '\s '\s '\s '\b '`[ '\o eMetaPrettyPrint(M, AtS) '\b '`] '\s '. '\o '\n
+       eMetaPrettyPrint(M, StDcls))
+    [owise] .
+  eq eMetaPrettyPrint(M, (none).StratDeclSet)  = nil .
+
+  eq eMetaPrettyPrint(M, ((sd CS := Strat [none] .) StDefs))
+    = ('\s '\s '\b 'sd '\s '\o eMetaPrettyPrint(M, CS) '\n
+       '\s '\s '\s '\s '\b ':= '\o '\s metaStratPrettyPrint(M, Strat, mixfix flat format number) '\b '\s '. '\n '\o
+       eMetaPrettyPrint(M, StDefs)) .
+  eq eMetaPrettyPrint(M, ((sd CS := Strat [AtS] .) StDefs))
+    = ('\s '\s '\b 'sd '\s '\o eMetaPrettyPrint(M, CS) '\n
+       '\s '\s '\s '\s '\b ':= '\o '\s metaStratPrettyPrint(M, Strat, mixfix flat format number)
+           '\s '\b '`[ '\o eMetaPrettyPrint(M, AtS) '\b '`] '\s '. '\o '\n
+       eMetaPrettyPrint(M, StDefs))
+    [owise] .
+  eq eMetaPrettyPrint(M, ((csd CS := Strat if Cond [none] .) StDefs))
+    = ('\s '\s '\b 'csd '\s '\o eMetaPrettyPrint(M, CS) '\n
+       '\s '\s '\s '\s '\b ':= '\o '\s metaStratPrettyPrint(M, Strat, mixfix flat format number) '\n
+       '\s '\s '\s '\s '\b 'if '\o '\s eMetaPrettyPrint(M, Cond) '\b '\s '. '\o '\n
+       eMetaPrettyPrint(M, StDefs)) .
+  eq eMetaPrettyPrint(M, ((csd CS := Strat if Cond [AtS] .) StDefs))
+    = ('\s '\s '\b 'csd '\s '\o eMetaPrettyPrint(M, CS) '\n
+       '\s '\s '\s '\s '\b ':= '\o '\s metaStratPrettyPrint(M, Strat, mixfix flat format number) '\n
+       '\s '\s '\s '\s '\b 'if '\o '\s eMetaPrettyPrint(M, Cond)
+           '\s '\b '`[ '\o eMetaPrettyPrint(M, AtS) '\b '`] '\s '. '\o '\n
+       eMetaPrettyPrint(M, StDefs))
+    [owise] .
+  eq eMetaPrettyPrint(M, (none).StratDefSet) = nil .
+
+  op eMetaPrettyPrint : Module CallStrategy -> QidList .
+  eq eMetaPrettyPrint(M, (F(TL)).CallStrategy) = F '`( eMetaPrettyPrint(M, TL) '`) .
+
+  op eMetaPrettyPrint : Module TermList -> QidList .
+  eq eMetaPrettyPrint(M, (T, TL)) = metaPrettyPrint(M, T) '`, eMetaPrettyPrint(M, TL) .
+  eq eMetaPrettyPrint(M, (empty).TermList) = nil .
 
   eq eMetaPrettyPrint(M, T = T' /\ Cond)
     = (eMetaPrettyPrint(M, T) '\b '= '\o eMetaPrettyPrint(M, T') '\b
@@ -17732,6 +17745,8 @@ fmod UNIT-META-PRETTY-PRINT is
   var  U : Module .
   var  AtS : AttrSet .
   var  MN : ModuleName .
+  var  StDcls : StratDeclSet .
+  var  StDefs : StratDefSet .
 
   ceq eMetaPrettyPrint(ME)
     = if QI == '`) or QI == '`] or QI == '`}
@@ -17873,6 +17888,57 @@ fmod UNIT-META-PRETTY-PRINT is
           eMetaPrettyPrint(MDS) eMetaPrettyPrint(M, MAS)
           eMetaPrettyPrint(M, EqS) eMetaPrettyPrint(M, RlS) '\n '\b
        'endoth '\o '\n) .
+  eq eMetaPrettyPrint(M, smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm)
+    = ('\b
+       'smod '\o eMetaPrettyPrint(ME) '\b 'is '\o '\n
+          eMetaPrettyPrint(IL)
+          (if SS == none
+           then nil
+           else ('\s '\s '\b 'sorts '\o eMetaPrettyPrint(SS) '\b '. '\o '\n)
+           fi)
+          eMetaPrettyPrint(SSDS)
+          eMetaPrettyPrint(M, OPDS)
+          eMetaPrettyPrint(M, MAS)
+          eMetaPrettyPrint(M, EqS)
+          eMetaPrettyPrint(M, RlS)
+          eMetaPrettyPrint(M, StDcls)
+          eMetaPrettyPrint(M, StDefs)
+       '\b 'endsm '\o '\n) .
+ eq eMetaPrettyPrint(M, smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm)
+   = ('\b
+      'smod '\o eMetaPrettyPrint(ME) (if PDL == nil
+                                     then nil
+                                     else '`{ eMetaPrettyPrint(PDL) '`} '\s
+                                     fi) '\b 'is '\o '\n
+         eMetaPrettyPrint(IL)
+         (if SS == none
+          then nil
+          else ('\s '\s '\b 'sorts '\o eMetaPrettyPrint(SS) '\b '. '\o '\n)
+          fi)
+         eMetaPrettyPrint(SSDS)
+         eMetaPrettyPrint(M, OPDS)
+         eMetaPrettyPrint(M, MAS)
+         eMetaPrettyPrint(M, EqS)
+         eMetaPrettyPrint(M, RlS)
+         eMetaPrettyPrint(M, StDcls)
+         eMetaPrettyPrint(M, StDefs)
+      '\b 'endsm '\o '\n) .
+ eq eMetaPrettyPrint(M, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth)
+   = ('\b
+      'sth '\o eMetaPrettyPrint(MN) '\b 'is '\o '\n
+         eMetaPrettyPrint(IL)
+         (if SS == none
+          then nil
+          else ('\s '\s '\b 'sorts '\o eMetaPrettyPrint(SS) '\b '. '\o '\n)
+          fi)
+         eMetaPrettyPrint(SSDS)
+         eMetaPrettyPrint(M, OPDS)
+         eMetaPrettyPrint(M, MAS)
+         eMetaPrettyPrint(M, EqS)
+         eMetaPrettyPrint(M, RlS)
+         eMetaPrettyPrint(M, StDcls)
+         eMetaPrettyPrint(M, StDefs)
+      '\b 'endsth '\o '\n) .
 
   eq eMetaPrettyPrint((including ME .) IL)
     = ('\s '\s '\b 'including '\o eMetaPrettyPrint(ME) '\b '. '\o '\n
@@ -21954,6 +22020,7 @@ endm
 
 loop init .
 
+eof
 --- trace exclude FULL-MAUDE .
 
 ---- set show loop stats on .

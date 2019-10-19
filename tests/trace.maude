@@ -1,14 +1,20 @@
 set trace off .
 set trace select on .
 trace select ----solveBubblesCond
-             ----solveBubbles
+             solveBubbles
              ----procModule4
              ----parseDecl
              ----evalPreModule
+             ----evalPreModule1
+             ----evalPreModule2
+             ----procModule4
              ----solveBubblesMod
+             solveBubblesModAux
              ----solveBubblesOps
              ----solveBubblesEq
              metaParse
+             metaStratParse
+             ----setStratDefs
              ----breakMb
              ----breakMbAux
              ----parseSort
@@ -29,4 +35,10 @@ trace select ----solveBubblesCond
              ----applyMapsToMaps
              .
 set print conceal on .
-----print reveal fmod_is_sorts_.____endfm .
+print conceal mod_is_sorts_.____endfm
+              mod_is_sorts_._____endm
+              db
+              ----procDecl
+              .
+
+----Warning: <metalevel>: declaration for __ has different attributes from declaration on <metalevel>.
