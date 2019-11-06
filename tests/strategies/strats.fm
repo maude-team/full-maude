@@ -1,0 +1,5 @@
+(smod STRATS is
+  protecting INT .
+  strat repeat : Nat @ Nat .
+  strat repeat : Int @ Nat .
+endsm)

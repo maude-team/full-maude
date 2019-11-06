@@ -1,0 +1,61 @@
+(fth BT-ELEMS is
+  protecting BOOL .
+  sort State .
+  op isSolution : State -> Bool .
+endfth)
+
+(sth BT-STRAT is
+  including BT-ELEMS .
+  strat expand @ State .
+endsth)
+
+load ../trace.maude
+
+(smod BACKTRACKING{X :: BT-STRAT} is
+  strat solve @ X$State .
+  var S : X$State .
+  sd solve := (match S s.t. isSolution(S)) ?
+                 idle : (expand ; solve) .
+endsm)
+
+eof
+
+(mod QUEENS is
+  protecting LIST{Nat} .
+  protecting SET{Nat} .
+
+  op isOk : List{Nat} -> Bool .
+  op ok : List{Nat} Nat Nat -> Bool .
+  op isSolution : List{Nat} -> Bool .
+
+  vars N M Diff : Nat .
+  var  L : List{Nat} .
+  var  S : Set{Nat} .
+
+  eq isOk(L N) = ok(L, N, 1) .
+  eq ok(nil, M, Diff) = true .
+  ceq ok(L N, M, Diff) = ok(L, M, Diff + 1)
+   if N =/= M /\ N =/= M + Diff /\ M =/= N + Diff .
+  eq isSolution(L) = size(L) == 8 .
+
+  crl [next] : L => L N if N, S := 1, 2, 3, 4, 5, 6, 7, 8 .
+endm)
+
+(smod QUEENS-STRAT is
+  protecting QUEENS .
+
+  strat expand @ List{Nat} .
+  var L : List{Nat} .
+  sd expand := top(next) ; match L s.t. isOk(L) .
+endsm)
+
+(view QueensBT from BT-STRAT to QUEENS-STRAT is
+  sort State to List{Nat} .
+  strat expand to expand .
+endv)
+
+(smod BT-QUEENS is
+  protecting BACKTRACKING{QueensBT} .
+endsm)
+
+(srew [2] nil using solve .)

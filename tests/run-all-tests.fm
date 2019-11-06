@@ -82,6 +82,4 @@ load bug-reports/riesco/prueba.fm
 load bug-reports/riesco/show-view.fm
 ---)
 
-load strategies/hanoi.fm
-load strategies/hanoi2.fm
-load strategies/hanoi-count.fm
+load strategies/hanoi-solve.fm

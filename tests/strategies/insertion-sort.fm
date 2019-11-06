@@ -1,0 +1,44 @@
+(fmod SORTING-PAIR is
+  protecting NAT .
+
+  sorts Value Entry .
+  subsort Nat < Value .
+
+  op `[_`,_`] : Nat Value -> Entry [ctor] .
+endfm)
+
+(view Entry from TRIV to SORTING-PAIR is
+  sort Elt to Entry .
+endv)
+
+(mod SORTING is
+  protecting SET{Entry} .
+  vars I J : Nat .
+  vars V W : Value .
+  rl [swap] : [J, V], [I, W] => [J, W], [I, V] .
+endm)
+
+(smod INSERTION-SORT is
+  protecting SORTING .
+
+  strat  swap : Nat Nat @ Set{Entry} .
+  strats insert insort : Nat @ Set{Entry} .
+
+  vars X Y J I : Nat .
+  vars V W : Value .
+  var PS : Set{Entry} .
+
+  sd insort(Y) := try(match PS s.t. Y <= | PS | ; ---- size(PS), greatest index?
+                      insert(Y) ;
+                      insort(Y + 1)) .
+
+  sd insert(1) := idle [label base-case] .
+  csd insert(s(X)) := try(xmatch [X, V], [s(X), W] s.t. V > W ;
+                          swap(X, s(X)) ;
+                          insert(X))
+                       if X > 0 [label recursive-case] .
+
+  sd swap(X, Y) := swap[J <- X, I <- Y] .
+endsm)
+
+(srewrite [1,8],[2,3],[3,15],[4,5],[5,2] using insort(2) .)
