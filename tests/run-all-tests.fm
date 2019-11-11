@@ -2,7 +2,7 @@ set show stats off .
 set show loop stats off .
 set show timing off .
 set show loop timing off .
-load trace.maude
+----load trace.maude
 
 ---(
 load sample-files-2.7/rew-seq-extended-rent-a-car-store.fm
@@ -80,6 +80,9 @@ load bug-reports/riesco/network.fm
 load bug-reports/riesco/nspk.fm
 load bug-reports/riesco/prueba.fm
 load bug-reports/riesco/show-view.fm
----)
 
 load strategies/hanoi-solve.fm
+load strategies/queens.fm
+load strategies/striv.fm
+---)
+load strategies/lp.fm

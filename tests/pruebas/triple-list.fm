@@ -16,19 +16,9 @@
    eq foo(E L) = 1 + foo(L) .
  endfm)
 
-(fmod BAR is 
+(fmod BAR is
    pr FOO{String, Nat, Nat} .
  endfm)
-
-trace include FULL-MAUDE .
-----set trace on .
-set trace select on .
-trace select show-module .
-trace select parseModExp .
-trace select evalModExp .
-trace select unitInst .
-----set print conceal on .
-print conceal fmod_is_sorts_.____endfm mod_is_sorts_._____endm .
 
 (show module FOO{String, Nat, Nat} .)
 

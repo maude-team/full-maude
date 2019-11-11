@@ -7039,10 +7039,10 @@ fmod EXT-TERM is
   op vars : TermList -> QidSet .
 
   eq vars(V) = V .
-  eq vars(C) = empty .
+  eq vars(C) = none .
   eq vars(F[TL]) = vars(TL) .
-  eq vars(empty) = empty .
-  eq vars((T, TL)) = (vars(T), vars(TL)) .
+  eq vars(empty) = none .
+  eq vars((T, TL)) = (vars(T) ; vars(TL)) .
 
   **** varlist returns the list of variables in a term
   op varlist : Term -> QidList .
@@ -7649,10 +7649,10 @@ fmod UNIT is
   var  H : Header .
   vars MN MN' : ModuleName .
   var  Cd Cond Cond1 Cond2 : Condition .
-  vars StDcls StDcls' : StratDeclSet .
-  vars StDefs StDefs' : StratDefSet .
-  var  StDcls? : [StratDeclSet] .
-  var  StDefs? : [StratDefSet] .
+  vars StratDcls StratDcls' : StratDeclSet .
+  vars StratDefs StratDefs' : StratDefSet .
+  var  StratDcls? : [StratDeclSet] .
+  var  StratDefs? : [StratDefSet] .
 
   eq I in (IL I IL') = true .
   eq I in IL = false [owise] .
@@ -7667,8 +7667,8 @@ fmod UNIT is
     = false .
   eq theory(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = true .
-  eq theory(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = false .
-  eq theory(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = true .
+  eq theory(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = false .
+  eq theory(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = true .
 
 *** Selection functions for units
 
@@ -7689,9 +7689,9 @@ fmod UNIT is
   eq getHeader(
        oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = MN .
-  eq getHeader(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = ME .
-  eq getHeader(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = ME .
-  eq getHeader(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = MN .
+  eq getHeader(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = ME .
+  eq getHeader(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = ME .
+  eq getHeader(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = MN .
 
   eq getImports(unitError(QIL)) = nil .
   eq getImports(noModule) = nil .
@@ -7705,8 +7705,8 @@ fmod UNIT is
   eq getImports(
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = IL .
-  eq getImports(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = IL .
-  eq getImports(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = IL .
+  eq getImports(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = IL .
+  eq getImports(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = IL .
 
   eq getPars(unitError(QIL)) = nil .
   eq getPars(noModule) = nil .
@@ -7734,12 +7734,12 @@ fmod UNIT is
   eq getPars(
        oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = nil .
-  eq getPars(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = nil .
-  eq getPars(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = PDL .
-  eq getPars(smod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm)
+  eq getPars(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = nil .
+  eq getPars(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = PDL .
+  eq getPars(smod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm)
     = nil .
-  eq getPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = nil .
-  eq getPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = nil .
+  eq getPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = nil .
+  eq getPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = nil .
 
   eq getSorts(unitError(QIL)) = none .
   eq getSorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = SS .
@@ -7752,8 +7752,8 @@ fmod UNIT is
   eq getSorts(
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = SS .
-  eq getSorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = SS .
-  eq getSorts(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = SS .
+  eq getSorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = SS .
+  eq getSorts(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = SS .
 
   op getAllSorts : Module -> SortSet .
   eq getAllSorts(M) = getSorts(M) .
@@ -7769,8 +7769,8 @@ fmod UNIT is
   eq getSubsorts(
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = SSDS .
-  eq getSubsorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = SSDS .
-  eq getSubsorts(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = SSDS .
+  eq getSubsorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = SSDS .
+  eq getSubsorts(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = SSDS .
 
   eq getOps(unitError(QIL)) = none .
   eq getOps(noModule) = none .
@@ -7782,8 +7782,8 @@ fmod UNIT is
     = OPDS .
   eq getOps(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = OPDS .
-  eq getOps(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = OPDS .
-  eq getOps(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = OPDS .
+  eq getOps(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = OPDS .
+  eq getOps(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = OPDS .
 
   eq getMbs(unitError(QIL)) = none .
   eq getMbs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = MAS .
@@ -7794,8 +7794,8 @@ fmod UNIT is
     = MAS .
   eq getMbs(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = MAS .
-  eq getMbs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = MAS .
-  eq getMbs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = MAS .
+  eq getMbs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = MAS .
+  eq getMbs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = MAS .
 
   eq getEqs(unitError(QIL)) = none .
   eq getEqs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = EqS .
@@ -7806,8 +7806,8 @@ fmod UNIT is
     = EqS .
   eq getEqs(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = EqS .
-  eq getEqs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = EqS .
-  eq getEqs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = EqS .
+  eq getEqs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = EqS .
+  eq getEqs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = EqS .
 
   eq getRls(unitError(QIL)) = none .
   eq getRls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = RlS .
@@ -7818,8 +7818,8 @@ fmod UNIT is
     = RlS .
   eq getRls(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = RlS .
-  eq getRls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = RlS .
-  eq getRls(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = RlS .
+  eq getRls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = RlS .
+  eq getRls(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = RlS .
 
   eq getClasses(unitError(QIL)) = none .
   eq getClasses(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
@@ -7832,8 +7832,8 @@ fmod UNIT is
   eq getClasses(
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = CDS .
-  eq getClasses(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = none .
-  eq getClasses(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = none .
+  eq getClasses(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = none .
+  eq getClasses(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = none .
 
   eq getSubclasses(unitError(QIL)) = none .
   eq getSubclasses(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
@@ -7846,8 +7846,8 @@ fmod UNIT is
   eq getSubclasses(
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = SCDS .
-  eq getSubclasses(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = none .
-  eq getSubclasses(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = none .
+  eq getSubclasses(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = none .
+  eq getSubclasses(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = none .
 
   eq getMsgs(unitError(QIL)) = none .
   eq getMsgs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
@@ -7858,8 +7858,8 @@ fmod UNIT is
     = MDS .
   eq getMsgs(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth)
     = MDS .
-  eq getMsgs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = none .
-  eq getMsgs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = none .
+  eq getMsgs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = none .
+  eq getMsgs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = none .
 
   eq getStratDcls(unitError(QIL)) = none .
   eq getStratDcls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
@@ -7868,8 +7868,8 @@ fmod UNIT is
   eq getStratDcls(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = none .
   eq getStratDcls(omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom) = none .
   eq getStratDcls(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth) = none .
-  eq getStratDcls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = StDcls .
-  eq getStratDcls(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = StDcls .
+  eq getStratDcls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = StratDcls .
+  eq getStratDcls(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = StratDcls .
 
   eq getStratDefs(unitError(QIL)) = none .
   eq getStratDefs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
@@ -7878,8 +7878,8 @@ fmod UNIT is
   eq getStratDefs(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = none .
   eq getStratDefs(omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom) = none .
   eq getStratDefs(oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth) = none .
-  eq getStratDefs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm) = StDefs .
-  eq getStratDefs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth) = StDefs .
+  eq getStratDefs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = StratDefs .
+  eq getStratDefs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = StratDefs .
 
 *** Set functions
 
@@ -7899,10 +7899,10 @@ fmod UNIT is
   eq setImports(
        oth H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, IL')
     = oth H is IL' sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth .
-  eq setImports(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, IL')
-    = smod H is IL' sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm .
-  eq setImports(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, IL')
-    = sth H is IL' sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth .
+  eq setImports(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, IL')
+    = smod H is IL' sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setImports(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, IL')
+    = sth H is IL' sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
 
   eq setOps(unitError(QIL), OPDS) = unitError(QIL) .
   eq setOps(noModule, OPDS) = noModule .
@@ -7922,10 +7922,10 @@ fmod UNIT is
   eq setOps(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth,
        OPDS')
     = oth MN is IL sorts SS . SSDS CDS SCDS OPDS' MDS MAS EqS RlS endoth .
-  eq setOps(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, OPDS')
-    = smod H is IL sorts SS . SSDS OPDS' MAS EqS RlS StDcls StDefs endsm .
-  eq setOps(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, OPDS')
-    = sth MN is IL sorts SS . SSDS OPDS' MAS EqS RlS StDcls StDefs endsth .
+  eq setOps(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, OPDS')
+    = smod H is IL sorts SS . SSDS OPDS' MAS EqS RlS StratDcls StratDefs endsm .
+  eq setOps(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, OPDS')
+    = sth MN is IL sorts SS . SSDS OPDS' MAS EqS RlS StratDcls StratDefs endsth .
 
   eq setSubsorts(unitError(QIL), SSDS) = unitError(QIL) .
   eq setSubsorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, SSDS')
@@ -7944,10 +7944,10 @@ fmod UNIT is
        oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth,
        SSDS')
     = oth MN is IL sorts SS . SSDS' CDS SCDS OPDS MDS MAS EqS RlS endoth .
-  eq setSubsorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, SSDS')
-    = smod H is IL sorts SS . SSDS' OPDS MAS EqS RlS StDcls StDefs endsm .
-  eq setSubsorts(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, SSDS')
-    = sth MN is IL sorts SS . SSDS' OPDS MAS EqS RlS StDcls StDefs endsth .
+  eq setSubsorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, SSDS')
+    = smod H is IL sorts SS . SSDS' OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setSubsorts(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, SSDS')
+    = sth MN is IL sorts SS . SSDS' OPDS MAS EqS RlS StratDcls StratDefs endsth .
 
   eq setMbs(unitError(QIL), membAxError(QIL') MAS) = unitError(QIL QIL') .
   eq setMbs(unitError(QIL), MAS) = unitError(QIL) .
@@ -7966,10 +7966,10 @@ fmod UNIT is
   eq setMbs(
        oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, MAS')
     = oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS' EqS RlS endoth .
-  eq setMbs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, MAS')
-    = smod H is IL sorts SS . SSDS OPDS MAS' EqS RlS StDcls StDefs endsm .
-  eq setMbs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, MAS')
-    = sth MN is IL sorts SS . SSDS OPDS MAS' EqS RlS StDcls StDefs endsth .
+  eq setMbs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, MAS')
+    = smod H is IL sorts SS . SSDS OPDS MAS' EqS RlS StratDcls StratDefs endsm .
+  eq setMbs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, MAS')
+    = sth MN is IL sorts SS . SSDS OPDS MAS' EqS RlS StratDcls StratDefs endsth .
 
   eq setEqs(unitError(QIL), EqS) = unitError(QIL) .
   eq setEqs(U, equationError(QIL) EqS?:[EquationSet]) = unitError(QIL) .
@@ -7989,10 +7989,10 @@ fmod UNIT is
   eq setEqs(
        oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, EqS')
     = oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS' RlS endoth .
-  eq setEqs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, EqS')
-    = smod H is IL sorts SS . SSDS OPDS MAS EqS' RlS StDcls StDefs endsm .
-  eq setEqs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, EqS')
-    = sth MN is IL sorts SS . SSDS OPDS MAS EqS' RlS StDcls StDefs endsth .
+  eq setEqs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, EqS')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS' RlS StratDcls StratDefs endsm .
+  eq setEqs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, EqS')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS' RlS StratDcls StratDefs endsth .
 
   var U? : [Module] .
   var RlS? : [RuleSet] .
@@ -8017,10 +8017,10 @@ fmod UNIT is
     = omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS' endom .
   eq setRls(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, RlS')
     = oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS' endoth .
-  eq setRls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, RlS')
-    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS' StDcls StDefs endsm .
-  eq setRls(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, RlS')
-    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS' StDcls StDefs endsth .
+  eq setRls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, RlS')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS' StratDcls StratDefs endsm .
+  eq setRls(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, RlS')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS' StratDcls StratDefs endsth .
 
   eq setSorts(unitError(QIL), SS) = unitError(QIL) .
   eq setSorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, SS')
@@ -8037,10 +8037,10 @@ fmod UNIT is
   eq setSorts(
         oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, SS')
     = oth MN is IL sorts SS' . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth .
-  eq setSorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, SS')
-    = smod H is IL sorts SS' . SSDS OPDS MAS EqS RlS StDcls StDefs endsm .
-  eq setSorts(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, SS')
-    = sth MN is IL sorts SS' . SSDS OPDS MAS EqS RlS StDcls StDefs endsth .
+  eq setSorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, SS')
+    = smod H is IL sorts SS' . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setSorts(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, SS')
+    = sth MN is IL sorts SS' . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
 
   eq setPars(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm, PDL)
     = if PDL == nil
@@ -8088,18 +8088,18 @@ fmod UNIT is
         oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth,
         PDL)
     = oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth .
-  eq setPars(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, PDL)
+  eq setPars(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, PDL)
     = if PDL == nil
-      then smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm
-      else smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm
+      then smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
+      else smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
       fi .
-  eq setPars(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, PDL')
+  eq setPars(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, PDL')
     = if PDL' == nil
-      then smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm
-      else smod ME{PDL'} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm
+      then smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
+      else smod ME{PDL'} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
       fi .
-  eq setPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, PDL)
-    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth .
+  eq setPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, PDL)
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
 
   eq setClasses(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, CDS)
     = if CDS == none
@@ -8216,12 +8216,12 @@ fmod UNIT is
     = omod ME'{PDL} is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom .
   eq setName(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, MN')
     = oth MN' is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth .
-  eq setName(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, ME')
-    = smod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm .
-  eq setName(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, ME')
-    = smod ME'{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm .
-  eq setName(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, MN')
-    = sth MN' is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth .
+  eq setName(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, ME')
+    = smod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setName(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, ME')
+    = smod ME'{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setName(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, MN')
+    = sth MN' is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
   eq setName(noModule, ME) = noModule .
   eq setName(unitError(QIL), ME) = unitError(QIL) .
 
@@ -8244,86 +8244,86 @@ fmod UNIT is
          IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth,
        MN)
     = oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth .
-  eq setName(smod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, ME')
-    = smod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm .
-  eq setName(sth nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, MN)
-    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth .
+  eq setName(smod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, ME')
+    = smod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setName(sth nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, MN)
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
   eq setName(noModule, ME) = noModule .
   eq setName(unitError(QIL), ME) = unitError(QIL) .
 
-  eq setStratDcls(unitError(QIL), StDcls?) = unitError(QIL) .
-----  eq setStratDcls(U?, ruleError(QIL) StDcls?) = unitError(QIL) .
-  eq setStratDcls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StDcls)
-    = if StDcls == none
+  eq setStratDcls(unitError(QIL), StratDcls?) = unitError(QIL) .
+----  eq setStratDcls(U?, ruleError(QIL) StratDcls?) = unitError(QIL) .
+  eq setStratDcls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StratDcls)
+    = if StratDcls == none
       then mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm
-      else smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls none endsm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls none endsm
       fi .
-  eq setStratDcls(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, StDcls)
-    = if StDcls == none
+  eq setStratDcls(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, StratDcls)
+    = if StratDcls == none
       then th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth
-      else sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls none endsth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls none endsth
       fi .
-  eq setStratDcls(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, StDcls)
-    = if StDcls == none
+  eq setStratDcls(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, StratDcls)
+    = if StratDcls == none
       then fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm
-      else smod H is IL sorts SS . SSDS OPDS MAS EqS none StDcls none endsm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS none StratDcls none endsm
       fi .
-  eq setStratDcls(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, StDcls)
-    = if StDcls == none
+  eq setStratDcls(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, StratDcls)
+    = if StratDcls == none
       then fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth
-      else sth MN is IL sorts SS . SSDS OPDS MAS EqS none StDcls none endsth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS none StratDcls none endsth
       fi .
-  eq setStratDcls(omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom, StDcls)
-    = if StDcls == none
+  eq setStratDcls(omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom, StratDcls)
+    = if StratDcls == none
       then omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom
       else unitError(header2QidList(H) 'not 'a 'strat 'module)
       fi .
-  eq setStratDcls(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, StDcls)
-    = if StDcls == none
+  eq setStratDcls(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, StratDcls)
+    = if StratDcls == none
       then oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth
       else unitError(header2QidList(MN) 'not 'a 'strat 'module)
       fi .
-  eq setStratDcls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, StDcls')
-    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls' StDefs endsm .
-  eq setStratDcls(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, StDcls')
-    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls' StDefs endsth .
+  eq setStratDcls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, StratDcls')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls' StratDefs endsm .
+  eq setStratDcls(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, StratDcls')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls' StratDefs endsth .
 
-  eq setStratDefs(unitError(QIL), StDefs?) = unitError(QIL) .
-  eq setStratDefs(U?, stratDefError(QIL) StDefs?) = unitError(QIL) .
-  eq setStratDefs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StDefs)
-    = if StDefs == none
+  eq setStratDefs(unitError(QIL), StratDefs?) = unitError(QIL) .
+  eq setStratDefs(U?, stratDefError(QIL) StratDefs?) = unitError(QIL) .
+  eq setStratDefs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StratDefs)
+    = if StratDefs == none
       then mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm
-      else smod H is IL sorts SS . SSDS OPDS MAS EqS RlS none StDefs endsm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS RlS none StratDefs endsm
       fi .
-  eq setStratDefs(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, StDefs)
-    = if StDefs == none
+  eq setStratDefs(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, StratDefs)
+    = if StratDefs == none
       then th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth
-      else sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS none StDefs endsth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS none StratDefs endsth
       fi .
-  eq setStratDefs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, StDefs)
-    = if StDefs == none
+  eq setStratDefs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, StratDefs)
+    = if StratDefs == none
       then fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm
-      else smod H is IL sorts SS . SSDS OPDS MAS EqS none none StDefs endsm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS none none StratDefs endsm
       fi .
-  eq setStratDefs(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, StDefs)
-    = if StDefs == none
+  eq setStratDefs(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, StratDefs)
+    = if StratDefs == none
       then fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth
-      else sth MN is IL sorts SS . SSDS OPDS MAS EqS none none StDefs endsth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS none none StratDefs endsth
       fi .
-  eq setStratDefs(omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom, StDefs)
-    = if StDefs == none
+  eq setStratDefs(omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom, StratDefs)
+    = if StratDefs == none
       then omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom
       else unitError(header2QidList(H) 'not 'a 'strat 'module)
       fi .
-  eq setStratDefs(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, StDefs)
-    = if StDefs == none
+  eq setStratDefs(oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, StratDefs)
+    = if StratDefs == none
       then oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth
       else unitError(header2QidList(MN) 'not 'a 'strat 'module)
       fi .
-  eq setStratDefs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, StDefs')
-    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs' endsm .
-  eq setStratDefs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, StDefs')
-    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs' endsth .
+  eq setStratDefs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, StratDefs')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs' endsm .
+  eq setStratDefs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, StratDefs')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs' endsth .
 
 *** Add functions
 
@@ -8353,8 +8353,8 @@ fmod UNIT is
   eq addSubclasses(SCDS, unitError(QIL)) = unitError(QIL) .
   eq addMsgs(MDS, U) = setMsgs(U, getMsgs(U) MDS) .
   eq addMsgs(MDS, unitError(QIL)) = unitError(QIL) .
-  eq addStratDefs(StDefs, U) = setStratDefs(U, StDefs getStratDefs(U)) .
-  eq addStratDcls(StDcls, U) = setStratDcls(U, StDcls getStratDcls(U)) .
+  eq addStratDefs(StratDefs, U) = setStratDefs(U, StratDefs getStratDefs(U)) .
+  eq addStratDcls(StratDcls, U) = setStratDcls(U, StratDcls getStratDcls(U)) .
 
 *** Creation of empty units
 
@@ -8400,9 +8400,9 @@ fmod UNIT is
     = (oth MN is
          nil sorts none . none none none none none none none none
        endoth) .
-  eq empty(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm)
+  eq empty(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm)
    = (smod H is nil sorts none . none none none none none none none endsm) .
-  eq empty(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth)
+  eq empty(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth)
    = (sth MN is nil sorts none . none none none none none none none endsth) .
 
 *** In the following \texttt{addDecls} function, the declarations of the unit
@@ -9070,6 +9070,8 @@ fmod VIEW is
   op msg_to_. : Qid Qid -> OpMapping .
   op msg_:_->_to_. : Qid TypeList Sort Qid -> OpMapping .
 
+  op strat_to`expr_. : Term Term -> StratMapping . ---- PreMapping
+
   subsort ViewExpression < Header .
 
   op null : -> View [ctor] .
@@ -9376,7 +9378,8 @@ fmod PRE-VIEW is
 
   op setPars : PreView ParameterDeclList -> PreView .
   eq setPars(preview VE from ME to ME' is VDS SMS OMS TMS endpv, PDL)
-    = preview VE{PDL} from ME to ME' is VDS SMS OMS TMS endpv .
+    = preview VE{PDL} from ME to ME' is VDS SMS OMS TMS endpv
+    [owise] .
   eq setPars(preview VE{PDL} from ME to ME' is VDS SMS OMS TMS endpv, PDL')
     = preview VE{PDL'} from ME to ME' is VDS SMS OMS TMS endpv .
 
@@ -10473,6 +10476,7 @@ fmod MOVE-DOWN is
 
   vars T T' T'' T''' T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 : Term .
   vars TL TL' : TermList .
+  vars NTL NTL' : NeTermList .
   vars QI QI' F V L : Qid .
   var  Ct : Constant .
   var  M : Module .
@@ -10532,25 +10536,23 @@ fmod MOVE-DOWN is
   eq downImports('including_.[T]) = (including downModExp(T) .) .
   eq downImports('extending_.[T]) = (extending downModExp(T) .) .
   eq downImports('protecting_.[T]) = (protecting downModExp(T) .) .
-  ceq downImports((TL, TL')) = (downImports(TL) downImports(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downImports((NTL, NTL')) = (downImports(NTL) downImports(NTL')) .
 
   eq downSubsorts('none.SubsortDeclSet) = none .
   eq downSubsorts('__[TL]) = downSubsorts(TL) .
   eq downSubsorts('subsort_<_.[T, T']) = (subsort downQid(T) < downQid(T') .) .
-  ceq downSubsorts((TL, TL')) = (downSubsorts(TL) downSubsorts(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downSubsorts((NTL, NTL')) = (downSubsorts(NTL) downSubsorts(NTL')) .
 
   eq downOps('none.OpDeclSet) = none .
   eq downOps('__[TL]) = downOps(TL) .
   eq downOps('op_:_->_`[_`].[Ct, T, T', T''])
     = (op downQid(Ct) : downTypes(T) -> downQid(T') [downAttrs(T'')] .) .
-  ceq downOps((TL, TL')) = (downOps(TL) downOps(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downOps((NTL, NTL')) = (downOps(NTL) downOps(NTL')) .
 
   eq downAttrs('none.AttrSet) = none .
   eq downAttrs('__[TL]) = downAttrs(TL) .
   ceq downAttrs((TL, TL')) = (downAttr(TL) downAttrs(TL')) if TL =/= empty /\ TL' =/= empty .
-  ceq downAttrs(T)
-    = downAttr(T)
-    if T =/= 'none.AttrSet .
+  eq downAttrs(T) = downAttr(T) [owise].
 
   eq downAttr('assoc.Attr) = assoc .
   eq downAttr('comm.Attr) = comm .
@@ -10583,13 +10585,13 @@ fmod MOVE-DOWN is
   eq downHooks('op-hook[T, T', T'', T3])
     = op-hook(downQid(T), downQid(T'), downQidList(T''), downQid(T3)) .
   eq downHooks('term-hook[T, T']) = term-hook(downQid(T), downTerm(T')) .
-  ceq downHooks((TL, TL')) = downHooks(TL) downHooks(TL') if TL =/= empty /\ TL' =/= empty .
+  eq downHooks((NTL, NTL')) = downHooks(NTL) downHooks(NTL') .
 
 ----  eq downTerm(T) = downTerm(T, qidError('\r 'Error: '\o 'Incorrect 'term. '\n)) .
   eq downTerm(QI) = downQid(QI) .
   eq downTerm('_`[_`][T, T']) = downQid(T)[downTerm(T')] .
   eq downTerm('_`,_[T, TL]) = (downTerm(T), downTerm(TL)) .
-  ceq downTerm((T, TL)) = (downTerm(T), downTerm(TL)) if TL =/= empty .
+  eq downTerm((T, NTL)) = (downTerm(T), downTerm(NTL)) .
   eq downTerm(F[TL])
     = qidError('\r 'Error: '\o 'Incorrect 'term. '\n) [owise] .
 
@@ -10597,14 +10599,14 @@ fmod MOVE-DOWN is
   eq downEqCond('_=_[T, T']) = downTerm(T) = downTerm(T') .
   eq downEqCond('_:_[T, T']) = downTerm(T) : downSort(T') .
   eq downEqCond('_:=_[T, T']) = downTerm(T) := downTerm(T') .
-  ceq downEqCond((TL, TL')) = downEqCond(TL) /\ downEqCond(TL') if TL =/= empty /\ TL' =/= empty .
+  eq downEqCond((NTL, NTL')) = downEqCond(NTL) /\ downEqCond(NTL') .
 
   eq downCond('_/\_[TL]) = downCond(TL) .
   eq downCond('_=_[T, T']) = downEqCond('_=_[T, T']) .
   eq downCond('_:_[T, T']) = downEqCond('_:_[T, T']) .
   eq downCond('_:=_[T, T']) = downEqCond('_:=_[T, T']) .
   eq downCond('_=>_[T, T']) = downTerm(T) => downTerm(T') .
-  ceq downCond((TL, TL')) = downCond(TL) /\ downCond(TL') if TL =/= empty /\ TL' =/= empty .
+  eq downCond((NTL, NTL')) = downCond(NTL) /\ downCond(NTL') .
 
   eq downMbs('none.MembAxSet) = none .
   eq downMbs('__[TL]) = downMbs(TL) .
@@ -10612,7 +10614,7 @@ fmod MOVE-DOWN is
     = (mb downTerm(T) : downSort(T') [downAttrs(T'')] .) .
   eq downMbs('cmb_:_if_`[_`].[T, T', T'', T3])
     = (cmb downTerm(T) : downSort(T') if downEqCond(T'') [downAttrs(T3)] .) .
-  ceq downMbs((TL, TL')) = (downMbs(TL) downMbs(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downMbs((NTL, NTL')) = (downMbs(NTL) downMbs(NTL')) .
 
   eq downEqs('none.EquationSet) = none .
   eq downEqs('__[TL]) = downEqs(TL) .
@@ -10620,7 +10622,7 @@ fmod MOVE-DOWN is
     = (eq downTerm(T) = downTerm(T') [downAttrs(T'')] .) .
   eq downEqs('ceq_=_if_`[_`].[T, T', T'', T3])
     = (ceq downTerm(T) = downTerm(T') if downEqCond(T'') [downAttrs(T3)] .) .
-  ceq downEqs((TL, TL')) = (downEqs(TL) downEqs(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downEqs((NTL, NTL')) = (downEqs(NTL) downEqs(NTL')) .
 
   eq downRls('none.RuleSet) = none .
   eq downRls('__[TL]) = downRls(TL) .
@@ -10628,31 +10630,27 @@ fmod MOVE-DOWN is
     = (rl downTerm(T) => downTerm(T') [downAttrs(T'')] .) .
   eq downRls('crl_=>_if_`[_`].[T, T', T'', T3])
     = (crl downTerm(T) => downTerm(T') if downCond(T'') [downAttrs(T3)] .) .
-  ceq downRls((TL, TL')) = (downRls(TL) downRls(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downRls((NTL, NTL')) = (downRls(NTL) downRls(NTL')) .
 
   eq downSorts('none.EmptyTypeSet) = none .
-----  eq downSorts('none.SortSet) = none .
-  eq downSorts('_;_[TL]) = downSorts(TL) .
-  ceq downSorts((TL, TL')) = (downSorts(TL) ; downSorts(TL')) if TL =/= empty /\ TL' =/= empty .
-  eq downSorts(QI) = downSort(QI) [owise] .
+  eq downSorts(('_;_[TL], TL')) = (downSorts(TL) ; downSorts(TL')) .
+  eq downSorts((QI, TL)) = (downSort(QI) ; downSorts(TL)) .
+  eq downSorts(empty) = none .
 
   eq downSort(Ct) = downQid(Ct) .
 
   eq downTypes('nil.TypeList) = nil .
-  eq downTypes('__[TL]) = downTypes(TL) .
-  ceq downTypes((TL, TL'))
-    = (downTypes(TL) downTypes(TL'))
-    if TL =/= empty /\ TL' =/= empty .
-  eq downTypes(QI) = downSort(QI) [owise] .
+  eq downTypes(('__[TL], TL')) = (downTypes(TL) downTypes(TL')) .
+  eq downTypes((QI, TL)) = (downSort(QI) downTypes(TL)) .
+  eq downTypes(empty) = nil .
 
   eq downQidList('nil.TypeList) = nil .
-  eq downQidList('__[TL]) = downQidList(TL) .
-  ceq downQidList((TL, TL')) = (downQidList(TL) downQidList(TL')) if TL =/= empty /\ TL' =/= empty .
-  eq downQidList(QI) = downQid(QI) [owise] .
+  eq downQidList(('__[TL], TL')) = (downQidList(TL) downQidList(TL')) .
+  eq downQidList((QI, TL)) = (downQid(QI) downQidList(TL)) .
+  eq downQidList(empty) = nil .
 
   eq downQid(Ct)
     = qid(substr(string(getName(Ct)), 1, length(string(getName(Ct))))) .
-----  eq downQid(Ct) = downTerm(Ct) .
 
   eq downMetaNat(QI)
     = qid(substr(string(getName(QI)), 1, length(string(getName(QI))))
@@ -11312,13 +11310,13 @@ fmod UNIT-BUBBLE-PARSING is
   var  RP : [ResultPair] .
   var  St : String .
   var  SDfs : StratDefSet .
-  var  SDcs : StratDeclSet .
+  var  SDcs StratDecls : StratDeclSet .
   var  Strat : Strategy .
-  var  Strat? : Strategy? .
+  vars Strat? Strat1? Strat2? : Strategy? .
 
   op vars : OpDeclSet -> QidSet .
-  eq vars(op V : nil -> Ty [none] . VDS) = qid(string(V) + ":" + string(Ty)), vars(VDS) .
-  eq vars(none) = empty .
+  eq vars(op V : nil -> Ty [none] . VDS) = qid(string(V) + ":" + string(Ty)) ; vars(VDS) .
+  eq vars(none) = none .
 
 *** In the parsing of bubbles themselves, we consider three different cases:
 *** The case of having one single bubble in which no context is
@@ -11374,11 +11372,11 @@ fmod UNIT-BUBBLE-PARSING is
                  '\r 'Error: '\o 'no 'parse 'for 'ceq QIL '\s '= '\s QIL' '\n)
       fi
     if M' := addOps((VDS
-                     op '_=_ : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
+                     op 'eq_=_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', QIL '= QIL', '@@@) .
+       /\ RP := metaParse(M', 'eq QIL '= QIL' '., '@@@) .
 
   eq solveBubblesRl('ububble[T], 'ububble[T'], M, B, VDS, DB)
     = solveBubblesRl(T, T', M, B, VDS, DB) .
@@ -11509,12 +11507,12 @@ fmod UNIT-BUBBLE-PARSING is
 *** \texttt{solveBubbles} functions on each of these sTS of declarations.
 
   op solveBubblesMod : Module OpDeclSet RuleSet Module Bool OpDeclSet Database -> Module .
-  op solveBubblesModAux : Module RuleSet Module Module Module Bool OpDeclSet Database -> Module .
+  op solveBubblesModAux : Module RuleSet Module Module Bool OpDeclSet Database -> Module .
 
   op solveBubbles : EquationSet Module [Module] Bool OpDeclSet Database -> EquationSet .
   op solveBubbles : RuleSet Module [Module] Bool OpDeclSet Database -> RuleSet .
   op solveBubbles : MembAxSet Module [Module] Bool OpDeclSet Database -> MembAxSet .
-  op solveBubbles : StratDefSet Module [Module] Module Bool OpDeclSet Database -> StratDefSet .
+  op solveBubbles : StratDefSet Module [Module] Bool OpDeclSet Database -> StratDefSet .
   op solveBubbles : Condition Module Bool OpDeclSet Database -> Condition .
   op solveBubblesOps : OpDeclSet OpDeclSet Module Module -> OpDeclSet .
   op solveBubblesOps : OpDeclSet OpDeclSet Module -> OpDeclSet .
@@ -11523,35 +11521,27 @@ fmod UNIT-BUBBLE-PARSING is
   op solveBubblesHooks : HookList Type Module -> HookList .
 
   ceq solveBubblesMod(PU, OPDS, Rls, M, B, VDS, DB)
-    = solveBubblesModAux(
+    = solveBubblesModAux( ---- we need to parse rls before solving strategies' bubbles
         setOps(
           setEqs(
             setMbs(
               setRls(PU,
-                solveBubbles(getRls(PU), M', addInfoConds(M'), B, VDS, DB)),
-              solveBubbles(getMbs(PU), M', addInfoConds(M'), B, VDS, DB)),
-            solveBubbles(getEqs(PU), M', addInfoConds(M'), B, VDS, DB)),
+                solveBubbles(getRls(PU), M', M'', B, VDS, DB)),
+              solveBubbles(getMbs(PU), M', M'', B, VDS, DB)),
+            solveBubbles(getEqs(PU), M', M'', B, VDS, DB)),
           solveBubblesOps(getOps(PU), OPDS, M')),
-        Rls, M', M, addInfoConds(M'), B, VDS, DB)
-    if M' := addOps(VDS, M) .
+        Rls, M, M'', B, VDS, DB)
+    if M' := addOps(VDS, M)
+    /\ M'' := addInfoConds(M') .
 
-  eq solveBubblesModAux(PU, Rls, M, M', M'', B, VDS, DB)
-    = if getStratDcls(PU) == none
-      then PU
-      else setStratDefs(PU,
-             solveBubbles(
-               getStratDefs(PU),
-               addOps(stratDecls2Ops(getStratDcls(PU)), addSorts('@CallStrategy@, M)),
-               setStratDcls(setRls(M', Rls), getStratDcls(PU)),
-               M'', B, VDS, DB))
-      fi .
-  eq solveBubblesModAux(unitError(QIL), Rls, M, M', M'', B, VDS, DB)
+  eq solveBubblesModAux(PU, Rls, M, M', B, VDS, DB)
+    = setStratDefs(PU,
+        solveBubbles(
+          getStratDefs(PU),
+          setRls(addStratDcls(getStratDcls(PU), M), Rls getRls(PU)),
+          M', B, VDS, DB)) .
+  eq solveBubblesModAux(unitError(QIL), Rls, M, M', B, VDS, DB)
     = unitError(QIL) .
-
-  op stratDecls2Ops : StratDeclSet -> OpDeclSet .
-  eq stratDecls2Ops(strat QI : TyL @ Ty [AtS] . SDcs)
-    = (op QI : TyL -> '@CallStrategy@ [AtS] .) stratDecls2Ops(SDcs) .
-  eq stratDecls2Ops(none) = none .
 
 *** To avoid the parsing ambiguities in the identity elements we add the sort
 *** of the operator to be used as context in which doing the parsing. We
@@ -11696,7 +11686,7 @@ fmod UNIT-BUBBLE-PARSING is
   eq solveBubbles(EqS, M, unitError(QIL), B, VDS, DB) = equationError(QIL) .
   eq solveBubbles(RlS, M, unitError(QIL), B, VDS, DB) = ruleError(QIL) .
   eq solveBubbles(MAS, M, unitError(QIL), B, VDS, DB) = membAxError(QIL) .
-  eq solveBubbles(SDfs, M, unitError(QIL), M', B, VDS, DB) = stratDefError(QIL) .
+  eq solveBubbles(SDfs, M, unitError(QIL), B, VDS, DB) = stratDefError(QIL) .
 
   eq solveBubbles(eq 'eqlbubble[T] = 'rbubble[T'] [AtS] . EqS, M, M', B, VDS, DB)
     = ((eq lhs(solveBubblesEq(term(pullLabelOut(T)), term(pullStmtAttrOut(T', VDS)),
@@ -11744,58 +11734,52 @@ fmod UNIT-BUBBLE-PARSING is
        solveBubbles(MAS, M, M', B, VDS, DB)) .
   eq solveBubbles((none).MembAxSet, M, M', B, VDS, DB) = none .
 
-  op term2StratCall : Term OpDeclSet -> CallStrategy .
-  op term2StratCallAux : TermList OpDeclSet -> TermList .
-  eq term2StratCall(F[TL], VDS) = F [[ term2StratCallAux(TL, VDS) ]] .
-  eq term2StratCallAux((QI, TL), VDS)
-    = constsToVarsAux(QI, VDS), term2StratCallAux(TL, VDS) .
-  eq term2StratCallAux((F[TL], TL'), VDS)
-    = F[term2StratCallAux(TL, VDS)], term2StratCallAux(TL', VDS)
-    [owise] .
-  eq term2StratCallAux(empty, VDS) = empty [owise] .
-
- ceq solveBubbles(sd 'sdlbubble[T] := 'rbubble[T'] [AtS] . SDfs, M, M', M'', B, VDS, DB)
-    = if RP :: ResultPair
-      then if Strat? :: Strategy
-           then sd term2StratCall(getTerm(RP), VDS) := Strat? [AtS1 AtS2 AtS] .
+ ceq solveBubbles(sd 'sdlbubble[T] := 'rbubble[T'] [AtS] . SDfs, M, M', B, VDS, DB)
+    = if Strat1? :: CallStrategy
+      then if Strat2? :: Strategy
+           then sd Strat1? := Strat2? [AtS1 AtS2 AtS] .
            else stratDefError('\r 'Warning:
-                      '\o printSyntaxError(Strat?, QIL2) '\n
+                      '\o printSyntaxError(Strat2?, QIL2) '\n
                       '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
            fi
       else stratDefError('\r 'Warning:
-                 '\o printSyntaxError(RP, QIL1) '\n
+                 '\o printSyntaxError(Strat2?, QIL1) '\n
                  '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
       fi
-      solveBubbles(SDfs, M, M', M'', B, VDS, DB)
+      solveBubbles(SDfs, M, M', B, VDS, DB)
     if {T1, AtS1} := pullLabelOut(T)
     /\ {T2, AtS2} := pullStmtAttrOut(T', VDS)
     /\ QIL1 := downQidList(T1)
     /\ QIL2 := downQidList(T2)
-    /\ RP := metaParse(M, QIL1, '@CallStrategy@)
-    /\ Strat? := metaParseStrategy(M', vars(VDS), QIL2) .
+    /\ Strat1? := metaParseCallStrategy(M, vars(VDS), QIL1)
+    /\ Strat2? := metaParseStrategy(M, vars(VDS), QIL2) .
  ceq solveBubbles(csd 'sdlbubble[T] := 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] . SDfs,
-       M, M', M'', B, VDS, DB)
-    = if RP :: ResultPair
-      then if Strat? :: Strategy
-           then csd term2StratCall(getTerm(RP), VDS) := Strat?
-                  if solveBubblesCond(T3, M, M'', B, VDS, DB)
+       M, M', B, VDS, DB)
+    = if Strat1? :: CallStrategy
+      then if Strat2? :: Strategy
+           then csd Strat1? := Strat2?
+                  if solveBubblesCond(T3, M, M', B, VDS, DB)
                   [AtS1 AtS2 AtS] .
            else stratDefError('\r 'Warning:
-                         '\o printSyntaxError(Strat?, QIL2) '\n
+                         '\o printSyntaxError(Strat2?, QIL2) '\n
                          '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
            fi
       else stratDefError('\r 'Warning:
-                    '\o printSyntaxError(RP, QIL1) '\n
+                    '\o printSyntaxError(Strat1?, QIL1) '\n
                     '\r 'Error: '\o 'no 'parse 'for 'sd QIL1 '\s ':= '\s QIL2 '\n)
       fi
-      solveBubbles(SDfs, M, M', M'', B, VDS, DB)
+      solveBubbles(SDfs, M, M', B, VDS, DB)
     if {T1, AtS1} := pullLabelOut(T)
     /\ {T3, AtS2} := pullStmtAttrOut(T'', VDS)
     /\ QIL1 := downQidList(T1)
     /\ QIL2 := downQidList(T')
-    /\ RP := metaParse(M, QIL1, '@CallStrategy@)
-    /\ Strat? := metaParseStrategy(M', vars(VDS), QIL2) .
-  eq solveBubbles((none).StratDefSet, M, M', M'', B, VDS, DB) = none .
+    /\ Strat1? := metaParseStrategy(M, vars(VDS), QIL1)
+    /\ Strat2? := metaParseStrategy(M, vars(VDS), QIL2) .
+  eq solveBubbles((none).StratDefSet, M, M', B, VDS, DB) = none .
+
+  op metaParseCallStrategy : Module QidSet QidList -> CallStrategy .
+  eq metaParseCallStrategy(M, Vs, QIL1)
+   = metaParseStrategy(M, Vs, QIL1) .
 
 *** The parsing process may generate error terms. Since in the
 *** current version of the system Core Maude is generating the appropriate
@@ -11853,24 +11837,45 @@ endfm
 fmod VIEW-BUBBLE-PARSING is
   pr BUBBLE-PARSING .
   pr PRE-VIEW .
+  pr UNIT-BUBBLE-PARSING .
 
   var  OMS : OpMappingSet .
+  var  TMS : StratMappingSet .
   vars T T' : Term .
   vars M M' : Module .
   var  U : Module .
-  var  QIL : QidList .
+  vars QIL QIL1 QIL2 : QidList .
   vars VDS VDS' : OpDeclSet .
+  vars Strat1? Strat2? : [Strategy] .
 
   op solveBubbles : OpMappingSet OpDeclSet OpDeclSet Module Module -> OpMappingSet .
+  op solveBubbles : StratMappingSet OpDeclSet OpDeclSet Module Module -> StratMappingSet .
 
   eq solveBubbles(OMS, VDS, VDS', U, unitError(QIL)) = none .
   eq solveBubbles(OMS, VDS, VDS', unitError(QIL), U) = none .
-  eq solveBubbles(OMS, VDS, VDS', M, M') = OMS [owise] .
   eq solveBubbles((op_to`term_.(T, T') OMS), VDS, VDS', M, M')
     = (op_to`term_.(
          solveBubbles(T, M, false, VDS, emptyDatabase),
          solveBubbles(T', M', false, VDS', emptyDatabase))
       solveBubbles(OMS, VDS, VDS', M, M')) .
+  eq solveBubbles(OMS, VDS, VDS', M, M') = OMS [owise] .
+
+  eq solveBubbles(TMS, VDS, VDS', U, unitError(QIL)) = none .
+  eq solveBubbles(TMS, VDS, VDS', unitError(QIL), U) = none .
+ ceq solveBubbles(strat_to`expr_.('bubble[T], 'bubble[T']) TMS, VDS, VDS', M, M')
+    = if Strat1? :: CallStrategy
+      then if Strat2? :: Strategy
+           then strat_to`expr_.(Strat1?, Strat2?)
+           else none
+           fi
+      else none
+      fi
+      solveBubbles(TMS, VDS, VDS', M, M')
+    if QIL1 := downQidList(T)
+    /\ QIL2 := downQidList(T')
+    /\ Strat1? := metaParseStrategy(M, vars(VDS), QIL1)
+    /\ Strat2? := metaParseStrategy(M', vars(VDS'), QIL2) .
+  eq solveBubbles(TMS, VDS, VDS', M, M') = TMS [owise] .
 endfm
 
 -------------------------------------------------------------------------------
@@ -12903,16 +12908,16 @@ fmod EVALUATION is
 *** declarations and converting extended sorts and module names into quoted
 *** identifiers.
 
-  op removeIds : OpDeclSet Module -> OpDeclSet .
-  eq removeIds(op F : TyL -> Ty [id(T) AtS] . OPDS, M)
-    = removeIds(op F : TyL -> Ty [AtS] . OPDS, M) .
-  eq removeIds(op F : TyL -> Ty [right-id(T) AtS] . OPDS, M)
-    = removeIds(op F : TyL -> Ty [AtS] . OPDS, M) .
-  eq removeIds(op F : TyL -> Ty [left-id(T) AtS] . OPDS, M)
-    = removeIds(op F : TyL -> Ty [AtS] . OPDS, M) .
-  eq removeIds(op F : TyL -> Ty [special(term-hook(QI, T) HkL) AtS] . OPDS, M)
-    = removeIds(op F : TyL -> Ty [special(HkL) AtS] . OPDS, M) .
-  eq removeIds(OPDS, M) = OPDS [owise] .
+  op removeIds : OpDeclSet -> OpDeclSet .
+  eq removeIds(op F : TyL -> Ty [id(T) AtS] . OPDS)
+    = removeIds(op F : TyL -> Ty [AtS] . OPDS) .
+  eq removeIds(op F : TyL -> Ty [right-id(T) AtS] . OPDS)
+    = removeIds(op F : TyL -> Ty [AtS] . OPDS) .
+  eq removeIds(op F : TyL -> Ty [left-id(T) AtS] . OPDS)
+    = removeIds(op F : TyL -> Ty [AtS] . OPDS) .
+  eq removeIds(op F : TyL -> Ty [special(term-hook(QI, T) HkL) AtS] . OPDS)
+    = removeIds(op F : TyL -> Ty [special(HkL) AtS] . OPDS) .
+  eq removeIds(OPDS) = OPDS [owise] .
 
   op removeCtors : Module -> Module .
   op removeCtors : OpDeclSet -> OpDeclSet .
@@ -12932,21 +12937,35 @@ fmod EVALUATION is
   op signature : Module -> Module .
   eq signature(unitError(QIL)) = unitError(QIL) .
   eq signature(U)
-    = fmod header2Qid(getHeader(U)) is
-         convertModuleExpressions(getImports(U))
-         sorts getSorts(U) .
-         getSubsorts(U)
-         removeIds(
-           removeDittos(getOps(U),
-             setSubsorts(
-               setSorts(emptyFModule('DUMMY), getSorts(U)),
-               getSubsorts(U))),
-           setSubsorts(
-             setSorts(emptyFModule('DUMMY), getSorts(U)),
-             getSubsorts(U)))
-         none
-         none
-      endfm
+    = if U :: StratModule
+    then smod header2Qid(getHeader(U)) is
+           convertModuleExpressions(getImports(U))
+           sorts getSorts(U) .
+           getSubsorts(U)
+           removeIds(
+             removeDittos(getOps(U),
+               setSubsorts(
+                 setSorts(emptyFModule('DUMMY), getSorts(U)),
+                 getSubsorts(U))))
+           none
+           none
+           none
+           getStratDcls(U)
+           none
+         endsm
+    else fmod header2Qid(getHeader(U)) is
+           convertModuleExpressions(getImports(U))
+           sorts getSorts(U) .
+           getSubsorts(U)
+           removeIds(
+             removeDittos(getOps(U),
+               setSubsorts(
+                 setSorts(emptyFModule('DUMMY), getSorts(U)),
+                 getSubsorts(U))))
+           none
+           none
+         endfm
+    fi
     [owise] .
 
 *** The function \texttt{flatModule} generates a module of sort \texttt{Module}
@@ -13368,15 +13387,12 @@ fmod RENAMING-SET-APPL-ON-TERM is
         getRightOpMaps(getName(Ct), nil, getType(Ct), ORS, M), M) .
   eq applyMapsToTerm2(SRS, ORS, V, M)
     = applyMapsToVar(SRS, V) .
-----    = qid(string(getName(V)) + ":"
-----          + string(applyMapsToType(SRS, getType(V)))) .
   eq applyMapsToTerm2(SRS, ORS, qidError(QIL), M) = qidError(QIL) .
   eq applyMapsToTerm2(SRS, ORS, F[TL], M)
     = imageOfTerm(SRS, ORS, F[TL],
         getRightOpMaps(F, eLeastSort(M, TL), leastSort(M, F[TL]), ORS, M),
         M)
     [owise] .
-    ---- if (F =/= '<_:_|_>) and (F =/= '<_:_|`>) .
   eq applyMapsToTerm2(SRS, ORS, '<_:_|_>[O, Ct, T], M)
     = '<_:_|_>[applyMapsToTerm2(SRS, ORS, O, M),
                qid(string(applyMapsToClassName(SRS, getName(Ct)))
@@ -13400,12 +13416,12 @@ fmod RENAMING-SET-APPL-ON-TERM is
     = qid("_::`" + string(applyMapsToType(SRS, qid(substr(string(F), 4, length(string(F))))))) [
         applyMapsToTerm2(SRS, ORS, TL, M)]
     if substr(string(F), 0, 4) == "_::`" .
-----    /\ substr(string(F), sd(length(string(F)), 2), 2) = "`}" .
 
   ceq applyMapsToTerm2(SRS, ORS, (T, TL), M)
     = (applyMapsToTerm2(SRS, ORS, T, M),
        applyMapsToTerm2(SRS, ORS, TL, M))
     if TL =/= empty .
+  eq applyMapsToTerm2(SRS, ORS, empty, M) = empty .
 
 *** Application of a map set to the name of an attribute in an object
 
@@ -13749,8 +13765,8 @@ fmod RENAMING-SET-APPL-ON-UNIT is
   op applyMapsToMsgDecl : RenamingSet RenamingSet MsgDecl Module -> MsgDecl .
   op applyMapsToAttrName : RenamingSet Sort Qid -> Qid .
   op applyMapsToAttrDeclSet : RenamingSet RenamingSet Sort AttrDeclSet -> AttrDeclSet .
-  op applyMapsToStDcls : RenamingSet RenamingSet StratDeclSet Module -> StratDeclSet .
-  op applyMapsToStDefs : RenamingSet RenamingSet StratDefSet Module -> StratDefSet .
+  op applyMapsToStratDcls : RenamingSet RenamingSet StratDeclSet Module -> StratDeclSet .
+  op applyMapsToStratDefs : RenamingSet RenamingSet StratDefSet Module -> StratDefSet .
   op applyMapsToStDcl : RenamingSet Renaming RenamingSet StratDecl Module -> StratDecl .
   op applyMapsToStDef : RenamingSet Renaming RenamingSet StratDefinition Module -> StratDefinition .
 
@@ -13791,8 +13807,8 @@ fmod RENAMING-SET-APPL-ON-UNIT is
   var  Cond : Condition .
   var  St : String .
   var  MN : ModuleName .
-  var  StDcls : StratDeclSet .
-  var  StDefs : StratDefSet .
+  var  StratDcls : StratDeclSet .
+  var  StratDefs : StratDefSet .
   var  Strats : StrategyList .
   vars CS CS' : CallStrategy .
   vars Strat Strat' Strat'' : Strategy .
@@ -13890,7 +13906,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
            applyMapsToEqs(SRS, ORS, EqS, M)
            applyMapsToRls(SRS, ORS, RlS, M)
       endoth .
-  eq applyMapsToModuleAux(SRS, ORS, smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm, M)
+  eq applyMapsToModuleAux(SRS, ORS, smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, M)
     = smod H is
           IL
           sorts applyMapsToSortSet(SRS, SS) .
@@ -13899,10 +13915,10 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToMbs(SRS, ORS, MAS, M)
           applyMapsToEqs(SRS, ORS, EqS, M)
           applyMapsToRls(SRS, ORS, RlS, M)
-          applyMapsToStDcls(SRS, ORS, StDcls, M)
-          applyMapsToStDefs(SRS, ORS, StDefs, M)
+          applyMapsToStratDcls(SRS, ORS, StratDcls, M)
+          applyMapsToStratDefs(SRS, ORS, StratDefs, M)
       endsm .
-  eq applyMapsToModuleAux(SRS, ORS, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth, M)
+  eq applyMapsToModuleAux(SRS, ORS, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, M)
     = sth MN is
           IL sorts applyMapsToSortSet(SRS, SS) .
           applyMapsToSubsorts(SRS, SSDS)
@@ -13910,8 +13926,8 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToMbs(SRS, ORS, MAS, M)
           applyMapsToEqs(SRS, ORS, EqS, M)
           applyMapsToRls(SRS, ORS, RlS, M)
-          applyMapsToStDcls(SRS, ORS, StDcls, M)
-          applyMapsToStDefs(SRS, ORS, StDefs, M)
+          applyMapsToStratDcls(SRS, ORS, StratDcls, M)
+          applyMapsToStratDefs(SRS, ORS, StratDefs, M)
       endsth .
 
   eq applyMapsToOps(RS, RS', (op F : TyL -> Ty [AtS] . OPDS), M)
@@ -14031,16 +14047,16 @@ fmod RENAMING-SET-APPL-ON-UNIT is
     = op-hook(QI, F, applyMapsToTypeList(RS, TyL),
         applyMapsToType(RS, Ty)) .
 
-  eq applyMapsToMbs(RS, RS', ((mb T : S [AtS] .) MAS), M)
-    = ((mb applyMapsToTerm2(RS, RS', T, M) : applyMapsToType(RS, S)
-          [applyMapsToAttrs(RS, RS', AtS, M)] .)
-       applyMapsToMbs(RS, RS', MAS, M)) .
-  eq applyMapsToMbs(RS, RS', ((cmb T : S if Cond [AtS] .) MAS), M)
-    = ((cmb applyMapsToTerm2(RS, RS', T, M) : applyMapsToType(RS, S)
-          if applyMapsToCond(RS, RS', Cond, M)
-          [applyMapsToAttrs(RS, RS', AtS, M)] .)
-       applyMapsToMbs(RS, RS', MAS, M)) .
-  eq applyMapsToMbs(RS, RS', none, M) = none .
+  eq applyMapsToMbs(SRS, ORS, ((mb T : S [AtS] .) MAS), M)
+    = ((mb applyMapsToTerm2(SRS, ORS, T, M) : applyMapsToType(SRS, S)
+          [applyMapsToAttrs(SRS, ORS, AtS, M)] .)
+       applyMapsToMbs(SRS, ORS, MAS, M)) .
+  eq applyMapsToMbs(SRS, ORS, ((cmb T : S if Cond [AtS] .) MAS), M)
+    = ((cmb applyMapsToTerm2(SRS, ORS, T, M) : applyMapsToType(SRS, S)
+          if applyMapsToCond(SRS, ORS, Cond, M)
+          [applyMapsToAttrs(SRS, ORS, AtS, M)] .)
+       applyMapsToMbs(SRS, ORS, MAS, M)) .
+  eq applyMapsToMbs(SRS, ORS, none, M) = none .
 
   eq applyMapsToEqs(RS, RS', ((ceq T = T' if Cond [AtS] .) EqS), M)
     = ((ceq applyMapsToTerm2(RS, RS', T, M)
@@ -14129,10 +14145,10 @@ fmod RENAMING-SET-APPL-ON-UNIT is
        applyMapsToSubclassDeclSet(RS, SCDS)) .
   eq applyMapsToSubclassDeclSet(RS, none) = none .
 
-  eq applyMapsToStDcls(RS, RS', (strat F : TyL @ Ty [AtS] . StDcls), M)
+  eq applyMapsToStratDcls(RS, RS', (strat F : TyL @ Ty [AtS] . StratDcls), M)
     = (applyMapsToStDcl(RS, getRightStMaps(F, TyL, RS', M), RS', (strat F : TyL @ Ty [AtS] .), M)
-       applyMapsToStDcls(RS, RS', StDcls, M)) .
-  eq applyMapsToStDcls(RS, RS', none, M) = none .
+       applyMapsToStratDcls(RS, RS', StratDcls, M)) .
+  eq applyMapsToStratDcls(RS, RS', none, M) = none .
 
   eq applyMapsToStDcl(RS, R, RS', (strat F : TyL @ Ty [AtS] .), M)
     = (strat applyStMapsToStId(F, R) : applyMapsToTypeList(RS, TyL) @ applyMapsToType(RS, Ty)
@@ -14146,18 +14162,18 @@ fmod RENAMING-SET-APPL-ON-UNIT is
     = (strat F : applyMapsToTypeList(RS, TyL) @ applyMapsToType(RS, Ty)
          [applyMapsToAttrs(RS, RS', AtS, M)] .) .
 
-  eq applyMapsToStDefs(RS, RS', ((csd CS := Strat if Cond [AtS] .) StDefs), M)
+  eq applyMapsToStratDefs(RS, RS', ((csd CS := Strat if Cond [AtS] .) StratDefs), M)
     = ((csd applyMapsToStrategy(RS, RS', CS, M)
          := applyMapsToStrategy(RS, RS', Strat, M)
          if applyMapsToCond(RS, RS', Cond, M)
          [applyMapsToAttrs(RS, RS', AtS, M)] .)
-       applyMapsToStDefs(RS, RS', StDefs, M)) .
-  eq applyMapsToStDefs(RS, RS', ((sd CS := Strat [AtS] .) StDefs), M)
+       applyMapsToStratDefs(RS, RS', StratDefs, M)) .
+  eq applyMapsToStratDefs(RS, RS', ((sd CS := Strat [AtS] .) StratDefs), M)
     = ((sd applyMapsToStrategy(RS, RS', CS, M)
          := applyMapsToStrategy(RS, RS', Strat, M)
          [applyMapsToAttrs(RS, RS', AtS, M)] .)
-       applyMapsToStDefs(RS, RS', StDefs, M)) .
-  eq applyMapsToStDefs(RS, RS', none, M) = none .
+       applyMapsToStratDefs(RS, RS', StratDefs, M)) .
+  eq applyMapsToStratDefs(RS, RS', none, M) = none .
 
   op applyMapsToStrategy : RenamingSet RenamingSet CallStrategy Module  -> CallStrategy .
   op imageOfCallStrategy : RenamingSet RenamingSet CallStrategy RenamingSet Module -> CallStrategy .
@@ -14219,10 +14235,12 @@ fmod RENAMING-SET-APPL-ON-UNIT is
     = xmatch applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M) .
   eq applyMapsToStrategy(SRS, ORS, amatch T s.t. Cond, M)
     = amatch applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M) .
-  eq applyMapsToStrategy(SRS, ORS, Strat | Strat', M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) | applyMapsToStrategy(SRS, ORS, Strat', M) .
-  eq applyMapsToStrategy(SRS, ORS, Strat ; Strat', M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) ; applyMapsToStrategy(SRS, ORS, Strat', M) .
+ ceq applyMapsToStrategy(SRS, ORS, Strat | Strat', M)
+    = applyMapsToStrategy(SRS, ORS, Strat, M) | applyMapsToStrategy(SRS, ORS, Strat', M)
+    if Strat =/= fail /\ Strat' =/= fail .
+ ceq applyMapsToStrategy(SRS, ORS, Strat ; Strat', M)
+    = applyMapsToStrategy(SRS, ORS, Strat, M) ; applyMapsToStrategy(SRS, ORS, Strat', M)
+    if Strat =/= idle /\ Strat' =/= idle .
   eq applyMapsToStrategy(SRS, ORS, Strat or-else Strat', M)
     = applyMapsToStrategy(SRS, ORS, Strat, M) or-else applyMapsToStrategy(SRS, ORS, Strat', M) .
   eq applyMapsToStrategy(SRS, ORS, Strat +, M)
@@ -15376,7 +15394,7 @@ fmod INST-EXPR-EVALUATION is
   eq applyMapsToMaps(SRS, SRS', OMS) = OMS [owise] .
 
   eq applyMapsToVar(SRS, V)
-    = qid(string(getName(V)) + "." + string(applyMapsToType(SRS, getType(V)))) .
+    = qid(string(getName(V)) + ":" + string(applyMapsToType(SRS, getType(V)))) .
 
   eq applyMapsToTerm(SRS, Ct)
     = qid(string(getName(Ct)) + "." + string(applyMapsToType(SRS, getType(Ct)))) .
@@ -16289,23 +16307,6 @@ fmod UNION-EXPR is
 *** and the \texttt{Module} sort immediately above the sort of the other unit;
 *** that is, sorts \texttt{FModule}, \texttt{SModule}, or \texttt{OModule} are
 *** considered to do the comparison.
-
-----  ceq evalModExpAux(ME + ME', PDL, DB)
-----    = if unitInDb(ME'' + ME3, DB'') or-else not (unitInDb(ME'', DB'') and-then unitInDb(ME3, DB''))
-----      then < DB'' ; ME'' + ME3 >
-----      else < evalModule(
-----                    addImports(including ME'' . including ME3 .,
-----                      setName(
-----                        rightEmptyModule(
-----                          getTopModule(ME'', DB''),
-----                          getTopModule(ME3, DB'')),
-----                        ME'' +  ME3)),
-----                    none,
-----                    DB'') ;
-----                  ME'' +  ME3 >
-----      fi
-----    if < DB' ; ME3 > := evalModExpAux(ME', PDL, DB)
-----    /\ < DB'' ; ME'' > := evalModExpAux(ME, PDL, DB') .
 
   ceq evalModExp(ME + ME', PDL, DB)
     = if unitInDb(ME'', DB') or-else not summandsInDB(ME'', DB')
@@ -17382,6 +17383,8 @@ fmod VIEW-DECL-PARSING is
   var  MD : MsgDecl .
   var  MDS' : MsgDeclSet .
   var  VDS : OpDeclSet .
+  vars StratDcls StratDcls' : StratDeclSet .
+  var  StratDcl : StratDecl .
 
 *** Operator and message name maps of the form \verb~F to F'~ are substituted
 *** by an equivalent set of maps of the form \verb~F : TyL -> S to F'~. One
@@ -17399,9 +17402,11 @@ fmod VIEW-DECL-PARSING is
 
   op genOpMaps : OpMapping OpDeclSet Module -> OpMappingSet .
   op genMsgMaps : OpMapping MsgDeclSet Module -> OpMappingSet .
+  op genStratMaps : StratMapping StratDeclSet Module -> StratMappingSet .
 
   op genOpMapsAux : OpDeclSet Qid -> OpMappingSet .
   op genMsgMapsAux : MsgDeclSet Qid -> OpMappingSet .
+  op genStratMapsAux : StratDeclSet Qid -> StratMappingSet .
 
   op getOpDeclSet : Qid Module -> OpDeclSet .
   op getOpDeclSetAux : Qid OpDeclSet -> OpDeclSet .
@@ -17411,17 +17416,24 @@ fmod VIEW-DECL-PARSING is
   op getMsgDeclSetAux : Qid MsgDeclSet -> MsgDeclSet .
   *** getMsgDeclSet(F, U) returns the set of declarations of messages with
   *** name F in the unit U
+  op getStratDeclSet : Qid Module -> StratDeclSet .
+  op getStratDeclSetAux : Qid StratDeclSet -> StratDeclSet .
+  *** getMsgDeclSet(F, U) returns the set of declarations of messages with
+  *** name F in the unit U
   op gTSubsortOverloadedFamilies : OpDeclSet OpDeclSet Module -> OpDeclSet .
   op gTSubsortOverloadedFamilies : MsgDeclSet MsgDeclSet Module -> MsgDeclSet .
+  op gTSubsortOverloadedFamilies : StratDeclSet StratDeclSet Module -> StratDeclSet .
   *** gTSubsortOverloadedFamilies returns a declaration of operator or
   *** message for each family of subsort-overloaded operators or messages.
   op selectOpDeclSet : Qid OpDeclSet -> OpDeclSet .
   op selectMsgDeclSet : Qid MsgDeclSet -> MsgDeclSet .
+  op selectStratDeclSet : Qid StratDeclSet -> StratDeclSet .
   *** selectOpDeclSet and selectMsgDeclSet returns, respectively, the subset
   *** of those declarations  of ops and msgs which name coincides with the
   *** qid given ar argument.
   op opFamilyIn : OpDecl OpDeclSet Module -> Bool .
   op msgFamilyIn : MsgDecl MsgDeclSet Module -> Bool .
+  op stratFamilyIn : StratDecl StratDeclSet Module -> Bool .
   *** Check whether the family of the subsort-overloaded operator given as
   *** argument has already a  representative in the set of declarations given.
 
@@ -17429,11 +17441,14 @@ fmod VIEW-DECL-PARSING is
     = genOpMapsAux(
          gTSubsortOverloadedFamilies(selectOpDeclSet(F, OPDS), none, M),
          F') .
-
   eq genMsgMaps(msg F to F' ., MDS, M)
     = genMsgMapsAux(
          gTSubsortOverloadedFamilies(selectMsgDeclSet(F, MDS), none, M),
          F') .
+  eq genStratMaps(strat F to F' ., StratDcls, M)
+    = genStratMapsAux(
+        gTSubsortOverloadedFamilies(selectStratDeclSet(F, StratDcls), none, M),
+        F') .
 
   eq selectOpDeclSet(F, ((op F' : TyL -> Ty [AtS] .) OPDS))
     = ((if F == F'
@@ -17451,6 +17466,14 @@ fmod VIEW-DECL-PARSING is
        selectMsgDeclSet(F, MDS)) .
   eq selectMsgDeclSet(F, none) = none .
 
+  eq selectStratDeclSet(F, ((strat F' : TyL @ Ty [AtS] .) StratDcls))
+    = ((if F == F'
+        then (strat F' : TyL @ Ty [AtS] .)
+        else none
+        fi)
+       selectStratDeclSet(F, StratDcls)) .
+  eq selectStratDeclSet(F, none) = none .
+
   eq genOpMapsAux(op F : TyL -> Ty [AtS] . OPDS, F')
     = (op F : TyL -> Ty to F' . genOpMapsAux(OPDS, F')) .
   eq genOpMapsAux(none, F') = none .
@@ -17458,6 +17481,10 @@ fmod VIEW-DECL-PARSING is
   eq genMsgMapsAux(((msg F : TyL -> Ty .) MDS), F')
     = (msg F : TyL -> Ty to F' . genMsgMapsAux(MDS, F')) .
   eq genMsgMapsAux(none, F') = none .
+
+  eq genStratMapsAux(strat F : TyL @ Ty [AtS] . StratDcls, F')
+    = (strat F : TyL @ Ty to F' . genStratMapsAux(StratDcls, F')) .
+  eq genStratMapsAux(none, F') = none .
 
   eq gTSubsortOverloadedFamilies((OPD OPDS), OPDS', M)
     = if opFamilyIn(OPD, OPDS', M)
@@ -17473,6 +17500,13 @@ fmod VIEW-DECL-PARSING is
       fi .
   eq gTSubsortOverloadedFamilies(none, MDS, M) = MDS .
 
+  eq gTSubsortOverloadedFamilies((StratDcl StratDcls), StratDcls', M)
+    = if stratFamilyIn(StratDcl, StratDcls', M)
+      then gTSubsortOverloadedFamilies(StratDcls, StratDcls', M)
+      else gTSubsortOverloadedFamilies(StratDcls, (StratDcl StratDcls'), M)
+      fi .
+  eq gTSubsortOverloadedFamilies(none, StratDcls, M) = StratDcls .
+
   eq opFamilyIn(
        (op F : TyL -> Ty [AtS] .), ((op F' : TyL' -> Ty' [AtS] .) OPDS), M)
     = ((F == F') and-then sameKind(M, TyL, TyL')) or-else
@@ -17484,6 +17518,12 @@ fmod VIEW-DECL-PARSING is
       or-else
       msgFamilyIn((msg F : TyL -> Ty .), MDS, M) .
   eq msgFamilyIn((msg F : TyL -> Ty .), none, M) = false .
+
+  eq stratFamilyIn(
+       (strat F : TyL @ Ty [AtS] .), ((strat F' : TyL' @ Ty' [AtS] .) StratDcls), M)
+    = ((F == F') and-then sameKind(M, TyL, TyL')) or-else
+      stratFamilyIn((strat F : TyL @ Ty [AtS] .), StratDcls, M) .
+  eq stratFamilyIn((strat F : TyL @ Ty [AtS] .), none, M) = false .
 
 *** In the case of views, the \texttt{parseDecl} function takes the term
 *** representing the corresponding declaration and a preview in which the
@@ -17503,40 +17543,48 @@ fmod VIEW-DECL-PARSING is
 *** in the theory part of the source theory of the view in question, and the
 *** signature of such theory to make the necessary sort comparisons.
 
-  op parseDecl : Term PreView OpDeclSet MsgDeclSet Module -> PreView .
+  op parseDecl : Term PreView OpDeclSet MsgDeclSet StratDeclSet Module -> PreView .
 
-  eq parseDecl('sort_to_.[T, T'], PV, OPDS, MDS, M)
+  eq parseDecl('sort_to_.[T, T'], PV, OPDS, MDS, StratDcls, M)
     = addMaps(sort parseType(T) to parseType(T') ., PV) .
 
-  eq parseDecl('class_to_.[T, T'], PV, OPDS, MDS, M)
+  eq parseDecl('class_to_.[T, T'], PV, OPDS, MDS, StratDcls, M)
     = addMaps(class parseType(T) to parseType(T') ., PV) .
 
-  eq parseDecl('vars_:_.['neTokenList[T], T'], PV, OPDS, MDS, M)
+  eq parseDecl('vars_:_.['neTokenList[T], T'], PV, OPDS, MDS, StratDcls, M)
     = addVars(parseVars(downQidList(T), parseType(T')), PV).
-  eq parseDecl('var_:_.['neTokenList[T], T'], PV, OPDS, MDS, M)
+  eq parseDecl('var_:_.['neTokenList[T], T'], PV, OPDS, MDS, StratDcls, M)
     = addVars(parseVars(downQidList(T), parseType(T')), PV).
 
-  eq parseDecl('op_to`term_.[T, T'], PV, OPDS, MDS, M)
+  eq parseDecl('op_to`term_.[T, T'], PV, OPDS, MDS, StratDcls, M)
     = addMaps(op_to`term_.(T, T'), PV) .
 
-  eq parseDecl('op_to_.['token[T], 'token[T']], PV, OPDS, MDS, M)
+  eq parseDecl('op_to_.['token[T], 'token[T']], PV, OPDS, MDS, StratDcls, M)
     = addMaps(genOpMaps(op downQid(T) to downQid(T') ., OPDS, M), PV) .
-  eq parseDecl('op_:_->_to_.['token[T], T', T'', 'token[T3]], PV, OPDS, MDS, M)
+  eq parseDecl('op_:_->_to_.['token[T], T', T'', 'token[T3]], PV, OPDS, MDS, StratDcls, M)
     = addMaps(op downQid(T) : parseTypeList(T') -> parseType(T'') to downQid(T3) ., PV) .
-  eq parseDecl('op_:`->_to_.['token[T], T', 'token[T'']], PV, OPDS, MDS, M)
-    = addMaps(op downQid(T) : nil -> parseType(T') to downQid(T'') ., PV) .
+----  eq parseDecl('op_:`->_to_.['token[T], T', 'token[T'']], PV, OPDS, MDS, StratDcls, M)
+----    = addMaps(op downQid(T) : nil -> parseType(T') to downQid(T'') ., PV) .
 
-  eq parseDecl('msg_to_.['token[T], 'token[T']], PV, OPDS, MDS, M)
+  eq parseDecl('msg_to_.['token[T], 'token[T']], PV, OPDS, MDS, StratDcls, M)
     = addMaps(genMsgMaps(msg downQid(T) to downQid(T') ., MDS, M), PV) .
-  eq parseDecl('msg_:_->_to_.['token[T], T', T'', 'token[T3]], PV, OPDS, MDS, M)
+  eq parseDecl('msg_:_->_to_.['token[T], T', T'', 'token[T3]], PV, OPDS, MDS, StratDcls, M)
     = addMaps(msg downQid(T) : parseTypeList(T') -> parseType(T'') to downQid(T3) ., PV) .
-  eq parseDecl('msg_:`->_to_.['token[T], T', 'token[T'']], PV, OPDS, MDS, M)
-    = addMaps(msg downQid(T) : nil -> parseType(T') to downQid(T'') ., PV) .
+----  eq parseDecl('msg_:`->_to_.['token[T], T', 'token[T'']], PV, OPDS, MDS, StratDcls, M)
+----    = addMaps(msg downQid(T) : nil -> parseType(T') to downQid(T'') ., PV) .
 
-  eq parseDecl('attr_._to_.[T', 'token[T], 'token[T'']], PV, OPDS, MDS, M)
+  eq parseDecl('attr_._to_.[T', 'token[T], 'token[T'']], PV, OPDS, MDS, StratDcls, M)
     = addMaps(attr downQid(T) . parseType(T') to downQid(T'') ., PV) .
 
-  eq parseDecl(T, PV, OPDS, MDS, M) = PV [owise] .
+  eq parseDecl('strat_to`expr_.[T, T'], PV, OPDS, MDS, StratDcls, M)
+    = addMaps(strat_to`expr_.(T, T'), PV) .
+
+  eq parseDecl('strat_to_.['token[T], 'token[T']], PV, OPDS, MDS, StratDcls, M)
+    = addMaps(genStratMaps(strat downQid(T) to downQid(T') ., StratDcls, M), PV) .
+  eq parseDecl('strat_:_@_to_.['token[T], T', T'', 'token[T3]], PV, OPDS, MDS, StratDcls, M)
+    = addMaps(strat downQid(T) : parseTypeList(T') @ parseType(T'') to downQid(T3) ., PV) .
+
+  eq parseDecl(T, PV, OPDS, MDS, StratDcls, M) = PV [owise] .
 endfm
 
 *******************************************************************************
@@ -17632,8 +17680,8 @@ fmod DECL-META-PRETTY-PRINT is
   var  ADS : AttrDeclSet .
   var  Cond : Condition .
   var  K : Kind .
-  var  StDcls : StratDeclSet .
-  var  StDefs : StratDefSet .
+  var  StratDcls : StratDeclSet .
+  var  StratDefs : StratDefSet .
   var  CS : CallStrategy .
   var  Strat : Strategy .
   var  TL : TermList .
@@ -17755,41 +17803,41 @@ fmod DECL-META-PRETTY-PRINT is
     [owise] .
   eq eMetaPrettyPrint(M, (none).RuleSet) = nil .
 
-  eq eMetaPrettyPrint(M, ((strat F : TyL @ Ty [none] .) StDcls))
+  eq eMetaPrettyPrint(M, ((strat F : TyL @ Ty [none] .) StratDcls))
     = ('\s '\s
        '\b 'strat '\o F '\b ': '\o eMetaPrettyPrint(TyL)
        '\b '@ '\o eMetaPrettyPrint(Ty) '\b '. '\o '\n
-       eMetaPrettyPrint(M, StDcls)) .
-  eq eMetaPrettyPrint(M, ((strat F : TyL @ Ty [AtS] .) StDcls))
+       eMetaPrettyPrint(M, StratDcls)) .
+  eq eMetaPrettyPrint(M, ((strat F : TyL @ Ty [AtS] .) StratDcls))
     = ('\s '\s
        '\b 'strat '\o F '\b ': '\o eMetaPrettyPrint(TyL)
        '\b '@ '\o eMetaPrettyPrint(Ty) '\n
        '\s '\s '\s '\s '\b '`[ '\o eMetaPrettyPrint(M, AtS) '\b '`] '\s '. '\o '\n
-       eMetaPrettyPrint(M, StDcls))
+       eMetaPrettyPrint(M, StratDcls))
     [owise] .
   eq eMetaPrettyPrint(M, (none).StratDeclSet)  = nil .
 
-  eq eMetaPrettyPrint(M, ((sd CS := Strat [none] .) StDefs))
+  eq eMetaPrettyPrint(M, ((sd CS := Strat [none] .) StratDefs))
     = ('\s '\s '\b 'sd '\s '\o metaPrettyPrintStrategy(M, CS) '\n
        '\s '\s '\s '\s '\b ':= '\o '\s metaPrettyPrintStrategy(M, Strat) '\b '\s '. '\n '\o
-       eMetaPrettyPrint(M, StDefs)) .
-  eq eMetaPrettyPrint(M, ((sd CS := Strat [AtS] .) StDefs))
+       eMetaPrettyPrint(M, StratDefs)) .
+  eq eMetaPrettyPrint(M, ((sd CS := Strat [AtS] .) StratDefs))
     = ('\s '\s '\b 'sd '\s '\o eMetaPrettyPrint(M, CS) '\n
        '\s '\s '\s '\s '\b ':= '\o '\s metaPrettyPrintStrategy(M, Strat)
            '\s '\b '`[ '\o eMetaPrettyPrint(M, AtS) '\b '`] '\s '. '\o '\n
-       eMetaPrettyPrint(M, StDefs))
+       eMetaPrettyPrint(M, StratDefs))
     [owise] .
-  eq eMetaPrettyPrint(M, ((csd CS := Strat if Cond [none] .) StDefs))
+  eq eMetaPrettyPrint(M, ((csd CS := Strat if Cond [none] .) StratDefs))
     = ('\s '\s '\b 'csd '\s '\o eMetaPrettyPrint(M, CS) '\n
        '\s '\s '\s '\s '\b ':= '\o '\s metaPrettyPrintStrategy(M, Strat) '\n
        '\s '\s '\s '\s '\b 'if '\o '\s eMetaPrettyPrint(M, Cond) '\b '\s '. '\o '\n
-       eMetaPrettyPrint(M, StDefs)) .
-  eq eMetaPrettyPrint(M, ((csd CS := Strat if Cond [AtS] .) StDefs))
+       eMetaPrettyPrint(M, StratDefs)) .
+  eq eMetaPrettyPrint(M, ((csd CS := Strat if Cond [AtS] .) StratDefs))
     = ('\s '\s '\b 'csd '\s '\o eMetaPrettyPrint(M, CS) '\n
        '\s '\s '\s '\s '\b ':= '\o '\s metaPrettyPrintStrategy(M, Strat) '\n
        '\s '\s '\s '\s '\b 'if '\o '\s eMetaPrettyPrint(M, Cond)
            '\s '\b '`[ '\o eMetaPrettyPrint(M, AtS) '\b '`] '\s '. '\o '\n
-       eMetaPrettyPrint(M, StDefs))
+       eMetaPrettyPrint(M, StratDefs))
     [owise] .
   eq eMetaPrettyPrint(M, (none).StratDefSet) = nil .
 
@@ -17975,8 +18023,8 @@ fmod UNIT-META-PRETTY-PRINT is
   var  U : Module .
   var  AtS : AttrSet .
   var  MN : ModuleName .
-  var  StDcls : StratDeclSet .
-  var  StDefs : StratDefSet .
+  var  StratDcls : StratDeclSet .
+  var  StratDefs : StratDefSet .
 
   ceq eMetaPrettyPrint(ME)
     = if QI == '`) or QI == '`] or QI == '`}
@@ -18118,7 +18166,7 @@ fmod UNIT-META-PRETTY-PRINT is
           eMetaPrettyPrint(MDS) eMetaPrettyPrint(M, MAS)
           eMetaPrettyPrint(M, EqS) eMetaPrettyPrint(M, RlS) '\n '\b
        'endoth '\o '\n) .
-  eq eMetaPrettyPrint(M, smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm)
+  eq eMetaPrettyPrint(M, smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm)
     = ('\b
        'smod '\o eMetaPrettyPrint(ME) '\b 'is '\o '\n
           eMetaPrettyPrint(IL)
@@ -18131,10 +18179,10 @@ fmod UNIT-META-PRETTY-PRINT is
           eMetaPrettyPrint(M, MAS)
           eMetaPrettyPrint(M, EqS)
           eMetaPrettyPrint(M, RlS)
-          eMetaPrettyPrint(M, StDcls)
-          eMetaPrettyPrint(M, StDefs)
+          eMetaPrettyPrint(M, StratDcls)
+          eMetaPrettyPrint(M, StratDefs)
        '\b 'endsm '\o '\n) .
- eq eMetaPrettyPrint(M, smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsm)
+ eq eMetaPrettyPrint(M, smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm)
    = ('\b
       'smod '\o eMetaPrettyPrint(ME) (if PDL == nil
                                      then nil
@@ -18150,10 +18198,10 @@ fmod UNIT-META-PRETTY-PRINT is
          eMetaPrettyPrint(M, MAS)
          eMetaPrettyPrint(M, EqS)
          eMetaPrettyPrint(M, RlS)
-         eMetaPrettyPrint(M, StDcls)
-         eMetaPrettyPrint(M, StDefs)
+         eMetaPrettyPrint(M, StratDcls)
+         eMetaPrettyPrint(M, StratDefs)
       '\b 'endsm '\o '\n) .
- eq eMetaPrettyPrint(M, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StDcls StDefs endsth)
+ eq eMetaPrettyPrint(M, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth)
    = ('\b
       'sth '\o eMetaPrettyPrint(MN) '\b 'is '\o '\n
          eMetaPrettyPrint(IL)
@@ -18166,8 +18214,8 @@ fmod UNIT-META-PRETTY-PRINT is
          eMetaPrettyPrint(M, MAS)
          eMetaPrettyPrint(M, EqS)
          eMetaPrettyPrint(M, RlS)
-         eMetaPrettyPrint(M, StDcls)
-         eMetaPrettyPrint(M, StDefs)
+         eMetaPrettyPrint(M, StratDcls)
+         eMetaPrettyPrint(M, StratDefs)
       '\b 'endsth '\o '\n) .
 
   eq eMetaPrettyPrint((including ME .) IL)
@@ -18316,10 +18364,18 @@ fmod VIEW-META-PRETTY-PRINT is
 
   op eMetaPrettyPrint : Database View -> QidList .
   op eMetaPrettyPrint : ViewExpression -> QidList .
-  op eMetaPrettyPrint : ModuleExpression ModuleExpression Database SortMappingSet SortMappingSet OpMappingSet -> QidList .
-  op eMetaPrettyPrint : ModuleExpression ModuleExpression Database OpMappingSet SortMappingSet OpMappingSet -> QidList .
-  op eMetaPrettyPrint : SortMapping -> QidList .
-  op eMetaPrettyPrint : OpMapping -> QidList .
+  op eMetaPrettyPrint : ModuleExpression ModuleExpression Database SortMappingSet
+       SortMappingSet OpMappingSet -> QidList .
+  op eMetaPrettyPrint : ModuleExpression ModuleExpression Database OpMappingSet
+       SortMappingSet OpMappingSet -> QidList .
+  op eMetaPrettyPrint : ModuleExpression ModuleExpression Database StratMappingSet
+       SortMappingSet OpMappingSet -> QidList .
+  op eMetaPrettyPrint1 : ModuleExpression ModuleExpression Database SortMapping
+       SortMappingSet OpMappingSet -> QidList .
+  op eMetaPrettyPrint1 : ModuleExpression ModuleExpression Database OpMapping
+       SortMappingSet OpMappingSet -> QidList .
+  op eMetaPrettyPrint1 : ModuleExpression ModuleExpression Database StratMapping
+       SortMappingSet OpMappingSet -> QidList .
 
   vars QI QI' F F' : Qid .
   vars S S' : Sort .
@@ -18330,6 +18386,7 @@ fmod VIEW-META-PRETTY-PRINT is
   vars ME ME' : ModuleExpression .
   var  SM : SortMapping .
   var  OM : OpMapping .
+  var  TM : StratMapping .
   vars SMS SMS' : SortMappingSet .
   vars OMS OMS' : OpMappingSet .
   vars TMS TMS' : StratMappingSet .
@@ -18337,6 +18394,8 @@ fmod VIEW-META-PRETTY-PRINT is
   var  PDL : ParameterDeclList .
   vars VE VE' : ViewExpression .
   var  DT : Default{Term} .
+  var  CS : CallStrategy .
+  var  Strat : Strategy .
 
   ceq eMetaPrettyPrint(DB, view VE from ME to ME' is SMS OMS TMS endv)
     = ('\b 'view '\o
@@ -18346,6 +18405,7 @@ fmod VIEW-META-PRETTY-PRINT is
               '\b 'to '\o eMetaPrettyPrint(ME') '\b 'is '\o '\n
        if SMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) else nil fi
        if OMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) else nil fi
+       if TMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, TMS, SMS, OMS) else nil fi
        '\b 'endv '\o '\n)
     if QIL QI := eMetaPrettyPrint(VE) .
   ceq eMetaPrettyPrint(DB, view VE{PDL} from ME to ME' is SMS OMS TMS endv)
@@ -18357,8 +18417,9 @@ fmod VIEW-META-PRETTY-PRINT is
                   fi)
               '\b 'from '\o eMetaPrettyPrint(ME)
               '\b 'to '\o eMetaPrettyPrint(ME') '\b 'is '\o '\n
-       if OMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) else nil fi
-       if OMS =/= none then '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) else nil fi
+       if OMS =/= none then eMetaPrettyPrint(ME, ME', DB, SMS, SMS, OMS) else nil fi
+       if OMS =/= none then eMetaPrettyPrint(ME, ME', DB, OMS, SMS, OMS) else nil fi
+       if TMS =/= none then eMetaPrettyPrint(ME, ME', DB, TMS, SMS, OMS) else nil fi
        '\b 'endv '\o '\n )
     if QIL QI := eMetaPrettyPrint(VE) .
   eq eMetaPrettyPrint(DB, viewError(QIL)) = QIL .
@@ -18369,41 +18430,53 @@ fmod VIEW-META-PRETTY-PRINT is
     if VE =/= nil /\ VE' =/= nil .
   eq eMetaPrettyPrint(QI{VE}) = QI '`{ eMetaPrettyPrint(VE) '`} '\s .
 
- ceq eMetaPrettyPrint(ME, ME', DB, SM SMS, SMS', OMS')
-    = (eMetaPrettyPrint(ME, ME', DB, SM, SMS', OMS') '\n
-       '\s '\s eMetaPrettyPrint(ME, ME', DB, SMS, SMS', OMS'))
-    if SMS =/= none .
- ceq eMetaPrettyPrint(ME, ME', DB, OM OMS, SMS', OMS')
-    = (eMetaPrettyPrint(ME, ME', DB, OM, SMS', OMS') '\n
-       '\s '\s eMetaPrettyPrint(ME, ME', DB, OMS, SMS', OMS'))
-    if OMS =/= none .
+  eq eMetaPrettyPrint(ME, ME', DB, SM SMS, SMS', OMS')
+    = ('\s '\s eMetaPrettyPrint1(ME, ME', DB, SM, SMS', OMS') '\n
+       eMetaPrettyPrint(ME, ME', DB, SMS, SMS', OMS')) .
+  eq eMetaPrettyPrint(ME, ME', DB, OM OMS, SMS', OMS')
+    = ('\s '\s eMetaPrettyPrint1(ME, ME', DB, OM, SMS', OMS') '\n
+       eMetaPrettyPrint(ME, ME', DB, OMS, SMS', OMS')) .
+  eq eMetaPrettyPrint(ME, ME', DB, TM TMS, SMS', OMS')
+    = ('\s '\s eMetaPrettyPrint1(ME, ME', DB, TM, SMS', OMS') '\n
+       eMetaPrettyPrint(ME, ME', DB, TMS, SMS', OMS')) .
   eq eMetaPrettyPrint(ME, ME', DB, (none).SortMappingSet, SMS, OMS) = nil .
   eq eMetaPrettyPrint(ME, ME', DB, (none).OpMappingSet, SMS, OMS) = nil .
+  eq eMetaPrettyPrint(ME, ME', DB, (none).StratMappingSet, SMS, OMS) = nil .
 
-  eq eMetaPrettyPrint(ME, ME', DB, op_to`term_.(T, T'), SMS, OMS)
+  eq eMetaPrettyPrint1(ME, ME', DB, op_to`term_.(T, T'), SMS, OMS)
     = ('\b 'op '\o eMetaPrettyPrint(getFlatModule(ME, DB), T) '\b 'to
                'term '\o eMetaPrettyPrint(getFlatModule(ME', DB), T') '\b '. '\o) .
-
-  eq eMetaPrettyPrint(ME, ME', DB, op_to`term_.(T, T'), SMS, OMS)
-    = ('op eMetaPrettyPrint(T) '\b 'to 'term '\o eMetaPrettyPrint(T') '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, op F to F' ., SMS, OMS)
-    = ('\b 'op '\o F '\b 'to '\o F' '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, op F : TyL -> Ty to F' ., SMS, OMS)
+----  eq eMetaPrettyPrint1(ME, ME', DB, op_to`term_.(T, T'), SMS, OMS)
+----    = ('op eMetaPrettyPrint(T) '\b 'to 'term '\o eMetaPrettyPrint(T') '. '\n) .
+  eq eMetaPrettyPrint1(ME, ME', DB, op F to F' ., SMS, OMS)
+    = ('\b 'op '\o F '\b 'to '\o F' '\b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, op F : TyL -> Ty to F' ., SMS, OMS)
     = ('\b 'op '\o F '\b ':
        '\o eMetaPrettyPrint(TyL) '\b '-> '\o eMetaPrettyPrint(Ty)
-       '\b 'to '\o F' '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, sort S to S' ., SMS, OMS)
-    = ('\b 'sort '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, class S to S' ., SMS, OMS)
-    = ('\b 'class '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, attr QI . S to QI' ., SMS, OMS)
-    = ('\b 'attr '\o eMetaPrettyPrint(S) '\b '. '\o QI '\b 'to '\o QI' '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, msg F to F' ., SMS, OMS)
-    = ('\b 'msg '\o F '\b 'to '\o F' '. '\n) .
-  eq eMetaPrettyPrint(ME, ME', DB, msg F : TyL -> Ty to F' ., SMS, OMS)
+       '\b 'to '\o F' 'b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, sort S to S' ., SMS, OMS)
+    = ('\b 'sort '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') 'b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, class S to S' ., SMS, OMS)
+    = ('\b 'class '\o eMetaPrettyPrint(S) '\b 'to '\o eMetaPrettyPrint(S') 'b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, attr QI . S to QI' ., SMS, OMS)
+    = ('\b 'attr '\o eMetaPrettyPrint(S) '\b '. '\o QI '\b 'to '\o QI' 'b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, msg F to F' ., SMS, OMS)
+    = ('\b 'msg '\o F '\b 'to '\o F' 'b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, msg F : TyL -> Ty to F' ., SMS, OMS)
     = ('\b 'msg '\o F '\b ':
        '\o eMetaPrettyPrint(TyL) '\b '-> '\o eMetaPrettyPrint(Ty)
-       '\b 'to '\o F' '. '\n) .
+       '\b 'to '\o F' 'b '. '\o) .
+
+  eq eMetaPrettyPrint1(ME, ME', DB, strat_to`expr_.(CS, Strat), SMS, OMS)
+    = ('\b 'strat '\o metaPrettyPrintStrategy(getFlatModule(ME, DB), CS) '\b 'to
+               'expr '\o metaPrettyPrintStrategy(getFlatModule(ME', DB), Strat) '\b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, strat F to F' ., SMS, OMS)
+    = ('\b 'strat '\o F '\b 'to '\o F' 'b '. '\o) .
+  eq eMetaPrettyPrint1(ME, ME', DB, strat F : TyL @ Ty to F' ., SMS, OMS)
+    = ('\b 'strat '\o F
+       if TyL == nil then nil else '\b ': '\o eMetaPrettyPrint(TyL) fi
+       '\b '@ '\o eMetaPrettyPrint(Ty)
+       '\b 'to '\o F' 'b '. '\o) .
 endfm
 
 *******************************************************************************
@@ -18665,8 +18738,10 @@ fmod VIEW-PROCESSING is
   vars PV PV' : PreView .
   vars ME ME' : ModuleExpression .
   vars DB DB' : Database .
+  var  DB? : [Database] .
   vars OPDS VDS VDS' VDS'' : OpDeclSet .
   var  MDS : MsgDeclSet .
+  var  StratDcls : StratDeclSet .
   var  TL : TermList .
   vars PDL PDL' : ParameterDeclList .
   var  H : Header .
@@ -18684,9 +18759,11 @@ fmod VIEW-PROCESSING is
 
   op getThOpDeclSet : Header Database -> OpDeclSet .
   op getThMsgDeclSet : Header Database -> MsgDeclSet .
+  op getThStratDeclSet : Header Database -> StratDeclSet .
 
   op getThOpDeclSetAux : ImportList Database -> OpDeclSet .
   op getThMsgDeclSetAux : ImportList Database -> MsgDeclSet .
+  op getThStratDeclSetAux : ImportList Database -> StratDeclSet .
 
   eq getThOpDeclSet(ME, DB)
     = if theory(getTopModule(ME, DB))
@@ -18718,6 +18795,21 @@ fmod VIEW-PROCESSING is
     = (getThMsgDeclSet(ME, DB) getThMsgDeclSetAux(IL, DB)) .
   eq getThMsgDeclSetAux(nil, DB) = none .
 
+  eq getThStratDeclSet(ME, DB)
+    = if theory(getTopModule(ME, DB))
+      then (getThStratDeclSetAux(getImports(getTopModule(ME, DB)), DB)
+            getStratDcls(getTopModule(ME, DB)))
+      else none
+      fi .
+
+  eq getThStratDeclSetAux(((including ME .) IL), DB)
+    = (getThStratDeclSet(ME, DB) getThStratDeclSetAux(IL, DB)) .
+  eq getThStratDeclSetAux(((extending ME .) IL), DB)
+    = (getThStratDeclSet(ME, DB) getThStratDeclSetAux(IL, DB)) .
+  eq getThStratDeclSetAux(((protecting ME .) IL), DB)
+    = (getThStratDeclSet(ME, DB) getThStratDeclSetAux(IL, DB)) .
+  eq getThStratDeclSetAux(nil, DB) = none .
+
 *** The processing of terms representing previews accomplished by the function
 *** \texttt{procView} is quite similar to the one accomplished by
 *** \texttt{procModule} on terms representing preunits. The algorithms followed
@@ -18747,7 +18839,7 @@ fmod VIEW-PROCESSING is
   op procView : Term Database -> Database .
   op procView2 : Term Database -> Database .
   op procView : Term PreView Database -> Database .
-  op procViewAux : Term PreView OpDeclSet MsgDeclSet Module Database -> Database .
+  op procViewAux : Term PreView OpDeclSet MsgDeclSet StratDeclSet Module Database -> Database .
 
   eq procView(QI, DB)
     = procView2(getTermView(QI, DB), DB) .
@@ -18766,8 +18858,8 @@ fmod VIEW-PROCESSING is
   eq procView('view_from_to_is_endv['token[T], T', T'', T3], DB)
     = procView(T3,
         emptyPreView(downQid(T), parseModExp(T'), parseModExp(T'')),
-          insertTermView(downQid(T),
-            'view_from_to_is_endv['token[T], T', T'', T3], DB)) .
+        insertTermView(downQid(T),
+          'view_from_to_is_endv['token[T], T', T'', T3], DB)) .
   eq procView('view_from_to_is_endv['_`{_`}['token[T], T'], T'', T3, T4], DB)
     = procView(T4,
         setPars(
@@ -18784,31 +18876,37 @@ fmod VIEW-PROCESSING is
 
   ceq procView(T, PV, DB)
     = procViewAux(T, PV,
-        getThOpDeclSet(ME, DB'),
-        getThMsgDeclSet(ME, DB'),
-        getFlatModule(ME, DB'),
-        DB')
+        getThOpDeclSet(ME, DB?),
+        getThMsgDeclSet(ME, DB?),
+        getThStratDeclSet(ME, DB?),
+        getFlatModule(ME, DB?),
+        DB?)
     if preview_from_to_is____endpv(VE, ME, ME', none, none, none, none) := PV
-    /\ DB' := database(evalModExp(ME', nil, database(evalModExp(ME, nil, DB)))) .
+    /\ DB? := database(evalModExp(ME', nil, database(evalModExp(ME, nil, DB)))) .
   ceq procView(T, PV, DB)
     = procViewAux(T, PV,
-        getThOpDeclSet(ME, DB':[Database]),
-        getThMsgDeclSet(ME, DB':[Database]),
-        getFlatModule(ME, DB':[Database]),
-        DB':[Database])
+        getThOpDeclSet(ME, DB?),
+        getThMsgDeclSet(ME, DB?),
+        getThStratDeclSet(ME, DB?),
+        getFlatModule(ME, DB?),
+        DB?)
     if preview_from_to_is____endpv(VE{PDL}, ME, ME', none, none, none, none) := PV
-    /\ DB':[Database] := database(evalModExp(ME', PDL, database(evalModExp(ME, PDL, DB)))) .
+    /\ DB? := database(evalModExp(ME', PDL, database(evalModExp(ME, PDL, DB)))) .
 
-  eq procViewAux('none.ViewDeclSet, preview_from_to_is____endpv(VE{PDL}, ME, ME', VDS, SMS, OMS, TMS), OPDS, MDS, M, DB)
+  eq procViewAux('none.ViewDeclSet,
+       preview_from_to_is____endpv(VE{PDL}, ME, ME', VDS, SMS, OMS, TMS),
+       OPDS, MDS, StratDcls, M, DB)
     = insertView(view VE{PDL} from ME to ME' is none none none endv, DB) .
-  eq procViewAux('none.ViewDeclSet, preview_from_to_is____endpv(VE, ME, ME', VDS, SMS, OMS, TMS), OPDS, MDS, M, DB)
+  eq procViewAux('none.ViewDeclSet,
+       preview_from_to_is____endpv(VE, ME, ME', VDS, SMS, OMS, TMS),
+       OPDS, MDS, StratDcls, M, DB)
     = insertView(view VE from ME to ME' is none none none endv, DB) .
-  eq procViewAux('__[T, T'], PV, OPDS, MDS, M, DB)
+  eq procViewAux('__[T, T'], PV, OPDS, MDS, StratDcls, M, DB)
   *** - OPDS and MDS are, respectively, the set of operation and
   ***   message declarations in the theory part of the source.
   *** - M is the signature of the source theory.
-    = procViewAux(T', parseDecl(T, PV, OPDS, MDS, M), OPDS, MDS, M, DB) .
-  ceq procViewAux(F[TL], PV, OPDS, MDS, M, DB)
+    = procViewAux(T', parseDecl(T, PV, OPDS, MDS, StratDcls, M), OPDS, MDS, StratDcls, M, DB) .
+  ceq procViewAux(F[TL], PV, OPDS, MDS, StratDcls, M, DB)
     = insertView(
         view VE{PDL} from ME to ME' is
           SMS
@@ -18817,13 +18915,17 @@ fmod VIEW-PROCESSING is
             VDS, VDS',
             addOps(VDS, M),
             addOps(VDS', getFlatModule(ME', DB)))
-          TMS
+          solveBubbles(
+            TMS,
+            VDS, VDS',
+            M,
+            getFlatModule(ME', DB))
         endv,
         DB)
     if F =/= '__
-       /\ preview_from_to_is____endpv(VE{PDL}, ME, ME', VDS, SMS, OMS, TMS) := parseDecl(F[TL], PV, OPDS, MDS, M)
+       /\ preview_from_to_is____endpv(VE{PDL}, ME, ME', VDS, SMS, OMS, TMS) := parseDecl(F[TL], PV, OPDS, MDS, StratDcls, M)
        /\ VDS' := applyMapsToOps(maps2rens(SMS), none, VDS, M) .
-  ceq procViewAux(F[TL], PV, OPDS, MDS, M, DB)
+  ceq procViewAux(F[TL], PV, OPDS, MDS, StratDcls, M, DB)
     = insertView(
         view VE from ME to ME' is
           SMS
@@ -18832,14 +18934,18 @@ fmod VIEW-PROCESSING is
             VDS, VDS',
             addOps(VDS, M),
             addOps(VDS', getFlatModule(ME', DB)))
-          TMS
+          solveBubbles(
+            TMS,
+            VDS, VDS',
+            M,
+            getFlatModule(ME', DB))
         endv,
         DB)
     if F =/= '__
        /\ preview_from_to_is____endpv(VE, ME, ME', VDS, SMS, OMS, TMS)
-            := parseDecl(F[TL], PV, OPDS, MDS, M)
+            := parseDecl(F[TL], PV, OPDS, MDS, StratDcls, M)
        /\ VDS' := applyMapsToOps(maps2rens(SMS), none, VDS, M) .
-  eq procViewAux(T, PV, OPDS, MDS, unitError(QIL), DB) = warning(DB, QIL) .
+  eq procViewAux(T, PV, OPDS, MDS, StratDcls, unitError(QIL), DB) = warning(DB, QIL) .
 endfm
 
 *******************************************************************************

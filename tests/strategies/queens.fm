@@ -4,12 +4,14 @@
   op isSolution : State -> Bool .
 endfth)
 
+(show module BT-ELEMS .)
+
 (sth BT-STRAT is
   including BT-ELEMS .
   strat expand @ State .
 endsth)
 
-load ../trace.maude
+(show module BT-STRAT .)
 
 (smod BACKTRACKING{X :: BT-STRAT} is
   strat solve @ X$State .
@@ -18,7 +20,7 @@ load ../trace.maude
                  idle : (expand ; solve) .
 endsm)
 
-eof
+(show module BACKTRACKING .)
 
 (mod QUEENS is
   protecting LIST{Nat} .
@@ -41,6 +43,8 @@ eof
   crl [next] : L => L N if N, S := 1, 2, 3, 4, 5, 6, 7, 8 .
 endm)
 
+(show module .)
+
 (smod QUEENS-STRAT is
   protecting QUEENS .
 
@@ -49,13 +53,27 @@ endm)
   sd expand := top(next) ; match L s.t. isOk(L) .
 endsm)
 
+(show module .)
+
 (view QueensBT from BT-STRAT to QUEENS-STRAT is
   sort State to List{Nat} .
   strat expand to expand .
 endv)
 
+(show view QueensBT .)
+
 (smod BT-QUEENS is
   protecting BACKTRACKING{QueensBT} .
 endsm)
 
+(show module .)
+
 (srew [2] nil using solve .)
+
+(view QueensBT2 from BT-STRAT to QUEENS is
+  sort State to List{Nat} .
+  var L : State .
+  strat expand to expr top(next) ; match L s.t. isOk(L) .
+endv)
+
+(show view QueensBT2 .)

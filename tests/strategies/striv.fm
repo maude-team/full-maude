@@ -2,3 +2,16 @@
    including TRIV .
    strat st @ Elt .
 endsth)
+
+(view StrivIdle from STRIV to TRIV is
+  sort Elt to Elt .
+  strat st to expr idle .
+endv)
+
+(show view StrivIdle .)
+
+(view STRIV from TRIV to STRIV is
+  sort Elt to Elt .
+endv)
+
+(show view STRIV .)

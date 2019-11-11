@@ -102,6 +102,7 @@ result [Nat] :
   set trace mb off .
   set trace condition off .
   set trace substitution off .
+  trace exclude FULL-MAUDE .
   (reduce in PATH : length(b ; c) .)
 ---(
 *********** trial #1

@@ -1,22 +1,29 @@
 set trace on .
-set trace select on .
+set trace select off .
 trace select ----solveBubblesCond
              ----solveBubbles
+             ----metaParseCallStrategy
              ----procModule1
              ----procModule2
              ----procModule3
              ----procModule4
              ----parseDecl
-             evalPreModule
-             evalPreModule1
-             evalPreModule2
+             ----evalPreModule
+             ----evalPreModule1
+             ----evalPreModule2
+             ----evalPreModule3
              ----procModule4
+             ----evalModExp
+             ----unitInst
+             ----unitInstAux
+             ----evalModule
              ----solveBubblesMod
              ----solveBubblesModAux
              ----solveBubblesOps
              ----solveBubblesEq
              ----metaParse
-             metaStratParse
+             ----metaParseStrategy
+             ----addDecls
              ----setStratDefs
              ----createCopy
              ----prepPar
@@ -30,6 +37,8 @@ trace select ----solveBubblesCond
              ----parseType
              ----evalViewExpression
              ----procView
+             ----procViewAux
+             ----solvebubbles
              ----procView2
              ----viewInst
              ----prepViewExpression
@@ -42,10 +51,18 @@ trace select ----solveBubblesCond
              ----setSortMappings
              ----setOpMappings
              ----applyMapsToMaps
+             ----getTermModule
+             ----getTopModule
+             ----getInternalModule
+             ----getFlatModule
+             ----getFlatModuleNeg
+             ----getVars
+             metaPrettyPrintStrategy
              .
-set print conceal on .
-print conceal mod_is_sorts_.____endfm
+set print conceal off .
+print conceal fmod_is_sorts_.____endfm
               mod_is_sorts_._____endm
+              ----smod_is_sorts_._______endsm
               db
               .
 eof
