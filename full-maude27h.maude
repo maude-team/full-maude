@@ -9092,20 +9092,29 @@ fmod VIEW is
   var  Ty : Type .
   var  TyL : TypeList .
   vars T T' : Term .
+  var  CS : CallStrategy .
+  var  Strat : Strategy .
 
   op maps2rens : SortMappingSet -> RenamingSet .
   op maps2rens : OpMappingSet -> RenamingSet .
+  op maps2rens : StratMappingSet -> RenamingSet .
+
   eq maps2rens(sort S to S' . SMS) = sort S to S', maps2rens(SMS) .
   eq maps2rens(class S to S' . SMS) = class S to S', maps2rens(SMS) .
   eq maps2rens((none).SortMappingSet) = none .
 
   eq maps2rens(op F to F' . OMS) = op F to F' [none], maps2rens(OMS) .
   eq maps2rens(op F : TyL -> Ty to F' . OMS) = op F : TyL -> Ty to F' [none], maps2rens(OMS) .
-  eq maps2rens(op T to  term T' . OMS) = op T to term T', maps2rens(OMS) .
+  eq maps2rens(op T to term T' . OMS) = op T to term T', maps2rens(OMS) .
   eq maps2rens(msg F to F' . OMS) = msg F to F' [none], maps2rens(OMS) .
   eq maps2rens(msg F : TyL -> Ty to F' . OMS) = msg F : TyL -> Ty to F' [none], maps2rens(OMS) .
   eq maps2rens(attr A . C to A' . OMS) = attr A . C to A', maps2rens(OMS) .
   eq maps2rens((none).OpMappingSet) = none .
+
+  eq maps2rens(strat F to F' . TMS) = strat F to F', maps2rens(TMS) .
+  eq maps2rens(strat F : TyL @ Ty to F' . TMS) = strat F : TyL @ Ty to F', maps2rens(TMS) .
+  eq maps2rens(strat CS to expr Strat . TMS) = strat CS to expr Strat, maps2rens(TMS) .
+  eq maps2rens((none).StratMappingSet) = none .
 
 *** projection functions
 ----  op getName : View -> Qid .
@@ -10924,6 +10933,12 @@ fmod MOD-EXP-PARSING is
           to downQid(T3) [none]) .
   eq parseMaps('op_:`~>_to_['token[T], T', 'token[T'']])
     = (op downQid(T) : nil -> kind(parseType(T')) to downQid(T'') [none]) .
+  eq parseMaps('strat_to_['token[T], 'token[T']])
+    = (strat downQid(T) to downQid(T')) .
+  eq parseMaps('strat_:_@_to_['token[T], T', T'', 'token[T3]])
+    = (strat downQid(T) : parseTypeList(T') @ parseType(T'') to downQid(T3)) .
+  eq parseMaps('strat_@_to_['token[T], T', 'token[T'']])
+    = (strat downQid(T) : nil @ parseType(T') to downQid(T'')) .
 
   eq parseAttrs('__[T, T']) = (parseAttrs(T) parseAttrs(T')) .
   eq parseAttrs('assoc.@Attr@) = assoc .
@@ -13734,16 +13749,19 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
+view RenamingSet from TRIV to META-LEVEL is
+  sort Elt to RenamingSet .
+endv
+
 fmod RENAMING-SET-APPL-ON-UNIT is
   pr RENAMING-SET-APPL-ON-TERM .
   pr INT-LIST .
   pr VIEW-EXPR .
 
   op applyMapsToModule : RenamingSet Module Module -> Module .
-  op applyMapsToModuleAux : RenamingSet RenamingSet Module Module -> Module .
-  op splitMaps : RenamingSet -> Tuple{RenamingSet,RenamingSet} .
-  op splitMapsAux : RenamingSet RenamingSet RenamingSet
-       -> Tuple{RenamingSet,RenamingSet} .
+  op applyMapsToModuleAux : RenamingSet RenamingSet RenamingSet Module Module -> Module .
+  op splitMaps : RenamingSet -> Tuple{RenamingSet,RenamingSet,RenamingSet} .
+  op splitMapsAux : RenamingSet RenamingSet RenamingSet RenamingSet -> Tuple{RenamingSet,RenamingSet,RenamingSet} .
 
   op applyMapsToTypeList : RenamingSet TypeList -> TypeList .
   op applyMapsToSubsorts : RenamingSet SubsortDeclSet -> SubsortDeclSet .
@@ -13765,10 +13783,10 @@ fmod RENAMING-SET-APPL-ON-UNIT is
   op applyMapsToMsgDecl : RenamingSet RenamingSet MsgDecl Module -> MsgDecl .
   op applyMapsToAttrName : RenamingSet Sort Qid -> Qid .
   op applyMapsToAttrDeclSet : RenamingSet RenamingSet Sort AttrDeclSet -> AttrDeclSet .
-  op applyMapsToStratDcls : RenamingSet RenamingSet StratDeclSet Module -> StratDeclSet .
-  op applyMapsToStratDefs : RenamingSet RenamingSet StratDefSet Module -> StratDefSet .
-  op applyMapsToStDcl : RenamingSet Renaming RenamingSet StratDecl Module -> StratDecl .
-  op applyMapsToStDef : RenamingSet Renaming RenamingSet StratDefinition Module -> StratDefinition .
+  op applyMapsToStratDcls : RenamingSet RenamingSet RenamingSet StratDeclSet Module -> StratDeclSet .
+  op applyMapsToStratDefs : RenamingSet RenamingSet RenamingSet StratDefSet Module -> StratDefSet .
+  op applyMapsToStratDcl : RenamingSet RenamingSet RenamingSet StratDecl Module -> StratDecl .
+  op applyMapsToStratDef : RenamingSet RenamingSet RenamingSet StratDefinition Module -> StratDefinition .
 
   vars M U : Module .
   vars QI QI' QI'' L L' L'' F F' F'' A A' A'' : Qid .
@@ -13802,7 +13820,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
   var  Hk : Hook .
   var  HkL : HookList .
   var  R : Renaming .
-  vars RS RS' RS'' SRS ORS : RenamingSet .
+  vars RS RS' RS'' RS3 SRS ORS TRS : RenamingSet .
   vars Subst Subst' : Substitution .
   var  Cond : Condition .
   var  St : String .
@@ -13812,38 +13830,53 @@ fmod RENAMING-SET-APPL-ON-UNIT is
   var  Strats : StrategyList .
   vars CS CS' : CallStrategy .
   vars Strat Strat' Strat'' : Strategy .
-  var  VSL : UsingPairSet .
+  var  UPS : UsingPairSet .
 
+  pr (3TUPLE * (op `(_`,_`,_`) to <_;_;_>,
+                op p1_ to sortMaps,
+                op p2_ to opMaps,
+                op p3_ to stratMaps)) { RenamingSet,RenamingSet,RenamingSet } .
+
+---(
   sort Tuple{RenamingSet,RenamingSet} .
   op <_;_> : RenamingSet RenamingSet -> Tuple{RenamingSet, RenamingSet} .
   ops sortMaps otherMaps : Tuple{RenamingSet, RenamingSet} -> RenamingSet .
   eq sortMaps(< RS ; RS' >) = RS .
   eq otherMaps(< RS ; RS' >) = RS' .
+)
 
-  eq splitMaps(RS) = splitMapsAux(RS, none, none) .
-  eq splitMapsAux((sort S to S'), RS', RS'')
-    = splitMapsAux(none, ((sort S to S'), RS'), RS'') .
-  eq splitMapsAux(((sort S to S'), RS), RS', RS'')
-    = splitMapsAux(RS, ((sort S to S'), RS'), RS'') .
-  eq splitMapsAux((class S to S'), RS', RS'')
-    = splitMapsAux(none, ((class S to S'), RS'), RS'') .
-  eq splitMapsAux(((class S to S'), RS), RS', RS'')
-    = splitMapsAux(RS, ((class S to S'), RS'), RS'') .
-  eq splitMapsAux(R, RS', RS'')
-    = splitMapsAux(none, RS', (R, RS'')) [owise] .
-  eq splitMapsAux((R, RS), RS', RS'')
-    = splitMapsAux(RS, RS', (R, RS'')) [owise] .
-  eq splitMapsAux(none, RS, RS') = < RS ; RS' > .
+  eq splitMaps(RS) = splitMapsAux(RS, none, none, none) .
+  eq splitMapsAux(sort S to S', RS', RS'', RS3)
+    = splitMapsAux(none, ((sort S to S'), RS'), RS'', RS3) .
+  eq splitMapsAux((sort S to S', RS), RS', RS'', RS3)
+    = splitMapsAux(RS, ((sort S to S'), RS'), RS'', RS3) .
+  eq splitMapsAux(class S to S', RS', RS'', RS3)
+    = splitMapsAux(none, ((class S to S'), RS'), RS'', RS3) .
+  eq splitMapsAux((class S to S', RS), RS', RS'', RS3)
+    = splitMapsAux(RS, ((class S to S'), RS'), RS'', RS3) .
+  eq splitMapsAux(R, RS', RS'', RS3)
+    = splitMapsAux(none, RS', (R, RS''), RS3) [owise] .
+  eq splitMapsAux((R, RS), RS', RS'', RS3)
+    = splitMapsAux(RS, RS', (R, RS''), RS3) [owise] .
+  eq splitMapsAux(strat F to F', RS', RS'', RS3)
+    = splitMapsAux(none, RS', RS'', (strat F to F', RS3)) .
+  eq splitMapsAux((strat F to F', RS), RS', RS'', RS3)
+    = splitMapsAux(RS, RS', RS'', (strat F to F', RS3)) .
+  eq splitMapsAux(strat F : TyL @ Ty to F', RS', RS'', RS3)
+    = splitMapsAux(none, RS', RS'', (strat F : TyL @ Ty to F', RS3)) .
+  eq splitMapsAux(((strat F : TyL @ Ty to F'), RS), RS', RS'', RS3)
+    = splitMapsAux(RS, RS', RS'', (strat F : TyL @ Ty to F', RS3)) .
+  eq splitMapsAux(none, RS, RS', RS3) = < RS ; RS' ; RS3 > .
 
 *** To avoid the interference between the sort and class maps with other maps, the map
 *** set is divided in two sets.
 
   ceq applyMapsToModule(RS, U, M)
-    = applyMapsToModuleAux(SRS, ORS, U, M)
-    if < SRS ; ORS > := splitMaps(RS) .
+    = applyMapsToModuleAux(SRS, ORS, TRS, U, M)
+    if < SRS ; ORS ; TRS > := splitMaps(RS) .
   eq applyMapsToModule(RS, U, unitError(QIL)) = unitError(QIL) .
 
-  eq applyMapsToModuleAux(SRS, ORS, mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, M)
     = mod H is
           IL
           sorts applyMapsToSortSet(SRS, SS) .
@@ -13853,7 +13886,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToEqs(SRS, ORS, EqS, M)
           applyMapsToRls(SRS, ORS, RlS, M)
       endm .
-  eq applyMapsToModuleAux(SRS, ORS, th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, M)
     = th MN is
           IL sorts applyMapsToSortSet(SRS, SS) .
           applyMapsToSubsorts(SRS, SSDS)
@@ -13862,7 +13895,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToEqs(SRS, ORS, EqS, M)
           applyMapsToRls(SRS, ORS, RlS, M)
       endth .
-  eq applyMapsToModuleAux(SRS, ORS, fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, M)
     = fmod H is
           IL
           sorts applyMapsToSortSet(SRS, SS) .
@@ -13871,7 +13904,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToMbs(SRS, ORS, MAS, M)
           applyMapsToEqs(SRS, ORS, EqS, M)
       endfm .
-  eq applyMapsToModuleAux(SRS, ORS, fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, M)
     = fth MN is
           IL
           sorts applyMapsToSortSet(SRS, SS) .
@@ -13880,7 +13913,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToMbs(SRS, ORS, MAS, M)
           applyMapsToEqs(SRS, ORS, EqS, M)
       endfth .
-  eq applyMapsToModuleAux(SRS, ORS, omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, omod H is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endom, M)
     = omod H is
            IL
            sorts applyMapsToSortSet(SRS, SS) .
@@ -13893,7 +13926,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
            applyMapsToEqs(SRS, ORS, EqS, M)
            applyMapsToRls(SRS, ORS, RlS, M)
       endom .
-  eq applyMapsToModuleAux(SRS, ORS, oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, oth MN is IL sorts SS . SSDS CDS SCDS OPDS MDS MAS EqS RlS endoth, M)
     = oth MN is
            IL
            sorts applyMapsToSortSet(SRS, SS) .
@@ -13906,7 +13939,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
            applyMapsToEqs(SRS, ORS, EqS, M)
            applyMapsToRls(SRS, ORS, RlS, M)
       endoth .
-  eq applyMapsToModuleAux(SRS, ORS, smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, M)
     = smod H is
           IL
           sorts applyMapsToSortSet(SRS, SS) .
@@ -13915,10 +13948,10 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToMbs(SRS, ORS, MAS, M)
           applyMapsToEqs(SRS, ORS, EqS, M)
           applyMapsToRls(SRS, ORS, RlS, M)
-          applyMapsToStratDcls(SRS, ORS, StratDcls, M)
-          applyMapsToStratDefs(SRS, ORS, StratDefs, M)
+          applyMapsToStratDcls(SRS, ORS, TRS, StratDcls, M)
+          applyMapsToStratDefs(SRS, ORS, TRS, StratDefs, M)
       endsm .
-  eq applyMapsToModuleAux(SRS, ORS, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, M)
+  eq applyMapsToModuleAux(SRS, ORS, TRS, sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, M)
     = sth MN is
           IL sorts applyMapsToSortSet(SRS, SS) .
           applyMapsToSubsorts(SRS, SSDS)
@@ -13926,8 +13959,8 @@ fmod RENAMING-SET-APPL-ON-UNIT is
           applyMapsToMbs(SRS, ORS, MAS, M)
           applyMapsToEqs(SRS, ORS, EqS, M)
           applyMapsToRls(SRS, ORS, RlS, M)
-          applyMapsToStratDcls(SRS, ORS, StratDcls, M)
-          applyMapsToStratDefs(SRS, ORS, StratDefs, M)
+          applyMapsToStratDcls(SRS, ORS, TRS, StratDcls, M)
+          applyMapsToStratDefs(SRS, ORS, TRS, StratDefs, M)
       endsth .
 
   eq applyMapsToOps(RS, RS', (op F : TyL -> Ty [AtS] . OPDS), M)
@@ -13973,6 +14006,7 @@ fmod RENAMING-SET-APPL-ON-UNIT is
     = applyMapToAttrsAux(AtS, AtS', none) .
   eq applyMapToAttrs((op F : TyL -> Ty to F' [AtS]), AtS')
     = applyMapToAttrsAux(AtS, AtS', none) .
+  eq applyMapToAttrs(R, AtS) = AtS [owise] .
 
   *** add the new syntactic attributes
   eq applyMapToAttrsAux((gather(QIL) AtS), AtS', AtS'')
@@ -14145,49 +14179,55 @@ fmod RENAMING-SET-APPL-ON-UNIT is
        applyMapsToSubclassDeclSet(RS, SCDS)) .
   eq applyMapsToSubclassDeclSet(RS, none) = none .
 
-  eq applyMapsToStratDcls(RS, RS', (strat F : TyL @ Ty [AtS] . StratDcls), M)
-    = (applyMapsToStDcl(RS, getRightStMaps(F, TyL, RS', M), RS', (strat F : TyL @ Ty [AtS] .), M)
-       applyMapsToStratDcls(RS, RS', StratDcls, M)) .
-  eq applyMapsToStratDcls(RS, RS', none, M) = none .
+  eq applyMapsToStratDcls(RS, RS', RS'', (strat F : TyL @ Ty [AtS] . StratDcls), M)
+    = (applyMapsToStratDcl(RS, RS', getRightStratMaps(F, TyL, RS'', M), (strat F : TyL @ Ty [AtS] .), M)
+       applyMapsToStratDcls(RS, RS', RS'', StratDcls, M)) .
+  eq applyMapsToStratDcls(RS, RS', RS'', none, M) = none .
 
-  eq applyMapsToStDcl(RS, R, RS', (strat F : TyL @ Ty [AtS] .), M)
+  eq applyMapsToStratDcl(RS, RS', R, (strat F : TyL @ Ty [AtS] .), M)
     = (strat applyStMapsToStId(F, R) : applyMapsToTypeList(RS, TyL) @ applyMapsToType(RS, Ty)
-         [applyMapsToAttrs(RS, RS', applyMapToAttrs(R, AtS), M)] .) .
-  eq applyMapsToStDcl(RS, (R, RS'), RS'', (strat F : TyL @ Ty [AtS] .), M)
+        [applyMapsToAttrs(RS, RS', AtS, M)] .) .
+  eq applyMapsToStratDcl(RS, RS', (R, RS''), (strat F : TyL @ Ty [AtS] .), M)
     *** In case of ambiguous mappings we take one of them arbitrarily
     = (strat applyStMapsToStId(F, R) : applyMapsToTypeList(RS, TyL) @ applyMapsToType(RS, Ty)
-         [applyMapsToAttrs(RS, RS'', applyMapToAttrs(R, AtS), M)] .) .
-  eq applyMapsToStDcl(RS, none, RS', (strat F : TyL @ Ty [AtS] .), M)
+        [applyMapsToAttrs(RS, RS', AtS, M)] .) .
+  eq applyMapsToStratDcl(RS, RS', none, (strat F : TyL @ Ty [AtS] .), M)
     *** No map for this declaration
-    = (strat F : applyMapsToTypeList(RS, TyL) @ applyMapsToType(RS, Ty)
-         [applyMapsToAttrs(RS, RS', AtS, M)] .) .
+    = (strat F : applyMapsToTypeList(RS, TyL) @ applyMapsToType(RS, Ty) [applyMapsToAttrs(RS, RS', AtS, M)] .) .
 
-  eq applyMapsToStratDefs(RS, RS', ((csd CS := Strat if Cond [AtS] .) StratDefs), M)
-    = ((csd applyMapsToStrategy(RS, RS', CS, M)
-         := applyMapsToStrategy(RS, RS', Strat, M)
+  eq applyMapsToStratDefs(RS, RS', RS'', csd CS := Strat if Cond [AtS] . StratDefs, M)
+    = (csd applyMapsToStrategy(RS, RS', RS'', CS, M)
+         := applyMapsToStrategy(RS, RS', RS'', Strat, M)
          if applyMapsToCond(RS, RS', Cond, M)
          [applyMapsToAttrs(RS, RS', AtS, M)] .)
-       applyMapsToStratDefs(RS, RS', StratDefs, M)) .
-  eq applyMapsToStratDefs(RS, RS', ((sd CS := Strat [AtS] .) StratDefs), M)
-    = ((sd applyMapsToStrategy(RS, RS', CS, M)
-         := applyMapsToStrategy(RS, RS', Strat, M)
+      applyMapsToStratDefs(RS, RS', RS'', StratDefs, M) .
+  eq applyMapsToStratDefs(RS, RS', RS'', sd CS := Strat [AtS] . StratDefs, M)
+    = (sd applyMapsToStrategy(RS, RS', RS'', CS, M)
+         := applyMapsToStrategy(RS, RS', RS'', Strat, M)
          [applyMapsToAttrs(RS, RS', AtS, M)] .)
-       applyMapsToStratDefs(RS, RS', StratDefs, M)) .
-  eq applyMapsToStratDefs(RS, RS', none, M) = none .
+      applyMapsToStratDefs(RS, RS', RS'', StratDefs, M) .
+  eq applyMapsToStratDefs(RS, RS', RS'', none, M) = none .
 
-  op applyMapsToStrategy : RenamingSet RenamingSet CallStrategy Module  -> CallStrategy .
+----  op applyMapsToStrategy : RenamingSet RenamingSet RenamingSet Strategy Module -> Strategy .
   op imageOfCallStrategy : RenamingSet RenamingSet CallStrategy RenamingSet Module -> CallStrategy .
   op pseudoMatch : CallStrategy CallStrategy Module Substitution -> Substitution .
   op pseudoMatchCS : CallStrategy CallStrategy Module Substitution -> Substitution .
 
-  eq imageOfCallStrategy(RS, RS', F[[TL]], (strat F to F', RS''), M)
-    = F' [[ applyMapsToTerm2(RS, RS', TL, M) ]] .
-  eq imageOfCallStrategy(RS, RS', F[[TL]], (strat F : TyL @ Ty to F', RS''), M)
-    = F' [[ applyMapsToTerm2(RS, RS', TL, M) ]] .
-  eq imageOfCallStrategy(RS, RS', CS, (strat_to`expr_(CS', Strat), RS''), M)
-    = applySubst(Strat, applyMapsToSubst(RS, RS', pseudoMatch(CS', CS, M, none), M)) .
-  eq imageOfCallStrategy(RS, RS', F[[TL]], none, M)
-    = F [[ applyMapsToTerm2(RS, RS', TL, M) ]] .
+  eq imageOfCallStrategy(SRS, ORS, F[[TL]], (strat F to F', TRS), M)
+    = F' [[ applyMapsToTerm2(SRS, ORS, TL, M) ]] .
+  eq imageOfCallStrategy(SRS, ORS, F[[TL]], strat F to F', M)
+    = F' [[ applyMapsToTerm2(SRS, ORS, TL, M) ]] .
+  eq imageOfCallStrategy(SRS, ORS, F[[TL]], (strat F : TyL @ Ty to F', TRS), M)
+    = F' [[ applyMapsToTerm2(SRS, ORS, TL, M) ]] .
+  eq imageOfCallStrategy(SRS, ORS, F[[TL]], strat F : TyL @ Ty to F', M)
+    = F' [[ applyMapsToTerm2(SRS, ORS, TL, M) ]] .
+  eq imageOfCallStrategy(SRS, ORS, CS, (strat_to`expr_(CS', Strat), TRS), M)
+    = applySubst(Strat, applyMapsToSubst(SRS, ORS, pseudoMatch(CS', CS, M, none), M)) .
+  eq imageOfCallStrategy(SRS, ORS, CS, strat_to`expr_(CS', Strat), M)
+    = applySubst(Strat, applyMapsToSubst(SRS, ORS, pseudoMatch(CS', CS, M, none), M)) .
+  eq imageOfCallStrategy(SRS, ORS, F[[TL]], TRS, M)
+    = F [[ applyMapsToTerm2(SRS, ORS, TL, M) ]]
+    [owise] .
 
   eq pseudoMatch(CS, CS', M, Subst)
     = pseudoMatchResult(pseudoMatchCS(CS, CS', M, Subst)) .
@@ -14198,88 +14238,99 @@ fmod RENAMING-SET-APPL-ON-UNIT is
       else none
       fi .
 
-  op getRightStMaps : Qid TypeList RenamingSet Module -> RenamingSet .
-  eq getRightStMaps(F, TyL, (strat F to F'), M) = (strat F to F') .
-  eq getRightStMaps(F, TyL, (strat F to F', RS), M)
-    = (strat F to F', getRightStMaps(F, TyL, RS, M)) .
-  eq getRightStMaps(F, TyL, (strat F : TyL' @ Ty to F', RS), M)
+  op getRightStratMaps : Qid TypeList RenamingSet Module -> RenamingSet .
+  eq getRightStratMaps(F, TyL, (strat F to F'), M) = (strat F to F') .
+  eq getRightStratMaps(F, TyL, (strat F to F', RS), M)
+    = (strat F to F', getRightStratMaps(F, TyL, RS, M)) .
+  eq getRightStratMaps(F, TyL, (strat F : TyL' @ Ty to F', RS), M)
     = if sameKind(M, TyL, TyL')
       then strat F : TyL' @ Ty to F'
       else none
       fi,
-      getRightStMaps(F, TyL, RS, M) .
-  eq getRightStMaps(F, TyL, (strat_to`expr_(F[[TL]], Strat), RS), M)
-    = if sameKind(M, TyL, varListSort(TL))
-      then (strat_to`expr_(F[[TL]], Strat), getRightStMaps(F, TyL, RS, M))
-      else getRightStMaps(F, TyL, RS, M)
+      getRightStratMaps(F, TyL, RS, M) .
+  eq getRightStratMaps(F, TyL, strat F : TyL' @ Ty to F', M)
+    = if sameKind(M, TyL, TyL')
+      then strat F : TyL' @ Ty to F'
+      else none
       fi .
-  eq getRightStMaps(F, TyL:[Type], RS, M) = none [owise].
+  eq getRightStratMaps(F, TyL, (strat_to`expr_(F[[TL]], Strat), RS), M)
+    = if sameKind(M, TyL, varListSort(TL))
+      then strat_to`expr_(F[[TL]], Strat)
+      else none
+      fi,
+      getRightStratMaps(F, TyL, RS, M) .
+  eq getRightStratMaps(F, TyL, strat_to`expr_(F[[TL]], Strat), M)
+    = if sameKind(M, TyL, varListSort(TL))
+      then strat_to`expr_(F[[TL]], Strat)
+      else none
+      fi .
+  eq getRightStratMaps(F, TyL:[Type], RS, M) = none [owise].
 
-  op applyMapsToStrategy : RenamingSet RenamingSet Strategy Module -> Strategy .
-  op applyMapsToStrategies : RenamingSet RenamingSet StrategyList Module -> StrategyList .
-  op applyMapsToVSL : RenamingSet RenamingSet UsingPairSet Module -> UsingPairSet .
+  op applyMapsToStrategy : RenamingSet RenamingSet RenamingSet Strategy Module -> Strategy .
+  op applyMapsToStrategies : RenamingSet RenamingSet RenamingSet StrategyList Module -> StrategyList .
+  op applyMapsToUPS : RenamingSet RenamingSet RenamingSet UsingPairSet Module -> UsingPairSet .
 
-  eq applyMapsToStrategy(SRS, ORS, F[[TL]], M)
-    = imageOfCallStrategy(SRS, ORS, F[[TL]], getRightStMaps(F, eLeastSort(M, TL), ORS, M), M) .
-  eq applyMapsToStrategy(SRS, ORS, fail, M) = fail .
-  eq applyMapsToStrategy(SRS, ORS, idle, M) = idle .
-  eq applyMapsToStrategy(SRS, ORS, all, M) = all .
-  eq applyMapsToStrategy(SRS, ORS, QI[Subst]{Strats}, M)
+  eq applyMapsToStrategy(SRS, ORS, TRS, F[[TL]], M)
+    = imageOfCallStrategy(SRS, ORS, F[[TL]], getRightStratMaps(F, eLeastSort(M, TL), TRS, M), M) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, fail, M) = fail .
+  eq applyMapsToStrategy(SRS, ORS, TRS, idle, M) = idle .
+  eq applyMapsToStrategy(SRS, ORS, TRS, all, M) = all .
+  eq applyMapsToStrategy(SRS, ORS, TRS, QI[Subst]{Strats}, M)
     = QI [ applyMapsToSubst(SRS, ORS, Subst, M) ]
-         { applyMapsToStrategies(SRS, ORS, Strats, M) } .
-  eq applyMapsToStrategy(SRS, ORS, top(Strat), M)
-    = top(applyMapsToStrategy(SRS, ORS, Strat, M)) .
-  eq applyMapsToStrategy(SRS, ORS, match T s.t. Cond, M)
+         { applyMapsToStrategies(SRS, ORS, TRS, Strats, M) } .
+  eq applyMapsToStrategy(SRS, ORS, TRS, top(Strat), M)
+    = top(applyMapsToStrategy(SRS, ORS, TRS, Strat, M)) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, match T s.t. Cond, M)
     = match applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M) .
-  eq applyMapsToStrategy(SRS, ORS, xmatch T s.t. Cond, M)
+  eq applyMapsToStrategy(SRS, ORS, TRS, xmatch T s.t. Cond, M)
     = xmatch applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M) .
-  eq applyMapsToStrategy(SRS, ORS, amatch T s.t. Cond, M)
+  eq applyMapsToStrategy(SRS, ORS, TRS, amatch T s.t. Cond, M)
     = amatch applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M) .
- ceq applyMapsToStrategy(SRS, ORS, Strat | Strat', M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) | applyMapsToStrategy(SRS, ORS, Strat', M)
-    if Strat =/= fail /\ Strat' =/= fail .
- ceq applyMapsToStrategy(SRS, ORS, Strat ; Strat', M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) ; applyMapsToStrategy(SRS, ORS, Strat', M)
-    if Strat =/= idle /\ Strat' =/= idle .
-  eq applyMapsToStrategy(SRS, ORS, Strat or-else Strat', M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) or-else applyMapsToStrategy(SRS, ORS, Strat', M) .
-  eq applyMapsToStrategy(SRS, ORS, Strat +, M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) + .
-  eq applyMapsToStrategy(SRS, ORS, Strat ? Strat' : Strat'', M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) ?
-      applyMapsToStrategy(SRS, ORS, Strat', M) :
-      applyMapsToStrategy(SRS, ORS, Strat'', M) .
-  eq applyMapsToStrategy(SRS, ORS, matchrew T s.t. Cond by VSL, M)
+  eq applyMapsToStrategy(SRS, ORS, TRS, Strat or-else Strat', M)
+    = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) or-else applyMapsToStrategy(SRS, ORS, TRS, Strat', M) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, Strat +, M)
+    = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) + .
+  eq applyMapsToStrategy(SRS, ORS, TRS, Strat ? Strat' : Strat'', M)
+    = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) ?
+      applyMapsToStrategy(SRS, ORS, TRS, Strat', M) :
+      applyMapsToStrategy(SRS, ORS, TRS, Strat'', M) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, matchrew T s.t. Cond by UPS, M)
     = matchrew applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M)
-        by applyMapsToVSL(SRS, ORS, VSL, M) .
-  eq applyMapsToStrategy(SRS, ORS, xmatchrew T s.t. Cond by VSL, M)
+        by applyMapsToUPS(SRS, ORS, TRS, UPS, M) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, xmatchrew T s.t. Cond by UPS, M)
     = xmatchrew applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M)
-        by applyMapsToVSL(SRS, ORS, VSL, M) .
-  eq applyMapsToStrategy(SRS, ORS, amatchrew T s.t. Cond by VSL, M)
+        by applyMapsToUPS(SRS, ORS, TRS, UPS, M) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, amatchrew T s.t. Cond by UPS, M)
     = amatchrew applyMapsToTerm2(SRS, ORS, T, M) s.t. applyMapsToCond(SRS, ORS, Cond, M)
-        by applyMapsToVSL(SRS, ORS, VSL, M) .
-  eq applyMapsToStrategy(SRS, ORS, one(Strat), M)
-    = one(applyMapsToStrategy(SRS, ORS, Strat, M)) .
-  eq applyMapsToStrategy(SRS, ORS, Strat *, M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) * .
-  eq applyMapsToStrategy(SRS, ORS, Strat !, M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) ! .
-  eq applyMapsToStrategy(SRS, ORS, not(Strat), M)
-    = not(applyMapsToStrategy(SRS, ORS, Strat, M)) .
-  eq applyMapsToStrategy(SRS, ORS, test(Strat), M)
-    = test(applyMapsToStrategy(SRS, ORS, Strat, M)) .
-  eq applyMapsToStrategy(SRS, ORS, try(Strat), M)
-    = try(applyMapsToStrategy(SRS, ORS, Strat, M)) .
+        by applyMapsToUPS(SRS, ORS, TRS, UPS, M) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, one(Strat), M)
+    = one(applyMapsToStrategy(SRS, ORS, TRS, Strat, M)) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, Strat *, M)
+    = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) * .
+  eq applyMapsToStrategy(SRS, ORS, TRS, Strat !, M)
+    = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) ! .
+  eq applyMapsToStrategy(SRS, ORS, TRS, not(Strat), M)
+    = not(applyMapsToStrategy(SRS, ORS, TRS, Strat, M)) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, test(Strat), M)
+    = test(applyMapsToStrategy(SRS, ORS, TRS, Strat, M)) .
+  eq applyMapsToStrategy(SRS, ORS, TRS, try(Strat), M)
+    = try(applyMapsToStrategy(SRS, ORS, TRS, Strat, M)) .
+  ceq applyMapsToStrategy(SRS, ORS, TRS, Strat | Strat', M)
+     = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) | applyMapsToStrategy(SRS, ORS, TRS, Strat', M)
+     if Strat =/= fail /\ Strat' =/= fail .
+  ceq applyMapsToStrategy(SRS, ORS, TRS, Strat ; Strat', M)
+     = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) ; applyMapsToStrategy(SRS, ORS, TRS, Strat', M)
+     if Strat =/= idle /\ Strat' =/= idle .
 
-  eq applyMapsToStrategies(SRS, ORS, (Strat, Strats), M)
-    = applyMapsToStrategy(SRS, ORS, Strat, M) .
-  eq applyMapsToStrategies(SRS, ORS, empty, M) = empty .
+  eq applyMapsToStrategies(SRS, ORS, TRS, (Strat, Strats), M)
+    = applyMapsToStrategy(SRS, ORS, TRS, Strat, M) .
+  eq applyMapsToStrategies(SRS, ORS, TRS, empty, M) = empty .
 
-  eq applyMapsToVSL(SRS, ORS, (V using Strat, VSL), M)
-    = applyMapsToVar(SRS, V) using applyMapsToStrategy(SRS, ORS, Strat, M),
-      applyMapsToVSL(SRS, ORS, VSL, M) .
-  eq applyMapsToVSL(SRS, ORS, V using Strat, M)
-    = applyMapsToVar(SRS, V) using applyMapsToStrategy(SRS, ORS, Strat, M) .
+  eq applyMapsToUPS(SRS, ORS, TRS, (V using Strat, UPS), M)
+    = applyMapsToVar(SRS, V) using applyMapsToStrategy(SRS, ORS, TRS, Strat, M),
+      applyMapsToUPS(SRS, ORS, TRS, UPS, M) .
+  eq applyMapsToUPS(SRS, ORS, TRS, V using Strat, M)
+    = applyMapsToVar(SRS, V) using applyMapsToStrategy(SRS, ORS, TRS, Strat, M) .
 
   op applySubst : StrategyList Substitution -> StrategyList .
   eq applySubst(F[[TL]], Subst) = F[[applySubst(TL, Subst)]] .
@@ -14297,12 +14348,12 @@ fmod RENAMING-SET-APPL-ON-UNIT is
   eq applySubst(Strat +, Subst) = applySubst(Strat, Subst) + .
   eq applySubst(Strat ? Strat' : Strat'', Subst)
     = applySubst(Strat, Subst) ? applySubst(Strat', Subst) : applySubst(Strat'', Subst) .
-  eq applySubst(matchrew T s.t. Cond by VSL, Subst)
-    = matchrew applySubst(T, Subst) s.t. applySubst(Cond, Subst) by applySubst(VSL, Subst) .
-  eq applySubst(xmatchrew T s.t. Cond by VSL, Subst)
-    = xmatchrew applySubst(T, Subst) s.t. applySubst(Cond, Subst) by applySubst(VSL, Subst) .
-  eq applySubst(amatchrew T s.t. Cond by VSL, Subst)
-    = amatchrew applySubst(T, Subst) s.t. applySubst(Cond, Subst) by applySubst(VSL, Subst) .
+  eq applySubst(matchrew T s.t. Cond by UPS, Subst)
+    = matchrew applySubst(T, Subst) s.t. applySubst(Cond, Subst) by applySubst(UPS, Subst) .
+  eq applySubst(xmatchrew T s.t. Cond by UPS, Subst)
+    = xmatchrew applySubst(T, Subst) s.t. applySubst(Cond, Subst) by applySubst(UPS, Subst) .
+  eq applySubst(amatchrew T s.t. Cond by UPS, Subst)
+    = amatchrew applySubst(T, Subst) s.t. applySubst(Cond, Subst) by applySubst(UPS, Subst) .
   eq applySubst(one(Strat), Subst)
     = one(applySubst(Strat, Subst)) .
   eq applySubst(Strat *, Subst)
@@ -14317,8 +14368,8 @@ fmod RENAMING-SET-APPL-ON-UNIT is
     = try(applySubst(Strat, Subst)) .
 
   op applySubst : UsingPairSet Substitution -> UsingPairSet .
-  eq applySubst((V using Strat, VSL), Subst)
-    = applySubst(V, Subst) using applySubst(Strat, Subst), applySubst(VSL, Subst) .
+  eq applySubst((V using Strat, UPS), Subst)
+    = applySubst(V, Subst) using applySubst(Strat, Subst), applySubst(UPS, Subst) .
   eq applySubst(V using Strat, Subst) = applySubst(V, Subst) using applySubst(Strat, Subst) .
 
 endfm
@@ -14943,6 +14994,7 @@ fmod INST-EXPR-EVALUATION is
 
   op prepare : SortMappingSet Qid SortSet SortSet SortSet -> SortMappingSet .
   op prepare : OpMappingSet Qid SortSet SortSet SortSet -> OpMappingSet .
+  op prepare : StratMappingSet Qid SortSet SortSet SortSet -> StratMappingSet .
 
   op prepare : TypeList Qid SortSet -> TypeList .
   op prepTerm : TermList Qid SortSet -> TermList .
@@ -14980,6 +15032,14 @@ fmod INST-EXPR-EVALUATION is
     = (attr A . qualify(X, S) to A' .
        prepare(OMS, X, SS, SS', SS'')) .
   eq prepare((none).OpMappingSet, X, SS, SS', SS'') = none .
+
+  eq prepare(strat F to F' . TMS, X, SS, SS', SS'')
+    = (strat F to F' .
+       prepare(TMS, X, SS, SS', SS'')) .
+  eq prepare(strat F : TyL @ Ty to F' . TMS, X, SS, SS', SS'')
+    = (strat F : prepare(TyL, X, SS) @ prepare(Ty, X, SS) to F' .
+       prepare(TMS, X, SS, SS', SS'')) .
+  eq prepare((none).StratMappingSet, X, SS, SS', SS'') = none .
 
   eq prepare((S TyL), X, (S ; SS)) = (qualify(X, S) prepare(TyL, X, (S ; SS))) .
   eq prepare((K TyL), X, SS) = prepare((getSort(K) TyL), X, SS) .
@@ -15217,7 +15277,8 @@ fmod INST-EXPR-EVALUATION is
          := treatPar(X :: ME, QI{PL}, VEPS, PDL'', DB) .
   ceq unitInstAux(U, M, VDS, SMS, OMS, TMS, nil, PDL, IL, IL', empty, VEPS, PDL', DB)
     = evalModule(
-        setImports(setPars(applyMapsToModule(maps2rens(SMS'), maps2rens(OMS), U, M), PDL), (prepImports(IL, VEPS) IL')),
+        setImports(setPars(applyMapsToModuleAux(maps2rens(SMS'), maps2rens(OMS), maps2rens(TMS), U, M), PDL),
+                   (prepImports(IL, VEPS) IL')),
         applyMapsToOps(maps2rens(SMS'), maps2rens(OMS), VDS, M),
         DB)
     if SMS' := (SMS
@@ -15297,7 +15358,10 @@ fmod INST-EXPR-EVALUATION is
                          getOpMappings(getView(VE, DB)),
                          X,
                          getThSorts(ME, DB), none, none) ;
-                       none ; ---- do something with strat maps
+                       prepare(
+                         getStratMappings(getView(VE, DB)),
+                         X,
+                         getThSorts(ME, DB), none, none) ;
                        getPars(getTopModule(getTo(getView(VE, DB)), DB)) ;
                        (protecting getTo(getView(VE, DB)) .) ;
                        < X ; VE > ;
@@ -15560,7 +15624,7 @@ fmod RENAMING-EXPR-EVALUATION is
   var  I : Import .
   vars IL IL' : ImportList .
   var  R : Renaming .
-  vars RS RS' RS'' RS3 : RenamingSet .
+  vars RS RS' RS'' RS3 SRS ORS TRS : RenamingSet .
   var  VEPS : Set{Tuple{ViewExpression,ViewExpression}} .
   vars X QI QI' QI'' F F' F'' L L' L'' A A' A'' : Qid .
   vars S S' S'' C C' C'' : Sort .
@@ -15587,6 +15651,7 @@ fmod RENAMING-EXPR-EVALUATION is
   var  HkL : HookList .
   var  B : Bool .
   var  St : String .
+  var  StratDcls : StratDeclSet .
 
 *** The function \texttt{crtCopyRen} creates a copy of the part of the
 *** structure of the specified module which is affected by the renaming,
@@ -15618,15 +15683,15 @@ fmod RENAMING-EXPR-EVALUATION is
              getImports(getTopModule(ME, DB)),
              nil,
              setName(
-               applyMapsToModuleAux(RS'', RS3,
+               applyMapsToModuleAux(SRS, ORS, TRS,
                  getTopModule(ME, DB), getFlatModule(ME, DB)),
                _*`(_`)(ME, RS')),
-             applyMapsToOps(RS'', RS3,
+             applyMapsToOps(SRS, ORS,
                getVars(ME, DB), getFlatModule(ME, DB)),
              DB)
       fi
     if RS' := canMaps(RS, getFlatModule(ME, DB))
-       /\ < RS'' ; RS3 > := splitMaps(RS') .
+       /\ < SRS ; ORS ; TRS > := splitMaps(RS') .
 
   op canMaps : RenamingSet Module -> RenamingSet .
   eq canMaps(op F : TyL -> Ty to F' [AtS], M)
@@ -15638,6 +15703,11 @@ fmod RENAMING-EXPR-EVALUATION is
     = msg F : canKinds(TyL, M) -> canKinds(Ty, M) to F' .
   eq canMaps((msg F : TyL -> Ty to F', RS), M)
     = (msg F : canKinds(TyL, M) -> canKinds(Ty, M) to F',
+       canMaps(RS, M)) .
+  eq canMaps(strat F : TyL @ Ty to F', M)
+    = strat F : canKinds(TyL, M) @ canKinds(Ty, M) to F' .
+  eq canMaps((strat F : TyL @ Ty to F', RS), M)
+    = (strat F : canKinds(TyL, M) @ canKinds(Ty, M) to F',
        canMaps(RS, M)) .
   eq canMaps(R:Renaming, M) = R:Renaming [owise] .
   eq canMaps((R:Renaming, RS), M)
@@ -15710,6 +15780,7 @@ fmod RENAMING-EXPR-EVALUATION is
   eq fixMaps2((op F : TyL -> Ty to F' [AtS], RS), M, CDS, MDS)
     = (opsAffd(getOps(M), op F : TyL -> Ty to F' [AtS], M),
        fixMaps2(RS, M, CDS, MDS)) .
+
   eq fixMaps2(msg F to F', M, CDS, MDS)
     = msgsAffd(MDS, msg F to F', M) .
   eq fixMaps2((msg F to F', RS), M, CDS, MDS)
@@ -15719,6 +15790,18 @@ fmod RENAMING-EXPR-EVALUATION is
   eq fixMaps2((msg F : TyL -> Ty to F', RS), M, CDS, MDS)
     = (msgsAffd(MDS, msg F : TyL -> Ty to F', M),
        fixMaps2(RS, M, CDS, MDS)) .
+
+  eq fixMaps2(strat F to F', M, CDS, MDS)
+   = stratsAffd(getStratDcls(M), strat F to F', M) .
+  eq fixMaps2((strat F to F', RS), M, CDS, MDS)
+   = stratsAffd(getStratDcls(M), strat F to F', M),
+     fixMaps2(RS, M, CDS, MDS) .
+  eq fixMaps2(strat F : TyL @ Ty to F', M, CDS, MDS)
+   = stratsAffd(getStratDcls(M), strat F : TyL @ Ty to F', M) .
+  eq fixMaps2((strat F : TyL @ Ty to F', RS), M, CDS, MDS)
+   = stratsAffd(getStratDcls(M), strat F : TyL @ Ty to F', M),
+     fixMaps2(RS, M, CDS, MDS) .
+
   eq fixMaps2(sort Ty to Ty', M, CDS, MDS)
     = if sortsAffd(getSorts(M), sort Ty to Ty')
       then (sort Ty to Ty')
@@ -15894,6 +15977,25 @@ fmod RENAMING-EXPR-EVALUATION is
             opsAffdAux(op F : TyL -> Ty [AtS] . OPDS, F, TLS, F', AtS', M))
       fi .
   eq opsAffdAux(OPDS, F, TLS, F', AtS, M) = none [owise] .
+
+  op stratsAffd : StratDeclSet Renaming Module -> RenamingSet .
+  op stratsAffdAux : StratDeclSet Qid TypeListSet Qid Module -> RenamingSet .
+
+  eq stratsAffd(strat F : TyL @ Ty [AtS] . StratDcls, strat F to F', M)
+    = strat F to F' .
+  eq stratsAffd(StratDcls, strat F : TyL @ Ty to F', M)
+    = stratsAffdAux(StratDcls, F, fixKinds(TyL Ty, M), F', M) .
+  eq stratsAffd(StratDcls, RS:[RenamingSet], M) = none [owise] .
+
+  eq stratsAffdAux(strat F : TyL @ Ty [AtS] . StratDcls,
+       F, (TyL' Ty') ; TLS, F', M)
+    = if sameKind(M, (TyL Ty), (TyL' Ty'))
+      then (strat F : TyL' @ Ty' to F',
+            stratsAffdAux(StratDcls, F, TLS, F', M))
+      else (stratsAffdAux(StratDcls, F, (TyL' Ty') ; TLS, F', M),
+            stratsAffdAux(strat F : TyL @ Ty [AtS] . StratDcls, F, TLS, F', M))
+      fi .
+  eq stratsAffdAux(StratDcls, F, TLS, F', M) = none [owise] .
 
 *** The predicate \texttt{modAffd} checks whether the module with the
 *** name given as first argument in the database is affected by the set of maps
@@ -16087,6 +16189,18 @@ fmod RENAMING-EXPR-EVALUATION is
   eq maps2QidList((msg F : TyL -> Ty to F'))
     = ('msg F ': typeList2QidList(TyL) '-> Ty 'to F') .
 
+  eq maps2QidList(((strat F to F'), RS))
+    = ('strat F 'to F' '`, '\s maps2QidList(RS))
+    [owise] .
+  eq maps2QidList((strat F to F')) = ('msg F 'to F') .
+
+  eq maps2QidList(((strat F : TyL  @ Ty to F'), RS))
+    = ('strat F ': typeList2QidList(TyL) '@ Ty 'to F' '`, '\s
+       maps2QidList(RS))
+    [owise] .
+  eq maps2QidList((strat F : TyL @ Ty to F'))
+    = ('strat F ': typeList2QidList(TyL) '@ Ty 'to F') .
+
   eq maps2QidList(((class S to S'), RS))
     = ('class S 'to S' '`, '\s maps2QidList(RS))
     [owise] .
@@ -16225,6 +16339,14 @@ fmod RENAMING-EXPR-EVALUATION is
   eq prepare(((msg F : TyL -> Ty to F'), RS), VEPS)
     = ((msg F : prepare(TyL, VEPS) -> prepSort(Ty, VEPS) to F'),
        prepare(RS, VEPS)) .
+  eq prepare(strat F to F', VEPS) = (strat F to F') .
+  eq prepare((strat F to F', RS), VEPS)
+    = strat F to F', prepare(RS, VEPS) .
+  eq prepare(strat F : TyL @ Ty to F', VEPS)
+    = strat F : prepare(TyL, VEPS) @ prepSort(Ty, VEPS) to F' .
+  eq prepare((strat F : TyL @ Ty to F', RS), VEPS)
+    = strat F : prepare(TyL, VEPS) @ prepSort(Ty, VEPS) to F',
+      prepare(RS, VEPS) .
   eq prepare((none).RenamingSet, VEPS) = none .
 
   eq prepare((Ty TyL), VEPS) = (prepSort(Ty, VEPS) prepare(TyL, VEPS)) .
@@ -17625,6 +17747,15 @@ fmod DECL-META-PRETTY-PRINT is
   eq metaPrettyPrintStrategy(M:Module, Strat:Strategy)
    = metaPrettyPrintStrategy(M:Module, Strat:Strategy, mixfix flat format number rat) .
 
+  eq metaPrettyPrint(
+       smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm,
+       T,
+       POs:PrintOptionSet)
+   = metaPrettyPrint(
+       mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm,
+       T,
+       POs:PrintOptionSet) .
+
   op eMetaPrettyPrint : Sort -> QidList .
   op eMetaPrettyPrint : SortSet -> QidList .
   op eMetaPrettyPrint : TypeList -> QidList .
@@ -17685,6 +17816,8 @@ fmod DECL-META-PRETTY-PRINT is
   var  CS : CallStrategy .
   var  Strat : Strategy .
   var  TL : TermList .
+  var  ME : ModuleExpression .
+  var  IL : ImportList .
 
   --- eq eMetaPrettyPrint(Ty) = Ty .
 
@@ -18974,6 +19107,10 @@ endfm
 *** command, an auxiliary function \texttt{procCommand2} is introduced,
 *** returning the term resulting from the evaluation of the command.
 
+view Strategy from TRIV to META-LEVEL is
+  sort Elt to Strategy .
+endv
+
 fmod COMMAND-PROCESSING is
   pr AX-COHERENCE-COMPLETION .
   pr UNIT-PROCESSING .
@@ -19045,7 +19182,7 @@ fmod COMMAND-PROCESSING is
   var  QIL : QidList .
   var  SS : SortSet .
   var  SSDS : SubsortDeclSet .
-  vars VS VDS OPDS : OpDeclSet .
+  vars VS VDS VDS' OPDS : OpDeclSet .
   var  OPDS? : [OpDeclSet] .
   var  MAS : MembAxSet .
   var  EqS : EquationSet .
@@ -19056,6 +19193,7 @@ fmod COMMAND-PROCESSING is
   var  TM : [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
   var  TMVB : [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
   var  TMVBN : [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
+  var  TMSBOBD : [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] .
   var  T? : [Term] .
   var  RP : [ResultPair] .
   var  RT : [ResultTriple] .
@@ -19065,7 +19203,9 @@ fmod COMMAND-PROCESSING is
   var  Sb : Substitution .
   var  UP? : [UnificationPair] .
   var  UP : UnificationProblem .
-  var  St : Strategy .
+  vars St Strat : Strategy .
+  var  SrwOpt : SrewriteOption .
+  var  RP? : [ResultPair] .
 
 ----  sorts Tuple{Term,Module,Bool,OpDeclSet,Database}
 ----        Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
@@ -19078,6 +19218,7 @@ fmod COMMAND-PROCESSING is
 ----       -> Tuple{Term,Module,OpDeclSet,Bound,Nat} .
   op tupleTMBODerror : QidList -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
   op tupleTMBOBDerror : QidList -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
+  op tupleTMSBOBDerror : QidList -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] .
   op tupleTMOBNerror : QidList -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
 
   pr 5TUPLE{Term,Module,Bool,OpDeclSet,Database}
@@ -19102,9 +19243,19 @@ fmod COMMAND-PROCESSING is
           op p3_ to getVars,
           op p4_ to getBound,
           op p5_ to getNat) .
+  pr 7TUPLE{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}
+       * (op ((_,_,_,_,_,_,_)) to `{_`,_`,_`,_`,_`,_`,_`},
+          op p1_ to getTerm,
+          op p2_ to getModule,
+          op p3_ to getStrategy,
+          op p4_ to getBool,
+          op p5_ to getVars,
+          op p6_ to getBound,
+          op p7_ to getDatabase) .
 
-  op boundError  : QidList -> [Bound] .
+  op boundError : QidList -> [Bound] .
 
+---(
   eq getTerm({T, M, B, VDS, DB}) = T .
   eq getTerm(tupleTMBODerror(QIL)) = qidError(QIL) .
   eq getModule({T, M, B, VDS, DB}) = M .
@@ -19128,6 +19279,7 @@ fmod COMMAND-PROCESSING is
   eq getVars({T, M, VDS, D, I}) = VDS .
   eq getBound({T, M, VDS, D, I}) = D .
   eq getNat({T, M, VDS, D, I}) = I .
+---)
 
   ---- procLoad
 
@@ -19164,7 +19316,8 @@ fmod COMMAND-PROCESSING is
   op solveBubblesRed : Term Module Bool OpDeclSet Database
        -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
   op solveBubblesRed2 : Term Database -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op solveBubblesRed3 : Term Module ModuleExpression OpDeclSet Database -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
+  op solveBubblesRed3 : Term Module ModuleExpression OpDeclSet Database
+       -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
 
   op procRew : ModuleExpression Module Term OpDeclSet Database -> QidList .
   op solveBubblesRew :
@@ -19176,13 +19329,18 @@ fmod COMMAND-PROCESSING is
   op solveBubblesFrew : Term Module Bool Bound Nat OpDeclSet Database -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
   op solveBubblesFrew2 : Term Module Bool Nat OpDeclSet Database -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
 
-  op procSRew : ModuleExpression Module Term OpDeclSet Database -> QidList .
-  op procDSRew : ModuleExpression Module Term OpDeclSet Database -> QidList .
-  op solveBubblesSRew : Term Module Bool Strategy Bound OpDeclSet Database -> QidList .
-  op solveBubblesSRew2 : Term Module Bool Strategy Bound OpDeclSet Database -> QidList .
-  op solveBubblesSRew3 : Term Module Bool Strategy Bound OpDeclSet Database -> QidList .
-  op procSRew2 : Module Term Strategy Bound -> QidList .
-  op procSRew3 : Module Term Strategy Bound Nat -> QidList .
+  sort SrewriteOption .
+  ops breadthFirst depthFirst : -> SrewriteOption [ctor] .
+
+  op procSrew : ModuleExpression Module Term OpDeclSet Database SrewriteOption -> QidList .
+  op solveBubblesSrew : Term Module Bool Strategy Bound OpDeclSet Database
+       -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}]  .
+  op solveBubblesSrew2 : Term Module Bool Strategy Bound OpDeclSet Database
+       -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}]  .
+  op solveBubblesSrew3 : Term Module Bool Strategy Bound OpDeclSet Database
+       -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}]  .
+  op procSrew2 : Module Term Strategy Bound SrewriteOption -> QidList .
+  op procSrew3 : Module Term Strategy Bound Nat SrewriteOption -> QidList .
 
   op procSearch : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
   op solveBubblesSearchL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
@@ -19279,8 +19437,7 @@ fmod COMMAND-PROCESSING is
   op procRedUp : ModuleExpression Module Term OpDeclSet Database -> Term .
   op procRewUp : ModuleExpression Module Term Bound OpDeclSet Database -> Term .
   op procFrewUp : ModuleExpression Module Term Bound Nat OpDeclSet Database -> Term .
-  op procSRewUp : ModuleExpression Module Term Bound OpDeclSet Database -> Term .
-  op procDSRewUp : ModuleExpression Module Term Bound OpDeclSet Database -> Term .
+  op procSrewUp : ModuleExpression Module Term Bound OpDeclSet Database SrewriteOption -> Term .
 
 *** Processing of commands.
 
@@ -19335,9 +19492,9 @@ fmod COMMAND-PROCESSING is
   eq procCommand('dsrewrite_.[T], ME, M, VS, DB)
     = procCommand('dsrew_.[T], ME, M, VS, DB) .
   eq procCommand('srew_.[T], ME, M, VS, DB)
-    = procSRew(ME, M, T, VS, DB) .
+    = procSrew(ME, M, T, VS, DB, breadthFirst) .
   eq procCommand('dsrew_.[T], ME, M, VS, DB)
-    = procDSRew(ME, M, T, VS, DB) .
+    = procSrew(ME, M, T, VS, DB, depthFirst) .
 
   eq procCommand('search_=>1_.[T, T'], ME, M, VS, DB)
     = procSearch(ME, M, T, T', '+, unbounded, 1, VS, DB) .
@@ -19410,13 +19567,13 @@ fmod COMMAND-PROCESSING is
   eq procCommandUp(ME, M, 'frewrite_.['ububble[T]], VDS, DB)
     = downTerm(procFrewUp(ME, M, 'bubble[T], unbounded, 0, VDS, DB)) .
   eq procCommandUp(ME, M, 'srew_.['ububble[T]], VDS, DB)
-    = downTerm(procSRewUp(ME, M, 'bubble[T], unbounded, VDS, DB)) .
+    = downTerm(procSrewUp(ME, M, 'bubble[T], unbounded, VDS, DB, breadthFirst)) .
   eq procCommandUp(ME, M, 'srewrite_.['ububble[T]], VDS, DB)
-    = downTerm(procSRewUp(ME, M, 'bubble[T], unbounded, VDS, DB)) .
+    = downTerm(procSrewUp(ME, M, 'bubble[T], unbounded, VDS, DB, breadthFirst)) .
   eq procCommandUp(ME, M, 'dsrew_.['ububble[T]], VDS, DB)
-    = downTerm(procDSRewUp(ME, M, 'bubble[T], unbounded, VDS, DB)) .
+    = downTerm(procSrewUp(ME, M, 'bubble[T], unbounded, VDS, DB, depthFirst)) .
   eq procCommandUp(ME, M, 'dsrewrite_.['ububble[T]], VDS, DB)
-    = downTerm(procDSRewUp(ME, M, 'bubble[T], unbounded, VDS, DB)) .
+    = downTerm(procSrewUp(ME, M, 'bubble[T], unbounded, VDS, DB, depthFirst)) .
 
   ceq procRedUp(ME, M, T, VDS, DB)
     = if metaReduce(getModule(TM), getTerm(TM)) :: ResultPair
@@ -19436,6 +19593,19 @@ fmod COMMAND-PROCESSING is
     if TMVB := solveBubblesRew(T, M,
                 included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
                 D, VDS, DB) .
+
+  ceq procSrewUp(ME, M, T, D, VDS, DB, SrwOpt)
+    = if RP? :: ResultPair
+      then getTerm(RP?)
+      else qidError('\r 'Error: '\o 'Incorrect 'command. '\n)
+      fi
+    if TMSBOBD := solveBubblesSrew(T, M,
+                    included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
+                    idle, D, VDS, DB)
+    /\ RP? := if SrwOpt == breadthFirst
+              then metaSrewrite(getModule(TMSBOBD), getTerm(TMSBOBD), getStrategy(TMSBOBD), getBound(TMSBOBD))
+              else metaDsrewrite(getModule(TMSBOBD), getTerm(TMSBOBD), getStrategy(TMSBOBD), getBound(TMSBOBD))
+              fi .
 
   ceq procFrewUp(ME, M, T, D, I, VDS, DB)
     = if metaFrewrite(
@@ -19606,66 +19776,114 @@ fmod COMMAND-PROCESSING is
         addOps((op '`[_`]_. : '@Token@ '@UBubble@ -> '@RewNuPart@ [none] .),
           BUBBLES)) .
 
-----  eq metaRewrite(fmod QI is IL sorts SS . SSDS OPDS MAS EqS endfm, T, D)
-----    = metaReduce(fmod QI is IL sorts SS . SSDS OPDS MAS EqS endfm, T) .
-----  eq metaRewrite(M, T, 0) = {T, leastSort(M, T)} .
-
   *** SREW
 
-  eq procSRew(ME, M, T, VDS, DB)
-    = solveBubblesSRew(T, M,
-        included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
-        idle, unbounded, VDS, DB).
-  eq procSRew(ME, unitError(QIL), T, VDS, DB) = qidError(QIL) .
+ ceq procSrew(ME, M, T, VDS, DB, SrwOpt)
+    = procSrew2(M', T', Strat, D, SrwOpt)
+    if { T', M', Strat, B, VDS', D, DB' }
+         := solveBubblesSrew(T, M,
+              included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
+              idle, unbounded, VDS, DB) .
+  eq procSrew(ME, unitError(QIL), T, VDS, DB, SrwOpt) = qidError(QIL) .
 
-  op GRAMMAR-SREW : -> FModule [memo] .
-  eq GRAMMAR-SREW
-    = addSorts('@SRewNuPart@ ; '@Token@ ; '@SortToken@ ; '@ViewToken@ ;
-               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@ ;
-               '@EqLBubble@ ; '@RlLBubble@ ; '@SdLBubble@ ; '@RCBubble@ ; '@RBubble@,
-        addOps((op '_using_. : '@StBubble@ '@UBubble@ -> '@SRewNuPart@ [none] .),
-          BUBBLES)) .
-
-  eq solveBubblesSRew('ububble[T], M, B, St, D, VDS, DB)
-    = solveBubblesSRew('bubble[T], M, B, St, D, VDS, DB) .
-  eq solveBubblesSRew('bubble[QI], M, B, St, D, VDS, DB)
+  eq solveBubblesSrew('ububble[T], M, B, St, D, VDS, DB)
+    = solveBubblesSrew('bubble[T], M, B, St, D, VDS, DB) .
+  eq solveBubblesSrew('bubble[QI], M, B, St, D, VDS, DB)
     = if solveBubbles('bubble[QI], M, B, VDS, DB) :: Term
-      then procSRew2(M, solveBubbles('bubble[QI], M, B, VDS, DB), St, D)
-      else ('\r 'Error: '\o 'no 'parsing 'for downQidList(QI) '\n)
+      then { solveBubbles('bubble[QI], M, B, VDS, DB), M, St, B, VDS, D, DB }
+      else tupleTMSBOBDerror('\r 'Error: '\o 'no 'parsing 'for downQidList(QI) '\n)
       fi .
-  eq solveBubblesSRew('bubble['__[TL]], M, B, St, D, VDS, DB)
+  eq solveBubblesSrew('bubble['__[TL]], M, B, St, D, VDS, DB)
     = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
-      then procSRew2(M, solveBubbles('bubble['__[TL]], M, B, VDS, DB), St, D)
+      then { solveBubbles('bubble['__[TL]], M, B, VDS, DB), M, St, B, VDS, D, DB }
       else if metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@) :: ResultPair
-           then solveBubblesSRew2(
+           then solveBubblesSrew2(
                   getTerm(metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)),
                   M, B, St, D, VDS, DB)
-           else solveBubblesSRew3(
-                  getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SRewNuPart@)),
+           else solveBubblesSrew3(
+                  getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@)),
                   M, B, St, D, VDS, DB)
            fi
       fi .
 
-  eq solveBubblesSRew2('`[_`]_.['token[T], 'ububble['__[TL]]], M, B, St, D, VDS, DB)
+  eq solveBubblesSrew2('`[_`]_.['token[T], 'ububble['__[TL]]], M, B, St, D, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
-         and-then metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SRewNuPart@) :: ResultPair
-      then solveBubblesSRew3(
-             getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SRewNuPart@)),
+         and-then metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@) :: ResultPair
+      then solveBubblesSrew3(
+             getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@)),
              M, B, St, downNat(downMetaNat(T)), VDS, DB)
+      else tupleTMSBOBDerror('\r 'Error: '\o 'no 'parsing 'for downQidList('__[TL, ''..Qid]) '\n)
+      fi .
+
+  eq solveBubblesSrew3('_using_.['stbubble[T], 'ububble[T']], M, B, St, D, VDS, DB)
+    = if metaParseStrategy(M, vars(VDS), downQidList(T')) :: Strategy
+         and-then solveBubblesRed('bubble[T], M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+      then { getTerm(solveBubblesRed('bubble[T], M, B, VDS, DB)),
+             getModule(solveBubblesRed('bubble[T], M, B, VDS, DB)),
+             metaParseStrategy(M, vars(VDS), downQidList(T')),
+             B,
+             VDS,
+             D,
+             DB }
+      else tupleTMSBOBDerror('\r 'Error: '\o 'Incorrect 'command. '\n)
+      fi .
+
+  op GRAMMAR-SREW : -> FModule [memo] .
+  eq GRAMMAR-SREW
+    = addSorts('@SrewNuPart@ ; '@Token@ ; '@SortToken@ ; '@ViewToken@ ;
+               '@NeTokenList@ ; '@Bubble@ ; '@UBubble@ ; '@StBubble@ ;
+               '@EqLBubble@ ; '@RlLBubble@ ; '@SdLBubble@ ; '@RCBubble@ ; '@RBubble@,
+        addOps((op '_using_. : '@StBubble@ '@UBubble@ -> '@SrewNuPart@ [none] .),
+          BUBBLES)) .
+
+---(
+  eq procSrew(ME, M, T, VDS, DB, SrwOpt)
+    = solveBubblesSrew(T, M,
+        included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
+        idle, unbounded, VDS, DB, SrwOpt).
+  eq procSrew(ME, unitError(QIL), T, VDS, DB, SrwOpt) = qidError(QIL) .
+
+  eq solveBubblesSrew('ububble[T], M, B, St, D, VDS, DB, SrwOpt)
+    = solveBubblesSrew('bubble[T], M, B, St, D, VDS, DB, SrwOpt) .
+  eq solveBubblesSrew('bubble[QI], M, B, St, D, VDS, DB, SrwOpt)
+    = if solveBubbles('bubble[QI], M, B, VDS, DB) :: Term
+        then procSrew2(M, solveBubbles('bubble[QI], M, B, VDS, DB), St, D, SrwOpt)
+      else ('\r 'Error: '\o 'no 'parsing 'for downQidList(QI) '\n)
+      fi .
+  eq solveBubblesSrew('bubble['__[TL]], M, B, St, D, VDS, DB, SrwOpt)
+    = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
+      then procSrew2(M, solveBubbles('bubble['__[TL]], M, B, VDS, DB), St, D, SrwOpt)
+      else if metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@) :: ResultPair
+           then solveBubblesSrew2(
+                  getTerm(metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)),
+                  M, B, St, D, VDS, DB, SrwOpt)
+           else solveBubblesSrew3(
+                  getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@)),
+                  M, B, St, D, VDS, DB, SrwOpt)
+           fi
+      fi .
+
+  eq solveBubblesSrew2('`[_`]_.['token[T], 'ububble['__[TL]]], M, B, St, D, VDS, DB, SrwOpt)
+    = if downNat(downMetaNat(T)) :: Nat
+         and-then metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@) :: ResultPair
+      then solveBubblesSrew3(
+             getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@)),
+             M, B, St, downNat(downMetaNat(T)), VDS, DB, SrwOpt)
       else ('\r 'Error: '\o 'no 'parsing 'for downQidList('__[TL, ''..Qid]) '\n)
       fi .
 
-  eq solveBubblesSRew3('_using_.['stbubble[T], 'ububble[T']], M, B, St, D, VDS, DB)
+  eq solveBubblesSrew3('_using_.['stbubble[T], 'ububble[T']], M, B, St, D, VDS, DB, SrwOpt)
     = if metaParseStrategy(M, vars(VDS), downQidList(T')) :: Strategy
          and-then solveBubblesRed('bubble[T], M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
-      then procSRew2(getModule(solveBubblesRed('bubble[T], M, B, VDS, DB)),
+      then procSrew2(getModule(solveBubblesRed('bubble[T], M, B, VDS, DB)),
                      getTerm(solveBubblesRed('bubble[T], M, B, VDS, DB)),
-                     metaParseStrategy(M, vars(VDS), downQidList(T')), D)
+                     metaParseStrategy(M, vars(VDS), downQidList(T')), D, SrwOpt)
       else ('\r 'Error: '\o 'Incorrect 'command. '\n)
       fi .
+---)
 
-  ceq procSRew2(M, T, St, D)
-    = ('srewrite
+  ceq procSrew2(M, T, St, D, SrwOpt)
+    = (if SrwOpt == breadthFirst then 'srewrite else 'dsrewrite fi
           if D == unbounded
           then nil
           else '\s '`[ qid(string(D, 10)) '`] '\s
@@ -19679,24 +19897,24 @@ fmod COMMAND-PROCESSING is
             '\b 'result '\o '\s eMetaPrettyPrint(getType(RP))
             '\s '\b ': '\o '\n '\s '\s
             eMetaPrettyPrint(M, getTerm(RP)) '\n '\n)
-            procSRew3(M, T, St, D, 1)
+            procSrew3(M, T, St, D, 1, SrwOpt)
       else ('No 'solution. '\n)
       fi)
-    if RP := metaSrewrite(M, T, St, 0) .
+    if RP := if SrwOpt == breadthFirst then metaSrewrite(M, T, St, 0) else metaDsrewrite(M, T, St, 0) fi .
 
-  ceq procSRew3(M, T, St, D, I)
+  ceq procSrew3(M, T, St, D, I, SrwOpt)
     = if D == unbounded or-else (D == 0 or-else I < D)
       then if RP :: ResultPair
            then ('Solution qid(string(I + 1, 10)) '\n
                  '\b 'result '\o '\s eMetaPrettyPrint(getType(RP))
                  '\s '\b ': '\o '\n '\s '\s
                  eMetaPrettyPrint(M, getTerm(RP)) '\n '\n)
-                 procSRew3(M, T, St, D, s I)
+                 procSrew3(M, T, St, D, s I, SrwOpt)
            else ('No 'more 'solutions. '\n)
            fi
       else nil
       fi
-    if RP := metaSrewrite(M, T, St, I) .
+    if RP := if SrwOpt == breadthFirst then metaSrewrite(M, T, St, I) else metaDsrewrite(M, T, St, I) fi .
 
   *** FREW
 

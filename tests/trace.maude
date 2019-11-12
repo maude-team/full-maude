@@ -1,8 +1,8 @@
-set trace on .
-set trace select off .
+set trace off .
+set trace select on .
 trace select ----solveBubblesCond
              ----solveBubbles
-             ----metaParseCallStrategy
+             ----metaParseStrategy
              ----procModule1
              ----procModule2
              ----procModule3
@@ -13,7 +13,8 @@ trace select ----solveBubblesCond
              ----evalPreModule2
              ----evalPreModule3
              ----procModule4
-             ----evalModExp
+             evalModExp
+             crtCopyRen
              ----unitInst
              ----unitInstAux
              ----evalModule
@@ -30,6 +31,19 @@ trace select ----solveBubblesCond
              ----prepParImports
              ----setName
              ----applyMapsToModule
+             ----applyMapsToModuleAux
+             ----applyMapsToStratDcls
+             ----applyMapsToStratDcl
+             ----applyMapsToStratDefs
+             ----applyMapsToStratDef
+             ----applyMapsToStrategy
+             ----imageOfCallStrategy
+             ----getRightStratMaps
+             ----procSrew
+             ----procSrew2
+             ----solveBubblesSrew
+             ----solveBubblesSrew2
+             ----solveBubblesSrew3
              ----maps2rens
              ----breakMb
              ----breakMbAux
@@ -57,16 +71,11 @@ trace select ----solveBubblesCond
              ----getFlatModule
              ----getFlatModuleNeg
              ----getVars
-             metaPrettyPrintStrategy
+             ----metaPrettyPrintStrategy
              .
-set print conceal off .
+set print conceal on .
 print conceal fmod_is_sorts_.____endfm
               mod_is_sorts_._____endm
-              ----smod_is_sorts_._______endsm
+              smod_is_sorts_._______endsm
               db
               .
-eof
-
-normalize
-createCopy
-prepParImports
