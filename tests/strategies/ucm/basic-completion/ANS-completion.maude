@@ -1,0 +1,81 @@
+***
+*** Basic completion strategies
+*** ANS completion (Lescanne89, Figure 3)
+***
+
+sload completion-rules
+
+smod ANS-COMPLETION-STRAT{X :: MODULE-AND-ORDER} is
+	pr COMPLETION{X} .
+	pr PARTITION-AUX{X} .
+
+	strat ANS-COMP @ System .
+	*** The strategies arguments represents the sets N, C, T and S of
+	*** ANS-completion. A is the rest of the rules in the state.
+	strats ANS-COMP success simplify-rules orient deduce
+	       internal-deduction new-loop : RlS RlS RlS RlS @ System .
+
+	var  e                       : Eq .
+	vars r r' rS                 : Rl .
+	vars E E' F                  : EqS .
+	vars R R' A N N' C T T' S QR : RlS .
+	vars s t                     : Term .
+	var  Sys Sys'                : System .
+
+	sd ANS-COMP := ANS-COMP(mtRlS, mtRlS, mtRlS, mtRlS) .
+
+	sd ANS-COMP(N, C, T, S) :=
+		success(N, C, T, S)			or-else
+		simplify-rules(N, C, T, S)		or-else
+		(match < e E, R > ?
+		  orient(N, C, T, S) : (
+		    deduce(N, C, T, S)			or-else
+		    internal-deduction(N, C, T, S)	or-else
+		    new-loop(N, C, T, S)
+		  )
+		) .
+
+	*** The procedure succeeds if the equations and rule sets but A and N are empty
+	sd success(N, mtRlS, mtRlS, mtRlS) := match < mtEqS, R > .
+
+	sd simplify-rules(N, C, T, rS) :=
+		matchrew Sys s.t. < E, R > := Sys by Sys using (
+		  *** Try to simplify a rule. On success, probe the state to
+		  *** find what changed and possibly update T. If no rule
+		  *** can be simplified, move S to T and continue.
+		  (L-Simplify[R <- rS] | R-Simplify[R <- rS]) ?
+		    matchrew Sys' s.t. < E', R' > := Sys' by Sys' using
+		      simplify-rules(combine(N, R, R'),
+		                     combine(C, R, R'),
+		                     combine(T, R, R'),
+		                     rS) :
+		    ANS-COMP(N, C, T rS, mtRlS)
+		) .
+
+	sd orient(N, C, T, mtRlS) :=
+		*** Simplify equations exhaustively
+		(Delete | Simplify) ! ;
+		*** If there is any equation left, orient it and add the rule to S
+		(match < mtEqS, R > ? ANS-COMP(N, C, T, mtRlS) :
+		  matchrew Sys s.t. < s =. t E, R > := Sys /\ s > t by Sys using (
+		    Orient[E <- E] ;
+		    ANS-COMP(N, C, T, s -> t)
+		  )
+		) .
+
+	csd deduce(N, r', T, mtRlS) := Deduce[r <- r', R <- r] ;
+	                               ANS-COMP(N', r', T, mtRlS)
+	if r := least-rule(N) /\ r N' := N .
+
+	sd internal-deduction(mtRlS, r, T, mtRlS) :=
+		Deduce[r <- r, R <- r] ;
+		*** Move A and C to N (thus N = R \ T)
+		matchrew Sys s.t. < E, R > := Sys by Sys using
+		  ANS-COMP(diff(R, T), mtRlS, T, mtRlS) .	*** AC2N
+
+	csd new-loop(N, mtRlS, T, mtRlS) :=
+		*** Move A to N and put the least rule from T in C
+		matchrew Sys s.t. < mtEqS, R > := Sys by Sys using
+		  ANS-COMP(diff(R, T), r, T', mtRlS) *** AN
+	if r := least-rule(T) /\ r T' := T .
+endsm

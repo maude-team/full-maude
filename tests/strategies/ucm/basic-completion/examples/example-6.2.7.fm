@@ -1,0 +1,70 @@
+***
+*** Basic completion strategies
+*** Example 6.2.7
+***
+
+sload all-completions	*** Suffix -old for the old version
+sload lpo.maude
+
+fmod EX627-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+
+	eq 'f >> 'g = true .
+endfm
+
+view Ex627Order from STRICT-ORDER to EX627-ORDER is
+	sort Qid to Qid .
+endv
+
+view Ex627 from MODULE-AND-ORDER to LPO{Ex627Order} + META-MODULE is
+	*** Module
+	op MOD to term (fmod 'M is
+		         protecting 'BOOL .
+	                 sorts 'S .
+	                 none
+	                 op 'g : 'S -> 'S [none] .
+	                 op 'f : 'S -> 'S [none] .
+	                 none
+	                 none
+	                endfm) .
+
+	*** Term order
+	var T T' : Term .
+	op T > T' to term T >lpo T' .
+endv
+
+fmod EX627 is
+	pr EQS-RULES{ForgetOrder}{Ex627} .
+
+	op eqs : -> EqS .
+	eq eqs = ('f['f['x:S]] =. 'g['x:S]) .
+endfm
+
+smod EX627-STRAT is
+	pr EX627 .
+	pr ALL-COMPLETIONS{Ex627} .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX627-STRAT .)
+
+*** Common solution
+***	< mtEqS,'f['f['x:S]] -> 'g['x:S] 'f['g['x:S]] -> 'g['f['x:S]] >
+
+*** with the basic one (Knuth-Bendix)
+(srew < eqs, mtRlS > using compl .)
+*** rewrites: 6944 in 6ms cpu (6ms real) (1046571 rewrites/second)
+
+*** with N-Completion
+(srew < eqs, mtRlS > using N-COMP .)
+*** rewrites: 2280 in 3ms cpu (2ms real) (683863 rewrites/second)
+
+*** with S-Completion
+(srew < eqs, mtRlS > using S-COMP .)
+*** rewrites: 2253 in 0ms cpu (3ms real) (~ rewrites/second)
+
+*** with ANS-Completion
+(srew < mtRlS, mtRlS, mtRlS, mtRlS, mtRlS, eqs > using ANS-COMP .)
+*** rewrites: 2253 in 3ms cpu (3ms real) (675764 rewrites/second)

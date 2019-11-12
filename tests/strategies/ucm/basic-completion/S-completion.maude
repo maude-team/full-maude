@@ -1,0 +1,65 @@
+***
+*** Basic completion strategies
+*** S-completion (Lescanne89, Figure 2)
+***
+
+sload completion-rules
+
+smod S-COMPLETION-STRAT{X :: MODULE-AND-ORDER} is
+	protecting COMPLETION{X} .
+	protecting PARTITION-AUX{X} .
+
+	strats S-COMP @ System .
+	*** The first argument of these strategies is the set T of rules
+	*** already used for simplifying, but whose critical pairs have
+	*** not been computed yet; the second argument is S, the set of
+	*** rules that are used to simplify other rules (a singleton or
+	*** empty set). The rest of equations in the state is R.
+	strats S-COMP success simplify-rules deduce orient : RlS RlS @ System .
+
+	var  e           : Eq .
+	vars r rS        : Rl .
+	vars E E' F      : EqS .
+	vars R R' T S QR : RlS .
+	vars s t         : Term .
+	var  Sys Sys'    : System .
+
+	sd S-COMP := S-COMP(mtRlS, mtRlS) .
+
+	sd S-COMP(T, S) :=
+		success(T, S)          or-else
+		simplify-rules(T, S)   or-else
+		(match < mtEqS, R > ?
+		  deduce(T, S) :
+		  orient(T, S)
+		) .
+
+	*** The procedure succeeds if E, S and T are empty
+	sd success(mtRlS, mtRlS) := match < mtEqS, R > .
+
+	sd simplify-rules(T, rS) :=
+		matchrew Sys s.t. < E, R > := Sys by Sys using (
+		  *** Try to simplify a rule. On success, probe the state to
+		  *** find what changed and possibly update T. If no rule
+		  *** can be simplified, move S to T and continue.
+		  (L-Simplify[R <- rS] | R-Simplify[R <- rS]) ?
+		    matchrew Sys' s.t. < E', R' > := Sys' by Sys' using
+		      simplify-rules(combine(T, R, R'), rS) :
+		    S-COMP(T rS, mtRlS)
+		) .
+
+	sd deduce(r T, mtRlS) := Deduce[r <- r, QR <- mtRlS] ;
+	                         S-COMP(T, mtRlS) .
+
+	sd orient(T, mtRlS) :=
+		*** Simplify equations exhaustively
+		(Delete | Simplify) ! ;
+		*** If there is any equation left, orient it and add the rule to S
+		(match < mtEqS, R > ? S-COMP(T, mtRlS) :
+		  matchrew Sys s.t. < s =. t E, R > := Sys /\ s > t by Sys using (
+		    Orient[E <- E] ;
+		    S-COMP(T, s -> t)
+		  )
+		) .
+
+endsm

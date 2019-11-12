@@ -1,0 +1,72 @@
+***
+*** Basic completion strategies
+*** Example 0
+***
+
+in all-completions	*** Suffix -old for the old version
+in lpo.maude
+
+fmod EX0-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+
+	eq 'a >> 'b = true .
+	eq 'b >> 'c = true .
+endfm
+
+view Ex0Order from STRICT-ORDER to EX0-ORDER is
+	sort Qid to Qid .
+endv
+
+view Ex0 from MODULE-AND-ORDER to LPO{Ex0Order} + META-MODULE is
+	*** Module
+	op MOD to term (fmod 'M is
+		         protecting 'BOOL .
+	                 sorts 'U 'S .
+	                 none
+	                 op 'a : 'U -> 'S [none] .
+	                 op 'b : 'U -> 'S [none] .
+	                 op 'c : 'U -> 'S [none] .
+	                 none
+	                 none
+	                endfm) .
+
+	*** Term order
+	var T T' : Term .
+	op T > T' to term T >lpo T' .
+endv
+
+fmod EX0 is
+	pr EQS-RULES{ForgetOrder}{Ex0} .
+
+	op eqs : -> EqS .
+	eq eqs = ('a['x:U] =. 'b['x:U]) ('b['x:U] =. 'c['x:U]) .
+endfm
+
+smod EX0-STRAT is
+	pr EX0 .
+	pr ALL-COMPLETIONS{Ex0} .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX0-STRAT .)
+
+*** Common solution
+***	< mtEqS,'a['x:U] -> 'b['x:U] 'b['x:U] -> 'c['x:U] >
+
+*** with the basic one (Knuth-Bendix)
+(srew < eqs, mtRlS > using compl .)
+*** rewrites: 9757 in 6ms cpu (6ms real) (1471644 rewrites/second)
+
+*** with N-Completion
+(srew < eqs, mtRlS > using N-COMP .)
+*** rewrites: 7649 in 3ms cpu (5ms real) (2294241 rewrites/second)
+
+*** with S-Completion
+(srew < eqs, mtRlS > using S-COMP .)
+*** rewrites: 7551 in 3ms cpu (5ms real) (2284720 rewrites/second)
+
+*** with ANS-Completion
+(srew < eqs, mtRlS > using ANS-COMP .)
+*** rewrites: 3227 in 3ms cpu (3ms real) (968196 rewrites/second)

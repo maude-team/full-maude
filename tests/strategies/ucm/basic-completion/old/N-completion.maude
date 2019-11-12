@@ -1,0 +1,86 @@
+***
+*** Basic completion strategies
+*** N-completion (Lescanne89, Figure 1)
+***
+
+sload ../critical-pairs.maude
+
+mod N-COMPLETION{X :: MODULE-AND-ORDER} is
+	pr CRITICAL-PAIRS{ForgetOrder}{X} .
+
+	sort System .
+	op <_,_,_> : RlS RlS EqS -> System .  *** R T E
+
+	var E F : EqS .
+	var r : Rl .
+	vars R T : RlS .
+	vars s t u : Term .
+
+	rl [Deduce] : < R, T, E >
+                   => < R, T, E F > [nonexec] . *** if  s <-- u --> t
+
+	crl [Orient] : < R, T, E s =. t >
+                    => < R, T s -> t, E >  if s > t .
+
+	rl [Delete] : < R, T, E s =. s >
+                   => < R, T, E > .
+
+	crl [Simplify] : < R, T, E s =. t >
+                      => < R, T, E u =. t >
+		if u := reduce(s, R T) .
+
+	crl [R-Simplify] : < R s -> t, T, E >
+                        => < R s -> u, T, E >
+		if u := reduce(t, R T) .
+
+	crl [R-Simplify] : < R, T s -> t, E >
+	                => < R, T s -> u, E >
+		if u := reduce(t, R T) .
+
+	crl [L-Simplify] : < R s -> t, T, E >
+	                => < R, T, E u =. t >
+		if u := reduce>(s -> t, R T) .
+
+	crl [L-Simplify] : < R, T s -> t, E >
+	                => < R, T, E u =. t >
+		if u := reduce>(s -> t, R T) .
+
+	rl [move] : < R, r T, E >
+	         => < r R, T, E > .
+endm
+
+smod N-COMPLETION-STRAT-OLD{X :: MODULE-AND-ORDER} is
+	pr N-COMPLETION{X} .
+
+	strats N-COMP success orient simplify-eqs @ System .
+	strats deduce deduction simplify-rules    @ System .
+
+	var  e   : Eq .
+	var  r   : Rl .
+	var  E F : EqS .
+	vars R T : RlS .
+	vars s t : Term .
+	var  Sys : System .
+
+	sd N-COMP := success or-else deduce or-else orient .
+
+	sd success := match < R, mtRlS, mtEqS > .
+
+	sd deduce := match < R, r T, mtEqS > ;
+	             deduction ;
+	             simplify-rules ;
+	             N-COMP .
+
+	sd deduction := matchrew Sys s.t. < R, r T, E > := Sys by Sys using
+	                 (Deduce[F <- equations(critical-pairs(r, R r))] ;
+	                  move[r <- r]) .
+
+	sd simplify-rules := (L-Simplify | R-Simplify) ! .
+
+	sd orient := match < R, T, e E > ;
+	             simplify-eqs ;
+	             (match < R, T, mtEqS > or-else Orient) ;
+	             N-COMP .
+
+	sd simplify-eqs := (Delete | Simplify) ! .
+endsm

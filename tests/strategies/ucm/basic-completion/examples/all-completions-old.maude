@@ -1,0 +1,79 @@
+***
+*** Basic completion strategies (old version)
+***
+
+sload ../old/knuth-bendix
+sload ../old/N-completion
+sload ../old/S-completion
+sload ../old/ANS-completion
+
+*** Since the old versions of the completion procedures define their
+*** own system states and rules, we need to rename them so that they
+*** can be imported to the same module without conflict.
+
+smod ALL-COMPLETIONS{X :: MODULE-AND-ORDER} is
+	protecting KNUTH-BENDIX-STRAT-OLD{X} * (
+		sort  System    to KB_System,
+		label Orient    to KB_Orient,
+		label Deduce    to KB_Deduce,
+		label Simplify  to KB_Simplify,
+		label Delete    to KB_Delete,
+		strat deduction to KB_deduction
+	) .
+
+	protecting N-COMPLETION-STRAT-OLD{X} * (
+		sort  System         to N_System,
+		label Deduce         to N_Deduce,
+		label Orient         to N_Orient,
+		label Simplify       to N_Simplify,
+		label Delete         to N_Delete,
+		label L-Simplify     to N_L-Simplify,
+		label R-Simplify     to N_R-Simplify,
+		label move           to N_move,
+		strat success        to N_success,
+		strat deduce         to N_deduce,
+		strat deduction      to N_deduction,
+		strat simplify-rules to N_simplify-rules,
+		strat orient         to N_orient,
+		strat simplify-eqs   to N_simplify-eqs
+	) .
+
+	protecting S-COMPLETION-STRAT-OLD{X} * (
+		sort  System         to S_System,
+		label Deduce         to S_Deduce,
+		label Orient         to S_Orient,
+		label Delete         to S_Delete,
+		label Simplify       to S_Simplify,
+		label L-Simplify     to S_L-Simplify,
+		label R-Simplify     to S_R-Simplify,
+		label move           to S_move,
+		label concatT&S      to S_concatT&S,
+		strat success        to S_success,
+		strat simplify-rules to S_simplify-rules,
+		strat deduce         to S_deduce,
+		strat deduction      to S_deduction,
+		strat orient         to S_orient,
+		strat simplify-eqs   to S_simplify-eqs
+	) .
+
+	protecting ANS-COMPLETION-STRAT-OLD{X} * (
+		sort  System         to ANS_System,
+		label Deduce         to ANS_Deduce,
+		label Orient         to ANS_Orient,
+		label Delete         to ANS_Delete,
+		label Simplify       to ANS_Simplify,
+		label L-Simplify     to ANS_L-Simplify,
+		label R-Simplify     to ANS_R-Simplify,
+		label move           to ANS_move,
+		label concatT&S      to ANS_concatT&S,
+		label AC2N           to ANS_AC2N,
+		label fillC          to ANS_fillC,
+		strat success        to ANS_success,
+		strat simplify-rules to ANS_simplify-rules,
+		strat orient         to ANS_orient,
+		strat simplify-eqs   to ANS_simplify-eqs,
+		strat deduce         to ANS_deduce,
+		strat deduction      to ANS_deduction
+	) .
+endsm
+

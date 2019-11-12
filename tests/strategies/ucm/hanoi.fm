@@ -1,0 +1,79 @@
+***
+*** Towers of Hanoi puzzle
+***
+
+fmod HANOI is
+	protecting LIST{Nat} .
+
+	sorts Tower Hanoi Game .
+	subsort Tower < Hanoi .
+
+	op (_) [_] : Nat List{Nat} -> Tower [ctor] .
+	op empty : -> Hanoi [ctor] .
+	op __ : Hanoi Hanoi -> Hanoi [ctor assoc comm id: empty] .
+
+	op <_,_> : Hanoi Nat -> Game [ctor] .
+
+	op initial : Nat Nat -> Hanoi .
+
+	vars N M : Nat .
+
+	eq initial(N, 0) = empty .
+	eq initial(N, 1) = (0) [diskList(N)] .
+	eq initial(N, s(M)) = initial(N, M) (M) [nil] .
+
+	op diskList : Nat -> List{Nat} .
+	eq diskList(0) = nil .
+	eq diskList(s(N)) = s(N) diskList(N) .
+endfm
+
+mod HANOI-RULES is
+	protecting HANOI .
+
+	vars S T D1 D2 N : Nat .
+	vars L1 L2       : List{Nat} .
+	vars H H'        : Hanoi .
+
+	*** Move a disk on top of a greater disk in another tower
+	crl [move] : (S) [L1 D1] (T) [L2 D2] => (S) [L1] (T) [L2 D2 D1] if D2 > D1 .
+	*** Move a disk to an empty tower
+	rl [move] : (S) [L1 D1] (T) [nil] => (S) [L1] (T) [D1] .
+
+	*** Rewrite the Hanoi game and counts one move
+	*** (to be executed by strategies)
+	crl [step] : < H, N > => < H', s(N) > if H => H' .
+endm
+
+fmod HANOI-AUX is
+	protecting SET{Nat} .
+
+	*** Get the third tower given two of them
+	op third : Nat Nat -> Nat .
+
+	vars N M K : Nat .
+
+	ceq third(N, M) = K if N, M, K := 0, 1, 2 .
+endfm
+
+smod HANOI-SOLVE is
+	protecting HANOI-RULES .
+	protecting HANOI-AUX .
+
+	*** moveAll(S, T, C) recursively moves C disks from the
+	*** tower S to the tower T (if possible)
+	strat moveAll : Nat Nat Nat @ Hanoi .
+
+	var S T C M : Nat .
+
+	sd moveAll(S, S, C) := idle .
+	sd moveAll(S, T, 0) := idle .
+	sd moveAll(S, T, s(C)) := moveAll(S, third(S, T), C) ;
+	                          move[S <- S, T <- T] ;
+	                          moveAll(third(S, T), T, C) .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select HANOI-SOLVE .)
+
+(srew (0)[3 2 1] (1)[nil] (2)[nil] using moveAll(0,2,3) .)

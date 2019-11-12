@@ -1,0 +1,339 @@
+***
+*** Simple word wrap algorithm
+***
+
+*** Words are objects with length.
+fmod WORD is
+	protecting STRING .
+
+	sort Word .
+
+	*** String are words but the type can be extended to
+	*** represent a more complex concept of word or more
+	*** precise notion of length
+	subsort String < Word .
+
+	op len : Word -> Nat .
+
+	eq len(S:String) = length(S:String) .
+endfm
+
+view Word from TRIV to WORD is
+	sort Elt to Word .
+endv
+
+*** A line is a collection of words.
+fmod LINE is
+	protecting LIST{Word} .
+	protecting RAT .
+
+	sort Line .
+
+	op {_} : List{Word} -> Line .
+	op {_@_} : List{Word} Rat -> Line [ctor] .
+endfm
+
+view Line from TRIV to LINE is
+	sort Elt to Line .
+endv
+
+*** Properties of the wrapping algorithm state.
+fmod STATE-DATA is
+	protecting NAT .
+	protecting RAT .
+
+	sort Property .
+
+	op count :_ 		: Nat -> Property [ctor] .
+	op width :_ 		: Nat -> Property [ctor] .
+	op words :_ 		: Nat -> Property [ctor] .
+	op raggedness :_ 	: Nat -> Property [ctor] .
+endfm
+
+view Property from TRIV to STATE-DATA is
+	sort Elt to Property .
+endv
+
+*** Wrapping algorithm data
+fmod WRAPPING is
+	protecting LIST{Line} .
+	protecting SET{Property} * (sort Set{Property} to StateData) .
+
+	sort State .
+
+	op _ |> _ (_) : List{Word} List{Line} StateData -> State [ctor format (d d d s d d d)] .
+
+	*** List of words of the text and line width (in characters)
+	op initial : List{Word} Nat -> State .
+
+	var WL		: List{Word} .
+	var N		: Nat .
+
+	eq initial(WL, N) = WL |> { nil } (count : 0, width : N, words : 0, raggedness : 0)  .
+endfm
+
+fmod WRAPPING-AUX is
+	protecting RAT .
+	protecting WRAPPING .
+
+	*** Mean space width
+	op spaceWidth : State -> Rat .
+	*** Mean space from (count, width, words)
+	op spaceWidth : Nat Nat Nat -> Rat .
+	*** Raggedness of the line
+	op raggedness : Nat Nat Nat -> Nat .
+
+	*** Number of words
+	op numberWords : State -> Nat .
+
+	var WL		: List{Word} .
+	var LL		: List{Line} .
+	var SD		: StateData .
+	var NC W NW	: Nat .
+
+	*** This function is well defined even if NW = 0
+	eq spaceWidth(WL |> LL (count : NC, width : W, words : NW, SD)) = spaceWidth(NC, W, NW) .
+
+	eq spaceWidth(NC, W, 1) = W - NC .
+	eq spaceWidth(NC, W, NW) = (W - NC) / sd(NW, 1) [owise] .
+
+	eq raggedness(NC, W, NW) = (W - (NC + sd(NW, 1))) ^ 2 .
+
+	eq numberWords(WL |> LL (words : NW, SD)) = NW .
+endfm
+
+*** Wrapping algorithm rules
+mod WRAPPING-RULES is
+	protecting WRAPPING .
+	protecting WRAPPING-AUX .
+
+	var WL WL'		: List{Word} .
+	var W			: Word .
+	var LL			: List{Line} .
+	var Width NC NW RG	: Nat .
+	var SD			: StateData .
+
+	rl [add] : W WL |> LL { WL' } (count : NC, width : Width, words : NW, SD) =>
+		WL |> LL { WL' W } (count : (NC + len(W)), width : Width, words : s(NW), SD) .
+
+	rl [newline] : WL |> LL { WL' } (count : NC, width : Width, words : NW, raggedness : RG, SD) =>
+			WL |> LL { WL' @ spaceWidth(NC, Width, NW) } { nil } (count : 0,
+				width : Width, words : 0, raggedness : (RG + raggedness(NC, Width, NW)), SD) .
+endm
+
+*** Wrapping decisions to be given as a parameter
+sth CUSTOM-WRAP is
+	including WRAPPING .
+
+	*** The main task of this strategy is to make a line break when
+	*** it find it convenient. It must idle when the line is able
+	*** to receive new words, and fail when it is plenty.
+	***
+	*** This strategy will be executed after adding a new word to the line.
+	***
+	*** Usually this strategy will 'idle' if the line can be continued
+	*** and apply 'newline' when it is over. If the line is too large after
+	*** adding the last word, it will fail. 'newline' and 'idle' can appear
+	*** in the same situation, to explore alternatives.
+	strat break @ State .
+endsth
+
+***
+*** Various word wrapping instances
+***
+
+smod WORDWRAP-RANGE is
+	protecting WRAPPING-AUX .
+	protecting WRAPPING-RULES .
+
+	strat range : Rat Rat @ State .
+
+	var S		: State .
+	var Min Max	: Rat .
+
+	*** Breaks if the space width between words is between Min and Max
+	*** (and keeps exploring new possibilites until it is below Min)
+	sd range(Min, Max) := match S s.t. numberWords(S) == 1 or spaceWidth(S) >= Min ;
+		(
+			(
+				match S s.t. spaceWidth(S) <= Max ;
+				newline
+			)
+		|
+			idle
+		) .
+endsm
+
+smod WORDWRAP-INTEGER is
+	protecting WRAPPING-AUX .
+	protecting WRAPPING-RULES .
+
+	strat integer : Nat @ State .
+
+	var S		: State .
+	var Bound	: Nat .
+
+	*** Break if the the uniform space between words is an integer
+	*** less than Bound (keeps trying alternatives until the width < 1)
+	sd integer(Bound) := match S s.t. spaceWidth(S) >= 1 ;
+		(
+			(
+				match S s.t. spaceWidth(S) : Nat /\ spaceWidth(S) <= Bound ;
+				newline
+			)
+		|
+			idle
+		) .
+endsm
+
+smod WORDWRAP-GREEDY is
+	protecting WRAPPING-AUX .
+	protecting WRAPPING-RULES .
+
+	strat greedy @ State .
+
+	var Wrd		: Word .
+	var WL		: List{Word} .
+	var LL		: List{Line} .
+	var W NC NW	: Nat .
+	var SD		: StateData .
+
+	*** Break lines when the next word will surpass the margin
+	sd greedy := match WL |> LL (count : NC, width : W, words : NW, SD)
+			s.t. NW == 1 or NC + sd(NW, 1) <= W ;
+		(
+			(
+				match Wrd WL |> LL (count : NC, width : W, words : NW, SD)
+					s.t. NW > 0 /\ NC + NW + len(Wrd) > W ;
+				newline
+			)
+		|
+			idle
+		) .
+endsm
+
+***
+*** Word wrapping instances with hyphenation
+***
+
+sth HYPHENATOR is
+	protecting LINE .
+
+	*** hyphenate receives a word and generate all avaiable
+	*** hyphenations for it
+	strat hyphenate @ List{Word} .
+endsth
+
+mod WORDWRAP-HYPHEN-RULES is
+	protecting WRAPPING .
+
+	var Wrd Wrd1 Wrd2	: Word .
+	var WL WL'		: List{Word} .
+	var LL			: List{Line} .
+	var NC NW		: Nat .
+	var SD			: StateData .
+
+	crl [hyphen-state] : Wrd WL |> LL { WL' } (count : NC, words : NW, SD) =>
+		Wrd2 WL |> LL { WL' Wrd1 } (count : (NC + len(Wrd1)), words : s(NW), SD)
+			if Wrd => Wrd1 Wrd2 .
+endm
+
+smod WORDWRAP-HYPHEN{X :: CUSTOM-WRAP * (strat break to baseBreak), Y :: HYPHENATOR} is
+	protecting WRAPPING-RULES .
+	protecting WORDWRAP-HYPHEN-RULES .
+
+	strat hbreak @ State .
+
+	var WL		: List{Word} .
+	var LL		: List{Line} .
+	var SD		: StateData .
+
+	*** Applies the base break after adding an hyphenation of the incoming word
+	*** We suppose the possible outcomes of baseBreaks are breaking the line or
+	*** the original state (or both)
+	sd hbreak := test(baseBreak ; match WL |> LL { nil } (SD)) ?
+		((hyphen-state{hyphenate} | idle) ; baseBreak)
+		: test(baseBreak) .
+endsm
+
+mod BLIND-HYPHENATOR is
+	protecting LINE .
+
+	var S : String .
+
+	crl [bhyph] : S => (substr(S, 0, length(S) quo 2) + "-") substr(S, length(S) quo 2, length(S) - length(S) quo 2)
+		if length(S) > 2 .
+endm
+
+view BlindHyphenator from HYPHENATOR to BLIND-HYPHENATOR is
+	strat hyphenate to expr bhyph .
+endv
+
+view WWRange from CUSTOM-WRAP to WORDWRAP-RANGE is
+	strat break to expr range(2/3, 4/3) .
+endv
+
+view WWInteger from CUSTOM-WRAP to WORDWRAP-INTEGER is
+	strat break to expr integer(6) .
+endv
+
+view WWGreedy from CUSTOM-WRAP to WORDWRAP-GREEDY is
+	strat break to greedy .
+endv
+
+view WWRangeBis from CUSTOM-WRAP * (strat break to baseBreak) to WORDWRAP-RANGE is
+	strat baseBreak to expr range(2/3, 4/3) .
+endv
+
+view WWHyphen from CUSTOM-WRAP to WORDWRAP-HYPHEN{WWRangeBis, BlindHyphenator} is
+	strat break to hbreak .
+endv
+
+smod WORDWRAP-ALGOR{X :: CUSTOM-WRAP} is
+	protecting WRAPPING-RULES .
+	protecting WRAPPING-AUX .
+
+	strat wrap @ State .
+	*** Wrap with bounded raggedness
+	strat wrap : Nat @ State .
+
+	var WL		: List{Word} .
+	var LL		: List{Line} .
+	var SD		: StateData .
+	var RG N	: Nat .
+
+	sd wrap :=  (match nil |> LL (SD)
+			?
+				not(match WL |> LL { nil } (SD))
+			:
+				add ; break ; wrap
+		) .
+
+	sd wrap(RG) :=  (match nil |> LL (SD)
+			?
+				not(match WL |> LL { nil } (SD))
+			:
+				add ; break ;
+				match WL |> LL (raggedness : N, SD) s.t. N <= RG ;
+				wrap(RG)
+		) .
+endsm
+
+load wordWrap-examples
+
+smod MAIN is
+	*** break is renamed only to avoid name conflicts (it is not supposed to be used directly)
+	protecting WORDWRAP-ALGOR{WWRange} * (strat wrap to wrange, strat break to brange) .
+	protecting WORDWRAP-ALGOR{WWInteger} * (strat wrap to wint, strat break to bint) .
+	protecting WORDWRAP-ALGOR{WWGreedy} * (strat wrap to wgreedy, strat break to bgreedy) .
+	protecting WORDWRAP-ALGOR{WWHyphen} * (strat wrap to whyphen) .
+
+	protecting WORDWRAP-EXAMPLES .
+endsm
+
+eof
+
+srew initial(quijote, 80) using wrange .
+srew initial(dracula, 80) using wrange(77) .
+srew initial(integer, 80) using wint .
+srew initial(dracula, 80) using wgreedy . *** raggedness: 208

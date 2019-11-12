@@ -1,0 +1,92 @@
+***
+*** Basic completion strategies
+*** S-completion (Lescanne89, Figure 2)
+***
+
+sload ../critical-pairs.maude
+
+mod S-COMPLETION{X :: MODULE-AND-ORDER} is
+	pr CRITICAL-PAIRS{ForgetOrder}{X} .
+
+	sort System .
+	op <_,_,_,_> : RlS RlS RlS EqS -> System .  *** R T S E
+
+	var  E F   : EqS .
+	var  r     : Rl .
+	vars R T S : RlS .
+	vars s t u : Term .
+
+	rl [Deduce] : < R, T, S, E >
+	           => < R, T, S, E F > [nonexec] . *** if  s <-- u --> t
+
+	crl [Orient] : < R, T, S, E s =. t >
+	            => < R, T, S s -> t, E > if s > t .
+
+	rl [Delete] : < R, T, S, E s =. s >
+	           => < R, T, S, E > .
+
+	crl [Simplify] : < R, T, S, E s =. t >
+	              => < R, T, S, E u =. t >
+		if u := reduce(s, R T) .
+
+	crl [R-Simplify] : < R s -> t, T, S, E >
+	                => < R s -> u, T, S, E >
+		if u := reduce(t, S) .
+
+	crl [R-Simplify] : < R, T s -> t, S, E >
+	                => < R, T s -> u, S, E >
+		if u := reduce(t, S) .
+
+	crl [L-Simplify] : < R s -> t, T, S, E >
+	                => < R, T, S, E u =. t >
+		if u := reduce>(s -> t, S) .
+
+	crl [L-Simplify] : < R, T s -> t, S, E >
+	                => < R, T, S, E u =. t >
+		if u := reduce>(s -> t, S) .
+
+	rl [move] : < R, r T, S, E >
+	         => < r R, T, S, E > .
+
+	rl [concatT&S] : < R, T, S, E >
+	              => < R, T S, mtRlS, E > .
+endm
+
+smod S-COMPLETION-STRAT-OLD{X :: MODULE-AND-ORDER} is
+	protecting S-COMPLETION{X} .
+
+	strats S-COMP success orient simplify-eqs @ System .
+	strats deduce deduction simplify-rules    @ System .
+
+	var  e     : Eq .
+	var  r     : Rl .
+	var  E F   : EqS .
+	vars R T S : RlS .
+	vars s t   : Term .
+	var  Sys   : System .
+
+	sd S-COMP := success or-else simplify-rules
+	             or-else deduce or-else orient .
+
+	sd success := match < R, mtRlS, mtRlS, mtEqS > .
+
+	sd simplify-rules := match < R, T, r S, E > ;
+	                     (L-Simplify | R-Simplify) ! ;
+	                     concatT&S ;
+	                     S-COMP .
+
+	sd deduce := match < R, r T, mtRlS, mtEqS > ;
+	             deduction ;
+	             S-COMP .
+
+	sd deduction := matchrew Sys s.t. < R, r T, S, E > := Sys by Sys using
+	                 (Deduce[F <- equations(critical-pairs(r, R r))] ;
+	                  move[r <- r]) .
+
+	sd orient := match < R, T, mtRlS, e E > ;
+	             simplify-eqs ;
+	             (match < R, T, S, mtEqS > or-else Orient) ;
+	             S-COMP .
+
+	sd simplify-eqs := (Delete | Simplify) ! .
+endsm

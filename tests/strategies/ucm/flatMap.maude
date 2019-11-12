@@ -1,0 +1,103 @@
+***
+*** Parametrized strategy module that acts as a flat map functor.
+***
+*** Source: Adapted from Towards a Strategy Language for Maude. Section 5.2
+***
+
+fth MAP-LIST-BASE is
+	including TRIV .
+
+	*** A list of elements of the type
+	sort List .
+	subsort Elt < List .
+
+	op nil : -> List [ctor] .
+	op __ : List List -> List [ctor assoc] .
+endfth
+
+sth MAP-LIST is
+	including MAP-LIST-BASE .
+
+	strat st @ List .
+endsth
+
+mod STRAT-LIST{X :: MAP-LIST-BASE} is
+	vars E E' : X$Elt .
+	vars L L' : X$List .
+
+	rl [empty] : nil => nil .
+	crl [nonempty] : E L => E' L' if E => E' /\ L => L' .
+endm
+
+view MapList0 from MAP-LIST-BASE to MAP-LIST is
+	*** identity
+endv
+
+smod STRAT-MAP{X :: MAP-LIST} is
+	protecting STRAT-LIST{MapList0}{X} .
+
+	var L : X$List .
+	var E : X$Elt .
+
+	strat map : @ X$List .
+	sd map := try(top(nonempty{st, map})) .
+
+	strat map2 : @ X$List .
+	sd map2 := (match nil) ? idle : top(nonempty{st, map2}) .
+
+	strat map3 : @ X$List .
+	sd map3 := top(empty) | top(nonempty{st, map3}) .
+
+	strat map4 : @ X$List .
+	sd map4 := (match nil) or-else
+			(matchrew E L by E using st, L using map4) .
+
+	strat map5 : @ X$List .
+	sd map5 := try(matchrew E L by E using st, L using map5) .
+endsm
+
+***
+*** A simple example
+
+mod LETTERS is
+	sort Letter .
+
+	ops a b c : -> Letter .
+
+	rl [ac] : a => c .
+	rl [ab] : b => c .
+endm
+
+view Letters0 from TRIV to LETTERS is
+	sort Elt to Letter .
+endv
+
+mod LETTERS-EXT is
+	protecting LETTERS .
+	protecting LIST{Letters0} .
+endm
+
+view Letters from MAP-LIST to LETTERS-EXT is
+	sort Elt to Letter .
+	sort List to List{Letters0} .
+
+	strat st to expr ac .
+endv
+
+smod MAIN is
+	protecting STRAT-MAP{Letters} .
+endsm
+
+eof
+
+srew [1] a a a a a using map .
+
+srew a a a a a using map .
+
+srew [1] a a a a a using map2 .
+
+srew [1] a a a a a using map3 .
+
+srew [1] a a a a a using map4 .
+
+srew [1] a a a a a using map5 .

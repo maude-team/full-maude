@@ -1,0 +1,310 @@
+***
+*** 15-puzzle and a strategy to solve it
+***
+*** The strategy is based on the method described in Chapter 8 "Le taquin"
+*** of Éduard Lucas' book "Récréations mathématiques" (volume 2)
+***
+
+fmod TILE is
+	protecting NAT .
+
+	sort Tile .
+	subsort Nat < Tile .
+
+	*** Tiles are natural numbers and the blank or hole 'h'
+
+	op b : -> Tile [ctor format (!y o)] .
+endfm
+
+view Tile from TRIV to TILE is
+	sort Elt to Tile .
+endv
+
+mod 15PUZZLE is
+	protecting LIST{Tile} * (
+		sort List{Tile} to Row,
+		sort NeList{Tile} to NeRow,
+		op __ to __ [format (d t d) prec 25]
+	) .
+
+	sort Puzzle .
+	subsort Row < Puzzle .
+
+	*** A puzzle is a square represented as a list of rows
+	op _;_ : Puzzle Puzzle -> Puzzle [ctor assoc format (d ! no d)] .
+
+	var  T             : Tile .
+	vars R1 R1+ R2 R2+ : Row .
+	var  P             : Puzzle .
+
+	*** Move a tile to the blank at its right, left, above or below
+
+	 rl [left] : T b => b T .
+	 rl [right] : b T => T b .
+	crl [down] : (R1 b R1+) ; (R2 T R2+)
+	          => (R1 T R1+) ; (R2 b R2+) if size(R1) == size(R2) .
+	crl [up] : (R1 T R1+) ; (R2 b R2+)
+	          => (R1 b R1+) ; (R2 T R2+) if size(R1) == size(R2) .
+endm
+
+mod 15PUZZLE-BIS is
+	protecting TILE .
+
+	*** Alternative representation of the board, intended to be more
+	*** efficient at the expense of readability.
+	*** In this case, a puzzle is a set of triples mapping
+	*** bidimensional positions to tiles.
+
+	sort Puzzle .
+
+	op [_,_,_] : Nat Nat Tile -> Puzzle [ctor] .
+
+	op empty : -> Puzzle [ctor] .
+	op __ : Puzzle Puzzle -> Puzzle [ctor assoc comm id: empty] .
+
+	vars N M : Nat .
+	var  T   : Tile .
+
+	rl [down]  : [N, M, b] [N, s(M), T] => [N, M, T] [N, s(M), b] .
+	rl [up]    : [N, M, T] [N, s(M), b] => [N, M, b] [N, s(M), T] .
+	rl [right] : [N, M, b] [s(N), M, T] => [N, M, T] [s(N), M, b] .
+	rl [left]  : [N, M, T] [s(N), M, b] => [N, M, b] [s(N), M, T] .
+endm
+
+mod 15COUNT is
+	protecting 15PUZZLE .
+
+	sort Count .
+
+	*** Auxiliary operator to count the number of moves
+
+	op <_|_> : Nat Puzzle -> Count [ctor] .
+
+	var  N    : Nat .
+	vars P P' : Puzzle .
+
+	crl [count] : < N | P > => < s(N) | P' > if P => P' .
+endm
+
+mod 15PUZZLE-AUX is
+	protecting 15PUZZLE .
+
+	vars R S     : Row .
+	vars P P1 P2 : Puzzle .
+	vars N M     : Nat .
+	var  T       : Tile .
+
+	*** Number of rows in the puzzle
+
+	op numRows : Puzzle -> Nat .
+
+	eq numRows(R) = 1 .
+	eq numRows(R ; P) = s(numRows(P)) .
+
+	*** Position of the hole in the puzzle
+	*** (by a line and column coordinate starting from 0)
+
+	op holeLine : Puzzle -> Nat .
+	op holeColumn : Puzzle -> Nat .
+
+	eq holeLine(P1 ; (R b S)) = numRows(P1) .
+	eq holeLine(P1 ; (R b S) ; P2) = numRows(P1) .
+	eq holeLine((R b S) ; P2) = 0 .
+	eq holeColumn((R b S) ; P2) = size(R) .
+	eq holeColumn(P1 ; (R b S) ; P2) = size(R) .
+	eq holeColumn(P1 ; (R b S)) = size(R) .
+
+	*** Tile at a given board position
+
+	op atPos : Puzzle Nat Nat ~> Tile .
+	op atPos : Row Nat ~> Tile .
+
+	eq atPos(T R, 0) = T .
+	eq atPos(T R, s(N)) = atPos(R, N) .
+
+	eq atPos(R, N, 0) = atPos(R, N) .
+	eq atPos(R ; P, N, 0) = atPos(R, N) .
+	eq atPos(R ; P, N, s(M)) = atPos(P, N, M) .
+
+	*** Sequence of numbers that can be read clockwise within a
+	*** a certain circuit (see reference) in the puzzle goal position
+
+	op sequence : -> Row .
+
+	eq sequence = 1 2 3 4 8 12 15 14 13 9 10 11 7 6 5 .
+endm
+
+mod 15PUZZLE-BIS-AUX is
+	protecting 15PUZZLE-BIS .
+	protecting LIST{Tile} * (
+		sort List{Tile} to Row,
+		sort NeList{Tile} to NeRow,
+		op __ to __ [format (d t d) prec 25]
+	) .
+
+	vars R S     : Row .
+	vars P P1 P2 : Puzzle .
+	vars X Y     : Nat .
+	var  T       : Tile .
+
+	*** The same functions in FIFTEEN-PUZZLE-AUX but for the
+	*** alternative representation
+
+	op holeLine : Puzzle -> Nat .
+	op holeColumn : Puzzle -> Nat .
+
+	eq holeLine([X, Y, b] P) = Y .
+	eq holeColumn([X, Y, b] P) = X .
+
+	op atPos : Puzzle Nat Nat ~> Tile .
+
+	eq atPos([X, Y, T] P, X, Y) = T .
+
+	op sequence : -> Row .
+
+	eq sequence = 1 2 3 4 8 12 15 14 13 9 10 11 7 6 5 .
+endm
+
+smod 15PUZZLE-STRAT is
+	protecting 15PUZZLE-AUX .
+	protecting INT .
+
+	*** Move the blank as many position as indicated by its
+	*** arguments. The first coordinate is columns, and
+	*** positive means (right/down)wards.
+
+	strat move : Int Int @ Puzzle .
+
+	vars N X Y         : Nat .
+	var  P             : Puzzle .
+	var  M             : Int .
+	vars T NT Last Pen : Tile .
+	vars LL LR         : Row .
+
+	sd move(0, 0)      := idle .
+	sd move(s(N), M)   := right ; move(N, M) .
+	sd move(- s(N), M) := left  ; move(- N, M) .
+	sd move(0, s(N))   := down  ; move(0, N) .
+	sd move(0, - s(N)) := up    ; move(0, - N) .
+
+	*** Move the blank to an absolute position in the board
+
+	strat moveTo : Nat Nat @ Puzzle .
+
+	sd moveTo(X, Y) := matchrew P by P using move(_-_(X, holeColumn(P)), _-_(Y, holeLine(P))) .
+
+	*** Constant strategies for movements within a fixed circuit
+	***
+	*** They assume that the blank is in (1, 1) except godown
+	*** which starts from (1, 0).
+
+	strats rotate reverse godown goup goback @ Puzzle .
+
+	*** Counterclockwise rotation (as seen from the outermost path)
+
+	sd reverse := right ; down ; left ; left ; down ;
+		right ; right ; right ;
+		up ; up ; up ;
+		left ; left ; left ;
+		down ; right .
+
+	*** Clockwise rotation
+
+	sd rotate := left ; up ;
+		right ; right ; right ;
+		down ; down ; down ;
+		left ; left ; left ;
+		up ; right ; right ;
+		up ; left .
+
+	*** Go down or up the dashed line that separates (1,0) and (1,1)
+
+	sd godown := left ; down ; right .
+	sd goup := left ; up ; right .
+
+	*** Go back from (1, 1) to (3, 3) within the circuit
+
+	sd goback := left ; up ; right ; right ; right ; down ; down ; down .
+
+
+
+	*** Strategy that must be called to solve the puzzle
+
+	strat solve @ Puzzle .
+
+	sd solve := moveTo(1, 1) ; place(1) ; solveLoop(1) ; place(1) ; goback .
+
+
+	*** Place the given tile at (1, 0) by successive rotations
+
+	strat place solveLoop : Tile @ Puzzle .
+
+	sd place(T) := (match P s.t. T =/= atPos(P, 1, 0) ; rotate) ! .
+
+
+	*** Main loop of the resolution method: it rotates, finds and places
+	*** the next tile in the sequence (by rotating) and continues
+	*** recursively
+
+	csd solveLoop(T) := rotate ; findNext(NT, 0) ; solveLoop(NT)
+	  if LL T NT LR Pen Last := sequence .
+
+	csd solveLoop(T) := idle if LL T Pen Last := sequence .
+
+	*** Finds the next expected tile according to the sequence, counts
+	*** the distance to its correct position, and calls move to
+	*** displace it back to it
+
+	strat findNext : Tile Nat @ Puzzle .
+
+	sd findNext(T, N) := match P s.t. T = atPos(P, 1, 0) ? move(N)
+		: (rotate ; findNext(T, s(N))) .
+
+
+	*** Move the tile at (1, 0) as many position as indicated
+	*** by the argument
+
+	strat move : Nat @ Puzzle .
+
+	sd move(0) := idle .
+	sd move(1) := rotate ; goup ; down ; reverse ; reverse .
+	sd move(s(s(N))) := up ; godown ; reverse ; reverse ; move(N) .
+endsm
+
+mod EXAMPLES is
+	protecting 15PUZZLE .
+
+	ops initial puzzle1 puzzle2 wikipedia : -> Puzzle .
+
+	eq initial =	1 	2 	3 	4 	;
+			5 	6 	7 	8 	;
+			9 	10 	11 	12 	;
+			13 	14 	15 	b 	.
+
+	eq puzzle1 =	b 	6 	2 	4 	;
+			1 	5 	3 	8 	;
+			9 	10 	7 	11 	;
+			13 	14 	15 	12	.
+
+	eq puzzle2 =	5 	1 	4 	8 	;
+			2 	14 	15 	3 	;
+			9 	7 	6 	11 	;
+			13 	10 	b 	12 	.
+
+	eq wikipedia =	15 	2 	1 	12 	;
+			8 	5 	6	11 	;
+			4 	9 	10 	7 	;
+			3 	14	13 	b	.
+endm
+
+smod 15PUZZLE-MAIN is
+	protecting EXAMPLES .
+	protecting 15PUZZLE-STRAT .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select 15PUZZLE-MAIN .)
+
+(srew puzzle1 using solve .)
+(srew wikipedia using solve .)   *** Not solvable, because of the parity

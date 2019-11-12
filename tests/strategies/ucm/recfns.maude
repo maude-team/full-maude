@@ -1,0 +1,254 @@
+***
+*** REC language from Chapter 9 of Glynn Winskel's The Formal Semantics of Programming Languages: An Introduction
+***
+*** Here, parameterization is used for two purposes: to select between different semantics for the REC
+*** language (for example, to choose between call by value and call by name) and also for strategy code reuse.
+***
+
+fmod REC-EXPR is
+	protecting QID .
+	protecting INT .
+
+	sort Variable FunctionCall Arguments RecExpr .
+	subsort Variable FunctionCall Int < RecExpr < Arguments .
+
+	*** Variables are quoted indentifiers
+	subsort Qid < Variable .
+
+	op none : -> Arguments [ctor] .
+	op _,_ : Arguments Arguments -> Arguments [ctor assoc id: none] .
+
+	*** A function call
+	op _(_) : Qid Arguments -> FunctionCall [prec 20] .
+
+	*** Product and addition of REC expression is allowed
+	op _+_ : RecExpr RecExpr -> RecExpr [ditto] .
+	op _*_ : RecExpr RecExpr -> RecExpr [ditto] .
+	op _-_ : RecExpr RecExpr -> RecExpr [ditto] .
+	op if_then_else_ : RecExpr RecExpr RecExpr -> RecExpr .
+endfm
+
+view Variable from TRIV to REC-EXPR is
+	sort Elt to Variable .
+endv
+
+fmod REC-SYNTAX is
+	protecting REC-EXPR .
+
+	sort FunctionDef FunctionLhs FormalArguments VarSet .
+	subsort Variable < VarSet FormalArguments .
+	subsort FormalArguments < Arguments .
+	subsort FunctionLhs < FunctionCall .
+
+	*** Specifies a more concrete type for arguments with variables only
+	op _,_ : FormalArguments FormalArguments -> FormalArguments [ctor ditto] .
+	op _(_) : Qid FormalArguments -> FunctionLhs [ditto] .
+
+	mb none : FormalArguments .
+
+	*** Sets of variables
+	op novar : -> VarSet .
+	op _._ : VarSet VarSet -> VarSet [ctor assoc comm id: novar] .
+
+	op subset : VarSet VarSet -> Bool .
+
+	*** A function definition
+	op _ := _ : FunctionLhs RecExpr -> FunctionDef [ctor] .
+
+	*** Get variables in a expression
+	op getVars	: Arguments -> VarSet .
+	*** Checks whether a fucntion definition is well formed
+	op isOk		: FunctionDef -> Bool .
+	*** Apply a function definition
+	op apply 	: FunctionDef Arguments -> RecExpr .
+	*** Substitute a variable in an expression
+	*** (term, var, replacement)
+	op subst 	: RecExpr Variable RecExpr -> RecExpr .
+	op subst* 	: Arguments Variable RecExpr -> Arguments .
+
+
+	***
+	*** Equations
+	***
+
+	var Q		: Qid .
+	var Args Args'	: Arguments .
+	var E F	G H	: RecExpr .
+	var VS VS'	: VarSet .
+	var V W		: Variable .
+
+	eq V . V = V .
+
+	eq subset(novar, VS) = true .
+	eq subset(V . VS, V . VS') = subset(VS, VS') .
+	eq subset(VS, VS') = false [owise] .
+
+	eq getVars(Q) = Q .
+	eq getVars(Q(Args)) = getVars(Args) .
+	ceq getVars(E, Args) = getVars(E) . getVars(Args) if Args =/= none .
+	eq getVars(E + F) = getVars(E) . getVars(F) .
+	eq getVars(E * F) = getVars(E) . getVars(F) .
+	eq getVars(Args) = novar [owise] .
+
+	eq isOk(E := F) = subset(getVars(F), getVars(E)) .
+
+	eq apply(Q(none) := F, none) = F .
+	eq apply(Q(V, Args') := F, (E, Args)) = apply(Q(Args') := subst(F, V, E), Args) .
+
+	eq subst(W, V, E) = if V == W then E else W fi .
+	eq subst(Q(Args), V, E) = Q(subst*(Args, V, E)) .
+	eq subst(E + F, V, G) = subst(E, V, G) + subst(F, V, G) .
+	eq subst(E * F, V, G) = subst(E, V, G) * subst(F, V, G) .
+	eq subst(E - F, V, G) = subst(E, V, G) - subst(F, V, G) .
+	eq subst(if E then F else G, V, H) = if subst(E, V, H) then subst(F, V, H) else subst(G, V, H) .
+	eq subst(F, V, E) = F [owise] .
+
+	eq subst*(none, V, F) = none .
+	eq subst*((E, Args), V, F) = subst(E, V, F), subst*(Args, V, F) .
+endfm
+
+view FunctionDef from TRIV to REC-SYNTAX is
+	sort Elt to FunctionDef .
+endv
+
+mod REC-RULE is
+	protecting REC-SYNTAX .
+	protecting LIST{FunctionDef} .
+
+	var Q Q'	: Qid .
+	var Args	: Arguments .
+	var E F C	: RecExpr .
+	var Defs	: List{FunctionDef} .
+
+	*** An operation to find function definitions in lists
+	op find : Qid List{FunctionDef} -> FunctionDef .
+	eq find(Q, Defs (Q'(Args) := E)) = if Q == Q' then (Q'(Args) := E) else find(Q, Defs) fi .
+
+	*** Replace a function call by its body
+	rl [apply] : Q(Args) => apply(find(Q, Defs), Args) [nonexec] .
+
+	*** If-then-else (could be resolved equationally instead)
+	crl [cond] : if C then E else F =>
+			if C == 0 then E else F fi if C : Int .
+endm
+
+sth REC-STRATEGY is
+	including REC-RULE .
+
+	strat st : List{FunctionDef} @ RecExpr .
+endsth
+
+smod REC-STRATS is
+	protecting REC-RULE .
+
+	*** This strategy is generalized to a wider type
+	*** strat byvalue : List{FunctionDef} @ Arguments .
+
+	var Q		: Qid .
+	var E F	G	: RecExpr .
+	var Args	: Arguments .
+	var FC		: FunctionCall .
+	var FL Defs	: List{FunctionDef} .
+
+	strats free byname byvalue : List{FunctionDef} @ RecExpr .
+
+	*** Unconstrained reduction
+	sd free(FL) := apply[Defs <- FL] .
+
+	*** Call by name
+	sd byname(FL) := top(apply[Defs <- FL]) .
+
+	*** Call by value
+	sd byvalue(FL) := (matchrew E, Args s.t. Args =/= none by E using byvalue(FL))
+			or-else matchrew E, Args s.t. Args =/= none by Args using byvalue(FL)
+		| (matchrew Q(Args) by Args using byvalue(FL)) or-else top(apply[Defs <- FL])
+		.
+endsm
+
+view ByName0 from REC-STRATEGY to REC-STRATS is
+	strat st to byname .
+endv
+
+view ByValue0 from REC-STRATEGY to REC-STRATS is
+	strat st to byvalue .
+endv
+
+smod STRAT-EXTENSION{X :: REC-STRATEGY} is
+	*** Extended strategy
+	strat xst : List{FunctionDef} @ RecExpr .
+
+	var E F G	: RecExpr .
+	var FL		: List{FunctionDef} .
+
+	sd xst(FL) := st(FL)
+		| (matchrew E + F by E using xst(FL))
+			or-else matchrew E + F by F using xst(FL)
+		| (matchrew E * F by E using xst(FL))
+			or-else matchrew E * F by F using xst(FL)
+		| (matchrew E - F by E using xst(FL))
+			or-else matchrew E - F by F using xst(FL)
+		| matchrew if E then F else G by E using xst(FL)
+		.
+endsm
+
+view ByName from REC-STRATEGY to STRAT-EXTENSION{ByName0} is
+	strat st to xst .
+endv
+
+view ByValue from REC-STRATEGY to STRAT-EXTENSION{ByValue0} is
+	strat st to xst .
+endv
+
+view Free from REC-STRATEGY to REC-STRATS is
+	strat st to free .
+endv
+
+smod REC-MAIN{X :: REC-STRATEGY} is
+
+	*** Only applies the reduction strategy until it cannot
+	*** be applied further
+	strat reduce : List{FunctionDef} @ RecExpr .
+
+	var FL		: List{FunctionDef} .
+
+	*** Conditions are resolved first
+	sd reduce(FL) := (cond or-else st(FL)) ! .
+endsm
+
+mod EXAMPLE is
+	protecting REC-RULE .
+
+	ops context factorial ackermann nameonly sign : -> List{FunctionDef} .
+
+	eq context =
+		('a(none) := 3)
+		.
+
+	*** Ackermann function
+	eq ackermann =
+		'A('m, 'n) := if 'm then 'n + 1 else (if 'n then 'A('m - 1, 1) else 'A('m - 1, 'A('m, 'n - 1)))
+		.
+
+	*** Factorial function
+	eq factorial =
+		'f('x) := if 'x then 1 else ('x * 'f('x - 1))
+		.
+
+	*** Try to calculate g(f(3))
+	eq nameonly =
+		('f('x) := 'f('x) + 1)
+		('g('x) := 7)
+		.
+
+	*** Gets the sign of the argument (s)
+	eq sign	=
+		('s('x) := if 'x then 0 else 'f('x, 0 - 'x))
+		('f('x, 'y) := if 'x then 1 else (if 'y then -1 else 'f('x - 1, 'y - 1)))
+		.
+endm
+
+smod MAIN is
+	protecting EXAMPLE .
+	protecting REC-MAIN{ByName} * (strat reduce to redName, strat xst to xbyname) .
+	protecting REC-MAIN{ByValue} * (strat reduce to redValue, strat xst to xbyvalue) .
+endsm

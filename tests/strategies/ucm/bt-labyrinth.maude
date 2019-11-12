@@ -1,0 +1,66 @@
+***
+*** Labyrinth problem solver, using the parametric backtracking algorithm.
+***
+
+load backtracking
+
+fmod POSITIONS is
+	protecting NAT .
+
+	sort Pos .
+
+	op [_,_] : Nat Nat -> Pos .
+endfm
+
+view Pos from TRIV to POSITIONS is
+	sort Elt to Pos .
+endv
+
+mod LABYRINTH is
+	including LIST{Pos} .
+
+	op contains : List{Pos} Pos -> Bool .
+	ops isSolution isOk : List{Pos} -> Bool .
+	op next : List{Pos} -> Pos .
+	op wall : -> List{Pos} .
+
+	vars X Y : Nat .
+	var P Q : Pos .
+	var L : List{Pos} .
+
+	eq wall = [5,5] [5,6] [5,7] [5, 8] [6,5] [7,5] .
+	eq isSolution(L [8,8]) = true .
+	eq isSolution(L) = false [owise] .
+	eq contains(nil, P) = false .
+	eq contains(Q L, P) = if P == Q then true else contains(L, P) fi .
+	eq isOk(L [X,Y]) = X >= 1 and Y >= 1 and X <= 8 and Y <= 8
+				and not(contains(wall, [X,Y])) and
+				not(contains(L, [X,Y])) .
+
+	crl [extend] : L => L P if next(L) => P .
+	rl [next] : next(L [X,Y]) => [X + 1, Y] .
+	rl [next] : next(L [X,Y]) => [X, Y + 1] .
+	rl [next] : next(L [X,Y]) => [sd(X, 1), Y] .
+	rl [next] : next(L [X,Y]) => [X, sd(Y, 1)] .
+endm
+
+smod LABYRINTH-STRAT is
+	protecting LABYRINTH .
+
+	strat expand @ List{Pos} .
+	sd expand := top(extend{next}) .
+endsm
+
+view LabyrinthBT from BT-ELEMS to LABYRINTH-STRAT is
+	sort State to List{Pos} .
+
+	strat expand to expand .
+endv
+
+smod LABYRINTH-BT-STRAT is
+	including BT-STRAT{LabyrinthBT} .
+endsm
+
+eof
+
+srew [1] [7,7] using solve .

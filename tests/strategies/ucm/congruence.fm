@@ -1,0 +1,187 @@
+***
+*** Abstract congruence clousure
+***
+*** Source: "Deduction, strategies and rewriting"
+***
+
+(fmod EQS-RULES is
+	inc META-TERM .
+
+	sort UConstant .
+	subsort UConstant < GroundTerm .
+
+	op c : Nat -> UConstant .
+
+	sort Eq EqS Rl RlS .
+	subsort Eq < EqS .
+	subsort Rl < RlS .
+
+	op _=_ : GroundTerm GroundTerm -> Eq [comm prec 60] .
+	op _->_ : GroundTerm GroundTerm -> Rl [prec 60] .
+	op mtEqS : -> EqS .
+	op __ : EqS EqS -> EqS [assoc comm prec 70 id: mtEqS] .
+	op mtRlS : -> RlS .
+	op __ : RlS RlS -> RlS [assoc comm prec 70 id: mtRlS] .
+endfm)
+
+(fmod AUX-FUNCTIONS is
+	inc EQS-RULES .
+
+	sorts GroundTermSet SubTerm .
+	subsorts GroundTerm < GroundTermSet SubTerm .
+
+	op mtTS : -> GroundTermSet .
+	op __ : GroundTermSet GroundTermSet -> GroundTermSet [assoc comm prec 45 id: mtTS] .
+
+	op subGroundTerms : GroundTerm -> GroundTermSet [memo] .
+	op subGroundTermsTL : GroundTermList -> GroundTermSet [memo] .
+	op subterm : GroundTerm -> GroundTermSet .
+
+	vars N M     : Nat .
+	var  a       : Constant .
+	var  c       : UConstant .
+	var  f       : Qid .
+	vars T T1 T2 : GroundTerm .
+	var  TL      : GroundTermList .
+	var  TS      : GroundTermSet .
+
+	eq subterm(T) = subGroundTerms(T) .
+
+	eq subGroundTerms(a) = a .
+	eq subGroundTerms(c) = c .
+	eq subGroundTerms(f[TL]) = f[TL] subGroundTermsTL(TL) .
+	eq subGroundTermsTL((T, TL)) = subGroundTerms(T) subGroundTermsTL(TL) .
+	eq subGroundTermsTL(empty) = mtTS .
+
+	op isOpConstants? : GroundTerm -> Bool .
+	op allConstants? : GroundTermList -> Bool .
+
+	eq isOpConstants?(a) = true .
+	eq isOpConstants?(f[TL]) = allConstants?(TL) .
+	eq isOpConstants?(f[TL]) = false [owise] .
+	eq allConstants?(empty) = true .
+	eq allConstants?((c, TL)) = allConstants?(TL) .
+	eq allConstants?(TL) = false [owise] .
+
+	op subst : GroundTerm GroundTerm GroundTerm -> GroundTerm .
+	op subst1 : GroundTermList GroundTerm GroundTerm  -> GroundTermList .
+
+	eq subst(T, T, T2) = T2 .
+	ceq subst(a, T1, T2) = a if a =/= T1 .
+	ceq subst(c, T1, T2) = c if c =/= T1 .
+	ceq subst(f[TL], T1, T2) = f[subst1(TL, T1, T2)] if f[TL] =/= T1 .
+	eq subst1((T, TL), T1, T2)
+	  = (subst(T, T1, T2), subst1(TL, T1, T2)) .
+	eq subst1(empty, T1, T2) = empty .
+
+	op _>_ : GroundTerm GroundTerm -> Bool .
+
+	eq c(N) > c(M) = N < M .
+	ceq T > c = isOpConstants?(T) if not(T :: UConstant) .
+	eq T1 > T2 = false [owise] .
+endfm)
+
+(mod ABSTRACT-CONGRUENCE-CLOSURE is
+	inc AUX-FUNCTIONS .
+
+	sort State .
+
+	op <_`,_`,_> : Nat EqS RlS -> State .
+
+	var  K        : Nat .
+	vars c d      : UConstant .
+	vars u u' v t : GroundTerm .
+	var  TS       : GroundTermSet .
+	var  E        : EqS .
+	var  R        : RlS .
+
+	crl [Ext] : < K, E u = v, R >
+	         => < K + 1, E u' = v, R t -> c >
+	         if t TS := subterm(u)			*** u[t]
+	         /\ isOpConstants?(t)			*** t -> c is a D-rule
+	         /\ c := c(K)				*** new constant
+	         /\ u' := subst(u, t, c) .
+
+	crl [Sim] : < K, E u = v, R t -> c >
+	         => < K, E u' = v, R t -> c >
+	         if t TS := subterm(u)
+	         /\ u' := subst(u, t, c) .
+
+	crl [Ori] : < K, E t = c, R >
+	         => < K, E, R t -> c >
+	         if t > c .
+
+	rl [Del] : < K, E t = t, R >
+	        => < K, E, R > .
+
+	crl [Ded] : < K, E, R t -> c t -> d >
+	         => < K, E c = d, R t -> d >
+	         if c > d .
+
+	crl [Col] : < K, E, R u -> c t -> d >
+	         => < K, E, R u' -> d t -> c >
+	         if t TS := subterm(u)
+	         /\ t =/= u				*** proper subterm
+		 /\ u' := subst(u, t, c) .
+endm)
+
+(smod ABSTRACT-CONGRUENCE-CLOSURE-STRAT is
+	protecting ABSTRACT-CONGRUENCE-CLOSURE .
+
+	var K   : Nat .
+	var S   : State .
+	var E   : EqS .
+	var Eq  : Eq .
+	var u v : GroundTerm .
+	var c d : UConstant .
+	var R   : RlS .
+
+	*** Shostak's algorithm
+	strat Shos @ State .
+	strat Shos : EqS @ State .
+	strat Shos : UConstant UConstant @ State .
+
+	sd Shos(E) := (Sim[E <- E] or-else Ext[E <- E]) ! ;
+	               (Del[E <- E] or-else
+	                 (matchrew S s.t. < K, E c = d, R > := S /\ c > d
+			   by S using (Ori[E <- E] ; Shos(c, d)))
+	               ) .
+
+	sd Shos(c, d) := (Col[c <- c, d <- d] ; Ded[c <- d, d <- d] !) ! .
+
+	sd Shos := (matchrew S s.t. < K, E Eq, R > := S by S using Shos(E)) ! .
+
+	*** Downey-Sethi-Tarjan algorithm
+	strats start DST @ State .
+	strat DST : EqS @ State .
+
+	*** The DST algorithm does not start with a set of equations
+	sd start := (Sim or-else Ext) ! ; Ori ! .
+
+	sd DST := ((Col ; try(Ded)) ! ;
+	          matchrew S s.t. < K, E c = d, R > := S by S using DST(E)) ! .
+
+	sd DST(E) := (Sim[E <- E] ! ; (Del[E <- E] or-else Ori[E <- E])) ! .
+endsm)
+
+***
+*** Example 1 of "Abstract Congruence Closure" by Leo Bachmair,
+*** 	Ashish Tiwari and Laurent Vigneron
+*** The input equations are {a = b, f(f(a)) = f(b)} and a minimal congruence closure is
+*** {a -> c0, b -> c0, f(c0) -> c1, f(c1) -> c0}
+***
+
+*** Using Shostak's algorithm
+(srew < 0, 'a.S = 'b.S 'f['f['a.S]] = 'f['b.S], mtRlS > using Shos .)
+*** rewrites: 3978 in 12ms cpu (9ms real) (331500 rewrites/second)
+*** < 4,mtEqS,'a.S -> c(1) 'b.S -> c(0) c(0) -> c(1) c(2) -> c(3)
+***	'f[c(1)] -> c(2) 'f[c(2)] -> c(3) >
+
+*** Using Downey-Sethi-Tarjan algorithm
+(dsrew < 0, 'a.S = 'b.S 'f['f['a.S]] = 'f['b.S], mtRlS > using start ; DST .)
+*** rewrites: 654 in 0ms cpu (1ms real) (~ rewrites/second)
+*** < 5,mtEqS,'a.S -> c(0) 'b.S -> c(1) c(0) -> c(3) c(1) -> c(4) c(2) -> c(4)
+***	'f[c(1)] -> c(2) 'f[c(3)] -> c(4) >
+
+*** By free rewriting (all solutions are valid)
+(rew < 0, 'a.S = 'b.S 'f['f['a.S]] = 'f['b.S], mtRlS > .)

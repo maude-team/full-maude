@@ -1,0 +1,24 @@
+***
+*** Simple word wrap algorithm
+***
+
+fmod WORDWRAP-EXAMPLES is
+	protecting LINE .
+
+	ops lorem quijote vingMilleLieues frankestein integer dracula : -> List{Word} .
+
+	eq lorem = "Lorem" "ipsum" "dolor" "sit" "amet," "consectetur" "adipiscing" "elit," "sed" "eiusmod" "tempor" "incidunt" "ut" "labore" "et" "dolore" "magna" "aliqua." "Ut" "enim" "ad" "minim" "veniam," "quis" "nostrud" "exercitation" "ullamco" "laboris" "nisi" "ut" "aliquid" "ex" "ea" "commodi" "consequat." "Quis" "aute" "iure" "reprehenderit" "in" "voluptate" "velit" "esse" "cillum" "dolore" "eu" "fugiat" "nulla" "pariatur." "Excepteur" "sint" "obcaecat" "cupiditat" "non" "proident," "sunt" "in" "culpa" "qui" "officia" "deserunt" "mollit" "anim" "id" "est" "laborum" .
+
+	eq quijote = "En" "un" "lugar" "de" "la" "Mancha," "de" "cuyo" "nombre" "no" "quiero" "acordarme," "no" "ha" "mucho" "tiempo" "que" "vivia" "un" "hidalgo" "de" "los" "de" "lanza" "en" "astillero," "adarga" "antigua," "rocin" "flaco" "y" "galgo" "corredor." "Una" "olla" "de" "algo" "mas" "vaca" "que" "carnero," "salpicon" "las" "mas" "noches," "duelos" "y" "quebrantos" "los" "sabados," "lantejas" "los" "viernes," "algun" "palomino" "de" "anadidura" "los" "domingos," "consumian" "las" "tres" "cuartas" "partes" "de" "su" "hacienda." .
+
+	eq vingMilleLieues = "L'annee" "1866" "fut" "marquee" "par" "un" "evenement" "bizarre," "un" "phenomene" "inexplique" "et" "inexplicable" "que" "personne" "n'a" "sans" "doute" "oublie." "Sans" "parler" "des" "rumeurs" "qui" "agitaient" "les" "populations" "des" "ports" "et" "surexcitaient" "l'esprit" "public" "a" "l'interieur" "des" "continents," "les" "gens" "de" "mer" "furent" "particulierement" "emus." .
+
+	eq frankestein = "You" "will" "rejoice" "to" "hear" "that" "no" "disaster" "has" "accompanied" "the" "commencement" "of" "an" "enterprise" "which" "you" "have" "regarded" "with" "such" "evil" "forebodings." "I" "arrived" "here" "yesterday;" "and" "my" "first" "task" "is" "to" "assure" "my" "dear" "sister" "of" "my" "welfare," "and" "increasing" "confidence" "in" "the" "success" "of" "my" "undertaking." .
+
+	eq dracula = "Having" "had" "some" "time" "at" "my" "disposal" "when" "in" "London," "I" "had" "visited" "the" "British" "Museum," "and" "made" "search" "among" "the" "books" "and" "maps" "in" "the" "library" "regarding" "Transylvania;" "it" "had" "struck" "me" "that" "some" "foreknowledge" "of" "the" "country" "could" "hardly" "fail" "to" "have" "some" "importance" "in" "dealing" "with" "a" "nobleman" "of" "that" "country." "I" "find" "that" "the" "district" "he" "named" "is" "in" "the" "extreme" "east" "of" "the" "country," "just" "on" "the" "borders" "of" "three" "states," "Transylvania," "Moldavia" "and" "Bukovina," "in" "the" "midst" "of" "the" "Carpathian" "mountains;" "one" "of" "the" "wildest" "and" "least" "known" "portions" "of" "Europe." "I" "was" "not" "able" "to" "light" "on" "any" "map" "or" "work" "giving" "the" "exact" "locality" "of" "the" "Castle" "Dracula," "as" "there" "are" "no" "maps" "of" "this" "country" "as" "yet" "to" "compare" "with" "our" "own" "Ordnance" "Survey" "maps;" "but" "I" "found" "that" "Bistritz," "the" "post" "town" "named" "by" "Count" "Dracula," "is" "a" "fairly" "well-known" "place." "I" "shall" "enter" "here" "some" "of" "my" "notes," "as" "they" "may" "refresh" "my" "memory" "when" "I" "talk" "over" "my" "travels" "with" "Mina." "In" "the" "population" "of" "Transylvania" "there" "are" "four" "distinct" "nationalities:" "Saxons" "in" "the" "South," "and" "mixed" "with" "them" "the" "Wallachs," "who" "are" "the" "descendants" "of" "the" "Dacians;" "Magyars" "in" "the" "West," "and" "Szekelys" "in" "the" "East" "and" "North." "I" "am" "going" "among" "the" "latter," "who" "claim" "to" "be" "descended" "from" "Attila" "and" "the" "Huns." "This" "may" "be" "so," "for" "when" "the" "Magyars" "conquered" "the" "country" "in" "the" "eleventh" "century" "they" "found" "the" "Huns" "settled" "in" "it." "I" "read" "that" "every" "known" "superstition" "in" "the" "world" "is" "gathered" "into" "the" "horse-shoe" "of" "the" "Carpathians," "as" "if" "it" "were" "the" "centre" "of" "some" "sort" "of" "imaginative" "whirlpool;" "if" "so" "my" "stay" "may" "be" "very" "interesting" .
+
+	eq integer = "abcdefg" "ijklm" "op" "rstuvwxyzab" "def" "ghijklmn" "pqrs" "t" "vwxyz" "bcd" "efghijklmnopq" "stuvwxy"
+		"abcdefghijkmnopq" "stv" "xyzbcde" "ghj" "lmopq" "su" "wxza" "cdefhijk" "mnop" "su" "wxyzab"
+		"a" "c" "defghijk" "mnopqrstuv" "xyzabcdef" "hijklmnopqrs" "uvwxy" "abcdefgh" "jklmno" "qrstu" "wxyza" .
+
+endfm

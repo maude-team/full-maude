@@ -1,0 +1,61 @@
+***
+*** Basic completion strategies
+*** Knuth-Bendix completion (TERESE, Table 7.7)
+***
+
+sload ../critical-pairs.maude
+
+mod KNUTH-BENDIX{X :: MODULE-AND-ORDER} is
+	pr CRITICAL-PAIRS{ForgetOrder}{X} .
+
+	sort System .
+	op <_,_> : EqS RlS -> System .
+
+	vars E F CPs : EqS .
+	vars R       : RlS .
+	vars R1 R2   : Rl .
+	vars s t u   : Term .
+
+	*** orienting an equation
+	crl [Orient] : < E s =. t , R >
+                    => < E, R s -> t > if s > t .
+
+	*** adding an equation
+	rl [Deduce] : < E, R >
+                   => < E F, R > [nonexec] . *** if  s <-- u --> t
+
+	*** simplifying an equation
+	crl [Simplify] : < E s =. t, R >
+                      => < E u =. t, R >
+		if u := reduce(s, R) .
+
+	*** deleting a trivial equation
+	rl [Delete] : < E s =. s, R >
+	           => < E, R > .
+endm
+
+smod KNUTH-BENDIX-STRAT-OLD{X :: MODULE-AND-ORDER} is
+	pr KNUTH-BENDIX{X} .
+
+	strat compl @ System .
+	strat deduction : RlS @ System .
+	strat crit-pairs : EqS  @ System .
+
+	var  E F : EqS .
+	var  R   : RlS .
+	vars s t : Term .
+	var  Sys : System .
+
+	sd compl := (matchrew Sys s.t. < E s =. t, R > := Sys by
+	               Sys using (try(Simplify[s <- s]) ;
+	                          try(Simplify[s <- t]) ;
+	                          (Delete[E <- E] or-else
+	                              (Orient[E <- E] ;
+	                               deduction(R))
+	                          )
+	                         )
+	            ) ! .
+
+	sd deduction(R) := matchrew Sys s.t. < E, R s -> t > := Sys by Sys using
+	                      Deduce[F <- equations(critical-pairs(s -> t, R s -> t))] .
+endsm

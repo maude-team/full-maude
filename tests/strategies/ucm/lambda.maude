@@ -1,0 +1,170 @@
+***
+*** Lambda calculus
+***
+
+fmod LAMBDA is
+	sort Var LambdaTerm .
+	subsort Var < LambdaTerm .
+
+	*** Adjust
+	op \_._ : Var LambdaTerm -> LambdaTerm [ctor format (y o m o -) prec 40 gather (& E)] .
+	op __ : LambdaTerm LambdaTerm -> LambdaTerm [ctor gather (E e)] .
+
+	*** Substitution
+	op subst : LambdaTerm Var LambdaTerm -> LambdaTerm .
+
+	var x y : Var .
+	var M N O : LambdaTerm .
+
+	eq subst(x, y, M) = if x == y then M else x fi .
+	eq subst(M N, x, O) = subst(M, x, O) subst(N, x, O) .
+	eq subst(\ x . M, y, N) = \ x . ( if x =/= y then
+			subst(M, y, N) else M fi ) .
+endfm
+
+mod LAMBDA-RULES is
+	pr LAMBDA .
+
+	var x y : Var .
+	var M N : LambdaTerm .
+
+	rl [beta] : (\ x . M) N => subst(M, x, N) .
+endm
+
+smod LAMBDA-STRATS is
+	pr LAMBDA-RULES .
+
+	*** Some alternative strategies to reduce a lambda term
+	*** (a single step)
+	strat full applicative normal byname byvalue @ LambdaTerm .
+
+
+	var x y z : Var .
+	var M N : LambdaTerm .
+
+	*** Beta reduction anywhere
+	sd full := all .
+
+	*** Applicative order (the innermost rightmost redex is reduced first)
+	sd applicative := (matchrew \ x . M by M using applicative)
+		| (matchrew M N by N using applicative)
+			or-else matchrew M N by M using applicative
+			or-else top(beta)
+		.
+
+	*** Normalization strategy (the outmost leftmost redex is reduced first)
+	sd normal := (matchrew \ x . M by M using normal)
+		| top(beta)
+			or-else (matchrew M N by M using normal)
+			or-else matchrew M N by N using normal
+		.
+
+	*** Call by name (like normal but without reducing inside abstractions)
+	sd byname := top(beta)
+		or-else (matchrew M N by M using byname)
+		or-else matchrew M N by N using byname .
+
+	*** Call by value (only the outermost redex is reduced and when the right term is simple)
+	sd byvalue := (match (\ x . M) z | match (\ x . M) (\ y . N)) ; top(beta) .
+
+endsm
+
+
+***
+*** A theory with a strategy for single step beta reductions
+
+sth LAMBDA-STRATEGY is 
+	including LAMBDA .
+
+	strat reduce @ LambdaTerm .
+endsth
+
+view Normal from LAMBDA-STRATEGY to LAMBDA-STRATS is
+	strat reduce to normal .
+endv
+
+view Applicative from LAMBDA-STRATEGY to LAMBDA-STRATS is
+	strat reduce to applicative .
+endv
+
+view ByName from LAMBDA-STRATEGY to LAMBDA-STRATS is
+	strat reduce to byname .
+endv
+
+view ByValue from LAMBDA-STRATEGY to LAMBDA-STRATS is
+	strat reduce to byvalue .
+endv
+
+smod LAMBDA-REDUCE{X :: LAMBDA-STRATEGY} is
+	strat fullReduce @ LambdaTerm .
+
+	sd fullReduce := reduce ? fullReduce : idle .
+endsm
+
+
+***
+*** An usable example
+
+fmod MAIN-BASE is
+	protecting NAT .
+	extending LAMBDA .
+
+	ops x y z p q f : -> Var [ctor] .
+	op v : Nat -> Var [ctor] .
+
+	ops I K K* S Omega Y : -> LambdaTerm .
+
+	*** Standard combinators
+	eq I = \ x . x .
+	eq K = \ x . \ y . x .
+	eq K* = \ x . \ y . y .
+	eq S = \ x . \ y . \ z . (x z (y z)) .
+
+	*** A term without normal form
+	eq Omega = (\ x . (x x)) (\ x . (x x)) .
+
+	*** Fix point combinator
+	eq Y = \ f . (\ x . (f (x x)) \ x . (f (x x))) .
+
+	***
+	*** Church numerals
+	var M N : LambdaTerm .
+	var K : Nat .
+
+	op churchNum : Nat -> LambdaTerm .
+
+	eq churchNum(K) = \ f . \ x . pow(f, x, K) .
+
+	*** Application power
+	op pow : LambdaTerm LambdaTerm Nat -> LambdaTerm .
+
+	eq pow(M, N, 0) = N .
+	eq pow(M, N, s(K)) = M pow(M, N, K) .
+
+	*** Operations
+	ops A+ A* : -> LambdaTerm .
+
+	eq A+ = \ x . \ y . \ p . \ q . (x p (y p q)) .
+	eq A* = \ x . \ y . \ z . \ q . (x (y z)) .
+endfm
+
+smod MAIN is
+	protecting MAIN-BASE .
+	extending LAMBDA-REDUCE{Normal} .
+endsm
+
+***
+*** Example terms
+eof
+
+*** Never ends
+rew Omega .
+
+*** Ends depending on the strategy used
+*** (it does not finish with applicative)
+rew K I Omega .
+
+*** These are rewritten in a different way depending on the strategy.
+rew ((\ x . v(1)) (\ y . v(2))) ((\ x . v(3)) (\ y . v(4))) .
+rew (\ x . (\ y . v(1)) z) v(4) .
+rew (\ x . x) (\ x . (\ y . z) v(1)) .

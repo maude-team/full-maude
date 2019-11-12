@@ -1,0 +1,81 @@
+***
+*** Strategies to watch the simplex execution.
+***
+
+load linprog-examples
+
+mod WATCH is
+	protecting SIMPLEX .
+
+	sort Watch .
+	subsort Nat < Watch .
+
+	*** Term that contains an LPState and a counter
+	op watch : LPState Nat -> Watch [ctor] .
+
+	var S	: LPState .
+	var V W : Vertex .
+	var R	: Rat .
+	var N	: Nat .
+
+	rl [count] : watch(S, N) => watch(S, s(N)) .
+	rl [reduce] : watch(S, N) => N .
+
+	*** Is the linear programming state final
+	op finalState : LPState -> Bool .
+
+	eq finalState(unbounded(V, W)) = true .
+	eq finalState(unfeasable) = true .
+	eq finalState(solution(R, V)) = true .
+	eq finalState(S) = false [owise] .
+endm
+
+view OnePivot from PIVOTING-STRAT to SIMPLEX-EXECUTION is
+	strat pivotingStrat to expr one(pivot) .
+endv
+
+view FreePivot from PIVOTING-STRAT to SIMPLEX-EXECUTION is
+	strat pivotingStrat to expr pivot .
+endv
+
+smod WATCH-STRAT{X :: PIVOTING-STRAT} is
+	protecting WATCH .
+	protecting SIMPLEX-STRAT{X} .
+
+	*** Counts iterations in the simplex execution
+	strats non-pivot watch loop @ Watch .
+
+	var S : LPState .
+	var N : Nat .
+
+	sd non-pivot := top(unbounded) | top(finish) | top(unfeas) | top(phase2) .
+
+	sd watch := try(matchrew watch(S, N) by S using makeTable) ; loop .
+
+	sd loop := (matchrew watch(S, N) by S using non-pivot or-else
+			(matchrew watch(S, N) by S using pivotingStrat) ; count
+		) ; (match watch(S, N) s.t. finalState(S) ? reduce : watch) .
+
+	*** Counts the number of iterations but using a normal | instead of
+	*** or-else (this happens when free pivoting and can be used to compare
+	*** the effect of the rule precedence)
+	strats watchor loopor @ Watch .
+
+	sd watchor := try(matchrew watch(S, N) by S using makeTable) ; loopor .
+
+	sd loopor := (matchrew watch(S, N) by S using non-pivot |
+			(matchrew watch(S, N) by S using pivotingStrat) ; count
+		) ; (match watch(S, N) s.t. finalState(S) ? reduce : watch) .
+
+endsm
+
+smod WATCH-MAIN is
+	protecting WATCH-STRAT{FreePivot} .
+	protecting SIMPLEX-EXAMPLES .
+endsm
+
+eof
+
+srew watch(opt1, 0) using watch . *** with views Bland and Lexico
+srew watch(io1, 0) using watchor . *** with views OnePivot and FreePivot
+srew watch(other, 0) using watchor . *** with view FreePivot give all possible numbers of iterations (in particular the optimus)

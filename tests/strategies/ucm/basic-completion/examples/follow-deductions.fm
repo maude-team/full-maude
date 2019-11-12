@@ -1,0 +1,49 @@
+***
+*** Basic completion strategies
+***
+*** The model checker can be used to follow the complete deductions
+*** or to check if some intermediate state has been reached.
+***
+
+load example-7.2.6	*** Change to the desired example
+load model-checker
+
+mod ANYEX-PREDS{X :: MODULE-AND-ORDER} is
+	pr COMPLETION{X} .
+	including SATISFACTION .
+
+	subsort System < State .
+
+	vars R S : RlS .
+	var  E   : EqS .
+	var  Sys : System .
+
+	op hasRules : RlS -> Prop [ctor] .
+	op rulesAre : RlS -> Prop [ctor] .
+
+	eq < E, R S > |= hasRules(R) = true .
+	eq Sys        |= hasRules(R) = false .
+
+	eq < mtEqS, R > |= rulesAre(R) = true .
+	eq Sys          |= rulesAre(R) = false .
+endm
+
+smod ANYEX-SCHECK is
+	*** Change to the desired example
+	protecting ANYEX-PREDS{Ex726} .
+	protecting EX726-STRAT .
+	including MODEL-CHECKER .
+	including STRATEGY-MODEL-CHECKER .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX0-STRAT .)
+
+(red modelCheck(< eqs,mtRlS >, []~ rulesAre('f['x:S] -> 'a.S 'g['x:S,'y:S] -> 'a.S 'h['x:S,'y:S] -> 'a.S), 'S-COMP))
+*** StrategyModelCheckerSymbol: Examined 15 system states.
+*** rewrites: 4563 in 6ms cpu (6ms real) (687095 rewrites/second)
+
+(red modelCheck(< eqs,mtRlS >, []~ rulesAre('f['x:S] -> 'a.S 'g['x:S,'y:S] -> 'a.S 'h['x:S,'y:S] -> 'a.S), 'S-COMP))
+*** StrategyModelCheckerSymbol: Examined 48 system states.
+*** rewrites: 24384 in 13ms cpu (15ms real) (1839885 rewrites/second)

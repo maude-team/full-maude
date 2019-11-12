@@ -1,0 +1,86 @@
+***
+*** Basic completion strategies
+*** Example table 7.4 (left group axioms)
+***
+
+sload all-completions	*** Suffix -old for the old version
+sload lpo.maude
+
+fmod EX74-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+
+	*** I > * > e
+
+	eq 'I >> '* = true .
+	eq 'I >> 'e = true .
+	eq '* >> 'e = true .
+endfm
+
+view Ex74Order from STRICT-ORDER to EX74-ORDER is
+	sort Qid to Qid .
+endv
+
+view Ex74 from MODULE-AND-ORDER to LPO{Ex74Order} + META-MODULE is
+	*** Module
+	op MOD to term (fmod 'M is
+	                 protecting 'BOOL .
+	                 sorts 'S .
+	                 none
+	                 op 'I : 'S -> 'S [none] .
+	                 op '* : 'S 'S -> 'S [none] .
+	                 op 'e : nil -> 'S [none] .
+	                 none
+	                 none
+	                endfm) .
+
+	*** Term order
+	var T T' : Term .
+	op T > T' to term T >lpo T' .
+endv
+
+fmod EX74 is
+	pr EQS-RULES{ForgetOrder}{Ex74} .
+
+	 op eqs : -> EqS .
+	 eq eqs = ('*['e.S ,'x:S] =. 'x:S
+	           '*['I['x:S], 'x:S] =. 'e.S
+	           '*['*['x:S, 'y:S], 'z:S] =. '*['x:S, '*['y:S, 'z:S]] ) .
+endfm
+
+smod EX74-STRAT is
+	pr EX74 .
+	pr ALL-COMPLETIONS{Ex74} .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX74-STRAT .)
+
+*** Common solution
+***	< mtEqS,'*['e.S,'x:S] -> 'x:S
+***	        '*['x3:S,'*['I['x3:S],'z5:S]] -> 'z5:S
+***	        '*['x3:S,'I['x3:S]] -> 'e.S
+***	        '*['z2:S,'e.S] -> 'z2:S
+***	        '*['*['x:S,'y:S],'z:S] -> '*[x:S,'*['y:S,'z:S]]
+***	        '*['I['x:S],'x:S] -> 'e.S
+***	        '*['I['y1:S],'*['y1:S,'z1:S]] -> 'z1:S
+***	        'I['e.S] -> 'e.S
+***	        'I['*['x3:S,'y5:S]] -> '*['I['y5:S],'I['x3:S]]
+***	        'I['I['y1:S]] -> 'y1:S >
+
+*** with the basic one (Knuth-Bendix)
+(dsrew [1] < eqs, mtRlS > using compl .)
+*** Takes too much time
+
+*** with N-Completion
+(srew < mtRlS, mtRlS, eqs > using N-COMP .)
+*** rewrites: 222369 in 637ms cpu (638ms real) (348590 rewrites/second)
+
+*** with S-Completion
+(srew < mtRlS, mtRlS, mtRlS, eqs > using S-COMP .)
+*** rewrites: 304856 in 2586ms cpu (2587ms real) (117872 rewrites/second)
+
+*** with ANS-Completion
+(dsrew < mtRlS, mtRlS, mtRlS, mtRlS, mtRlS, eqs > using ANS-COMP .)
+*** rewrites: 94965 in 99ms cpu (100ms real) (952240 rewrites/second)

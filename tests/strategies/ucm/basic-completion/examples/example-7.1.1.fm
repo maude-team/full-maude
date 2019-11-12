@@ -1,0 +1,68 @@
+***
+*** Basic completion strategies
+*** Example 7.1.1
+***
+
+sload all-completions	*** Suffix -old for the old version
+sload lpo.maude
+
+fmod EX711-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+endfm
+
+view Ex711Order from STRICT-ORDER to EX711-ORDER is
+	sort Qid to Qid .
+endv
+
+view Ex711 from MODULE-AND-ORDER to LPO{Ex711Order} + META-MODULE is
+	*** Module
+	op MOD to term (fmod 'M is
+		         protecting 'BOOL .
+	                 sorts 'S .
+	                 none
+	                 op '* : 'S 'S -> 'S [none] .
+	                 none
+	                 none
+	                endfm) .
+
+	*** Term order
+	var T T' : Term .
+	op T > T' to term T >lpo T' .
+endv
+
+fmod EX711 is
+	pr EQS-RULES{ForgetOrder}{Ex711} .
+
+	 op eqs : -> EqS .
+	 eq eqs = ('*['*['x:S, 'y:S], '*['y:S, 'z:S]] =. 'y:S) .
+endfm
+
+smod EX711-STRAT is
+	pr EX711 .
+	pr ALL-COMPLETIONS{Ex711} .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX711-STRAT .)
+
+*** Common solution
+*** 	< mtEqS, '*['y:S,'*['*['y:S,'z:S],'z1:S]] -> '*['y:S,'z:S]
+***	         '*['*['x1:S,'*['x:S,'y:S]],'y:S] -> '*['x:S,'y:S]
+***		 '*['*['x:S,'y:S],'*['y:S,'z:S]] -> 'y:S >
+
+*** with the basic one (Knuth-Bendix)
+(dsrew [1] < eqs, mtRlS > using compl .)
+*** rewrites: 15754 in 6ms cpu (8ms real) (2373305 rewrites/second)
+
+*** with N-Completion
+(dsrew [1] < eqs, mtRlS > using N-COMP .)
+*** rewrites: 18772 in 13ms cpu (13ms real) (1414512 rewrites/second)
+
+*** with S-Completion
+(dsrew [1] < eqs, mtRlS > using S-COMP .)
+*** rewrites: 18613 in 9ms cpu (10ms real) (1870653 rewrites/second)
+
+(dsrew [1] < mtRlS, mtRlS, mtRlS, mtRlS, mtRlS, eqs > using ANS-COMP .)
+*** rewrites: 16188 in 9ms cpu (9ms real) (1626607 rewrites/second

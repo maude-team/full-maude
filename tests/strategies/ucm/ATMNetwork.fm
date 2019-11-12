@@ -1,0 +1,265 @@
+***
+*** Telecommunication networks example
+***
+*** Adapted from "Towards a Strategy language from Maude", in turn adapted
+*** from "A Maude specification of an object-oriented database model for
+*** telecommunication networks".
+***
+
+mod PAIRNODES is
+	protecting CONFIGURATION .
+
+	sort NodesPair .
+	op <<_;_>> : Oid Oid -> NodesPair .
+endm
+
+mod SERVICEDEMAND is
+	protecting CONFIGURATION .
+	protecting NAT .
+
+	sort ServiceDemand .
+
+	*** A service demand consists of a service object identifier
+	*** and a bandwidth.
+	op <<_;_>> : Oid Nat -> ServiceDemand [ctor] .
+endm
+
+view ServiceDemand from TRIV to SERVICEDEMAND is
+	sort Elt to ServiceDemand .
+endv
+
+view Oid from TRIV to CONFIGURATION is
+	sort Elt to Oid .
+endv
+
+mod NETWORK is
+	extending CONFIGURATION .
+	protecting PAIRNODES .
+	protecting LIST{Oid} * (
+		sort List{Oid} to ListLinks,
+		sort NeList{Oid} to NeListLinks
+	) .
+	protecting LIST{ServiceDemand} * (
+		sort List{ServiceDemand} to ListDemand,
+		sort NeList{ServiceDemand} to NeListDemand
+	) .
+
+	*** Class names
+	ops C-Connection C-Link C-Node C-Service : -> Cid [ctor] .
+
+	*** C-Connection attributes
+	op Nodes :_ : NodesPair -> Attribute [ctor gather (&)] . *** also C-Link
+	op LinkList :_ : ListLinks -> Attribute [ctor gather (&)] .
+	op DemandList :_ : ListDemand -> Attribute [ctor gather (&)] .
+	*** C-Link attributes
+	op Load :_ : Nat -> Attribute [ctor gather (&)] .
+	*** C-Node attributes
+	op Capacity :_ : Nat -> Attribute [ctor gather (&)] .
+	op Used :_ : Nat -> Attribute [ctor gather (&)] .
+	*** C-Service attributes
+	op Capacity :_ : Nat -> Attribute [ctor gather (&)] .
+
+	*** Messages
+
+	*** Increment the traffic demand of a service between two nodes
+	*** by a given bandwidth. The message parameters are the identifier
+	*** of the external object issuing the request, the network identifier,
+	*** the pair of endpoints, and the service demand.
+	op MCom : Oid Oid Oid Oid ServiceDemand -> Msg [ctor msg] .
+
+	*** Increment the traffic load in the given links by a given bandwidth.
+	*** The parameters are the service identifier, the list of links and
+	*** the bandwidth increment.
+	op LinkListLoad : Oid ListLinks Nat -> Msg [ctor msg] .
+
+	*** Request a node to handle traffic for a service. The parameters are
+	*** the service and node identifiers, and the bandwidth accrual.
+	op PortNode : Oid Oid Nat -> Msg [ctor msg] .
+
+	vars O C N No No1 No2 M1 M2 S L : Oid .
+	vars Dl1 Dl2                    : ListDemand .
+	vars D D1 D2 Cp B Cap U Ld      : Nat .
+	var  Ll                         : ListLinks .
+	var  NeLl                       : NeListLinks .
+
+	*** Handles the MCom message and sends LinkListLoad messages to
+	*** continue updating links and nodes.
+	crl [MCom] : MCom(O, N, No1, No2, << S ; D >>)
+	   < C : C-Connection | DemandList : Dl1 << S ; D1 >> Dl2,
+		                Nodes : << M1 ; M2 >>, LinkList : Ll >
+	   < S : C-Service    | Capacity : Cp >
+	=> < C : C-Connection | DemandList : Dl1 << S ; D1 + D >> Dl2,
+	                        Nodes : << M1 ; M2 >>, LinkList : Ll >
+	   < S : C-Service    | Capacity : Cp > LinkListLoad(S, Ll, D * Cp)
+	if ((M1 == No1) and (M2 == No2)) or ((M1 == No2) and (M2 == No1)) .
+
+	*** The same rule but for the case when the service was not already
+	*** active in the connection. This condition is not required here but
+	*** will be enforced by means of strategies.
+	crl [MComNS] : MCom(O, N, No1, No2, << S ; D >>)
+	   < C : C-Connection | Nodes : << M1 ; M2 >>,
+	                        DemandList : Dl1, LinkList : Ll >
+	   < S : C-Service    | Capacity : Cp >
+	=> < C : C-Connection | DemandList : (<< S ; D >> Dl1),
+	                        Nodes : << M1 ; M2 >>, LinkList : Ll >
+	   < S : C-Service    | Capacity : Cp >
+	   LinkListLoad(S, Ll, D * Cp)
+	if ((M1 == No1) and (M2 == No2)) or ((M1 == No2) and (M2 == No1)) .
+
+	*** Updates the link's load in response to a LinkListLoad message,
+	*** and emits PortNode messages to follow the process in the nodes.
+	rl [LinkListLoad] : LinkListLoad(S, L NeLl, B)
+	   < L : C-Link | Nodes : << No1 ; No2 >>, Load : Ld >
+	=> < L : C-Link | Nodes : << No1 ; No2 >>, Load : Ld + B >
+           LinkListLoad(S, NeLl, B)
+	   PortNode(S, No1, B) PortNode(S, No2, B) .
+
+	rl [LinkListLoad] : LinkListLoad(S, L, B)
+	   < L : C-Link | Nodes : << No1 ; No2 >>, Load : Ld >
+	=> < L : C-Link | Nodes : << No1 ; No2 >>, Load : Ld + B >
+	   PortNode(S, No1, B) PortNode(S, No2, B) .
+
+	*** Manages PortNode messages. Nodes only accept services if
+	*** they have enough capacity.
+	crl [PortNode] : PortNode(S, No, B)
+	   < S  : C-Service | Capacity : Cp >
+	   < No : C-Node    | Capacity : Cap, Used : U >
+	=> < No : C-Node    | Capacity : Cap, Used : U + B quo Cap >
+	   < S  : C-Service | Capacity : Cp >
+	if Cp <= Cap .
+endm
+
+mod MEDIATOR is
+	including NETWORK .
+
+	*** Class names
+	op Mediator : -> Cid [ctor] .
+
+	*** Mediator attributes
+	op Config :_ : Configuration -> Attribute [ctor gather (&)] .
+
+	*** Messages
+
+	*** Request the mediator to increment the service bandwidth between
+	*** two nodes. Its singture coincides with MCom.
+	op ChDemand : Oid Oid Oid Oid ServiceDemand -> Msg [ctor msg] .
+
+	*** Acknowledge that the demand has succeeded.
+	*** The message are sent to the external object that initiates
+	*** the request. The rest of parameters are the connection
+	*** endpoints and the network identifier.
+	op To_AckChDemand_and_in_ : Oid Oid Oid Oid -> Msg [ctor msg] .
+
+	*** Acknowledge that no connection exists between the given nodes.
+	*** Its signature coincides with AckChDemand.
+	op To_NoConnectionBetween_and_in_ : Oid Oid Oid Oid -> Msg [ctor msg] .
+
+	*** Acknowledge that the service capacity is not supported between
+	*** the requested two nodes.
+	op To_ServiceCapacityNotSupported : Oid -> Msg [ctor msg] .
+
+	vars O N No1 No2 S : Oid .
+	vars C C'          : Configuration .
+	var  D             : Nat .
+
+	*** Translates the ChDemand in a MCom message within the nested
+	*** configuration, whose evolution will be controlled by
+	*** strategies.
+	crl [ChDemand-ok] : ChDemand(O, N, No1, No2, << S ; D >>)
+	   < N : Mediator | Config : C >
+	=> < N : Mediator | Config : C' >
+           (To O AckChDemand No1 and No2 in N)
+	if  C MCom(O, N, No1, No2, << S ; D >>) => C' .
+
+	crl [ChDemand-NoConn] : ChDemand(O, N, No1, No2, << S ; D >>)
+	   < N : Mediator | Config : C >
+	=> < N : Mediator | Config : C >
+           (To O NoConnectionBetween No1 and No2 in N)
+	if  C MCom(O, N, No1, No2, << S ; D >>) => C' .
+
+	rl [ChDemand-NoCap] : ChDemand(O, N, No1, No2, << S ; D >>)
+	   < N : Mediator | Config : C >
+	=> < N : Mediator | Config : C >
+           (To O ServiceCapacityNotSupported) .
+endm
+
+mod EXAMPLE is
+	protecting MEDIATOR .
+
+	ops O1 C1 C2 C3 L1 L2 L3 L4 L5 L6
+            N N1 N2 N3 N4 N5 N6 N7 SS1 SS2 SS3 : -> Oid [ctor] .
+	op iniConf : -> Configuration .
+
+	eq iniConf =
+	< C1 : C-Connection | Nodes : << N1 ; N4 >>, LinkList : L1 L2 L3,
+		              DemandList : << SS1 ; 3 >> << SS2 ; 5 >> >
+	< C2 : C-Connection | Nodes : << N1 ; N7 >>, LinkList : L1 L4,
+		              DemandList : << SS1 ; 2 >> << SS2 ; 6 >> >
+	< C3 : C-Connection | Nodes : << N1 ; N6 >>, LinkList : L5 L6,
+		              DemandList : << SS1 ; 8 >> << SS2 ; 1 >> >
+	< L1 : C-Link       | Nodes : << N1 ; N2 >>, Load : 27 >
+	< L2 : C-Link       | Nodes : << N2 ; N3 >>, Load : 13 >
+	< L3 : C-Link       | Nodes : << N3 ; N4 >>, Load : 13 >
+	< L4 : C-Link       | Nodes : << N2 ; N7 >>, Load : 14 >
+	< L5 : C-Link       | Nodes : << N1 ; N5 >>, Load : 10 >
+	< L6 : C-Link       | Nodes : << N5 ; N6 >>, Load : 10 >
+	< N1 : C-Node       | Capacity : 10, Used : 37 >
+	< N2 : C-Node       | Capacity : 10, Used : 54 >
+	< N3 : C-Node       | Capacity : 10, Used : 26 >
+	< N4 : C-Node       | Capacity : 10, Used : 13 >
+	< N5 : C-Node       | Capacity : 10, Used : 20 >
+	< N6 : C-Node       | Capacity : 10, Used : 10 >
+	< N7 : C-Node       | Capacity : 10, Used : 14 >
+	< SS1 : C-Service   | Capacity : 1 >
+	< SS2 : C-Service   | Capacity : 15 >
+	< SS3 : C-Service   | Capacity : 10 > .
+endm
+
+
+smod STRAT is
+	protecting MEDIATOR .
+
+	strats iterate Sconf Smediator @ Configuration .
+
+	vars Conf Crest            : Configuration .
+	vars O No1 No2 M1 M2 N S C : Oid .
+	var  D                     : Nat .
+
+	*** Iterates LinkListLoad and PortNode executions until
+	*** all nodes in the path are updated.
+	sd iterate := LinkListLoad ? PortNode ; PortNode ; iterate : idle .
+
+	*** Tries to apply MComNS only if MCom fails.
+	sd Sconf := matchrew Conf s.t. MCom(O, N, No1, No2, << S ; D >>)
+                                     < C : C-Connection | Nodes : << M1 ; M2 >> >
+                                     Crest := Conf
+	                             /\ ((M1 == No1) and (M2 == No2))
+	                                 or ((M1 == No2) and (M2 == No1))
+	               by Conf using (MCom[C <- C] or-else MComNS[C <- C]) ;
+		    iterate .
+
+	sd Sconf := MCom ? iterate : MComNS ; iterate .
+
+	*** Tries to complete the demand. In case it is not possible,
+	*** it finds out the reason and answer accordingly.
+	sd Smediator := ChDemand-ok{Sconf}
+		        or-else (ChDemand-NoConn{not(MCom | MComNS)}
+		                 or-else ChDemand-NoCap) .
+endsm
+
+smod MAIN is
+	protecting STRAT .
+	protecting EXAMPLE .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select MAIN .)
+
+*** In the following examples the external object which sends the demands
+*** does not really exist. The message replies are left in the configuration.
+
+(srew < N : Mediator | Config : iniConf > ChDemand(O1, N, N1, N4, << SS1 ; 4 >>) using Smediator .)
+(srew < N : Mediator | Config : iniConf > ChDemand(O1, N, N1, N4, << SS2 ; 12 >>) using Smediator .)
+(srew < N : Mediator | Config : iniConf > ChDemand(O1, N, N1, N4, << SS3 ; 4 >>) using Smediator .)
+(srew < N : Mediator | Config : iniConf > ChDemand(O1, N, N4, N7, << SS3 ; 4 >>) using Smediator .)

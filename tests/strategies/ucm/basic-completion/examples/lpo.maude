@@ -1,0 +1,67 @@
+***
+*** Basic completion strategies
+*** Lexicographic path ordering
+***
+
+fth STRICT-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+	vars A B C : Qid .
+	ceq A >> B = false if B >> A [nonexec] .
+	ceq A >> C = true if A >> B /\ B >> C [nonexec] .
+endfth
+
+fmod LPO{X :: STRICT-ORDER} is
+	 pr META-TERM .
+	 pr EXT-BOOL .
+
+	 op _>lpo_ : Term Term -> Bool .
+
+	 op _>lpo_ : TermList TermList -> Bool .
+	 op _>=lpo_ : Term Term -> Bool .
+	 op any_>=lpo_ : TermList Term -> Bool .
+	 op all_>lpo_ : Term TermList -> Bool .
+	 op _occurs-in_ : Qid Term -> Bool .
+	 op _occurs-in_ : Qid NeTermList -> Bool .
+
+	 vars T T'       : Term .
+	 vars TL TL'     : TermList .
+	 var  NeTL NeTL' : NeTermList .
+	 vars C C'       : Constant .
+	 vars X Y        : Variable .
+	 vars F F'       : Qid .
+
+	 eq X occurs-in Y = X == Y .
+	 eq X occurs-in C = false .
+	 eq X occurs-in F[TL] = X occurs-in TL .
+	 eq X occurs-in (T, NeTL) = (X occurs-in T) or-else (X occurs-in NeTL) .
+
+	 eq T >lpo X = (X =/= T) and-then (X occurs-in T) .
+
+	 eq X >lpo C = false .
+	 eq X >lpo F[TL] = false .
+
+	 eq C >lpo C' = if (getName(C) >> getName(C') == true) then true else false fi .
+	 eq C >lpo F[TL]
+	   = if (getName(C) >> F == true) then (all C >lpo TL) else false fi .
+
+	 eq F[TL] >lpo C
+	   = if (F >> getName(C) == true) then true
+	     else (any TL >=lpo C) fi .
+	 eq F[TL] >lpo F'[TL']
+	   = (any TL >=lpo F'[TL'])
+	     or-else (if ((F >> F') == true) then (all F[TL] >lpo TL') else false fi)
+	     or-else ((F == F') and-then (all F[TL] >lpo TL')
+	                        and-then (TL >lpo TL')) .
+
+	 eq any (T, NeTL) >=lpo T' = (T >=lpo T') or-else (any NeTL >=lpo T') .
+	 eq any T >=lpo T' = T >=lpo T' .
+
+	 eq T >=lpo T' = (T == T') or-else (T >lpo T') .
+
+	 eq all T >lpo (T', NeTL) = (T >lpo T') and-then (all T >lpo NeTL) .
+	 eq all T >lpo T' = T >lpo T' .
+
+	 eq (T, NeTL) >lpo (T', NeTL') = (T >lpo T') or-else (T == T' and-then NeTL >lpo NeTL') .
+
+endfm

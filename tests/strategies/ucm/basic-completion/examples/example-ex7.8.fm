@@ -1,0 +1,80 @@
+***
+*** Basic completion strategies
+*** Example ex7.8
+***
+
+sload all-completions	*** Suffix -old for the old version
+sload lpo.maude
+
+fmod EX78-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+
+	*** f > h > c
+
+	eq 'f >> 'h = true .
+	eq 'f >> 'c = true .
+	eq 'h >> 'c = true .
+endfm
+
+view Ex78Order from STRICT-ORDER to EX78-ORDER is
+	sort Qid to Qid .
+endv
+
+view Ex78 from MODULE-AND-ORDER to LPO{Ex78Order} + META-MODULE is
+	*** Module
+	op MOD to term (fmod 'M is
+	                 protecting 'BOOL .
+	                 sorts 'S .
+	                 none
+	                 op 'h : 'S 'S -> 'S [none] .
+	                 op 'f : 'S 'S -> 'S [none] .
+	                 op 'c : nil -> 'S [none] .
+	                 none
+	                 none
+	                endfm) .
+
+	*** Term order
+	var T T' : Term .
+	op T > T' to term T >lpo T' .
+endv
+
+fmod EX78 is
+	pr EQS-RULES{ForgetOrder}{Ex78} .
+
+	op eqs : -> EqS .
+	eq eqs = ('f['x:S, 'y:S] =. 'h['x:S,'c.S]
+		  'f['x:S, 'y:S] =. 'h['c.S,'y:S]
+		  'h['c.S,'c.S] =. 'c.S ) .
+endfm
+
+smod EX78-STRAT is
+	pr EX78 .
+	pr ALL-COMPLETIONS{Ex78} .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX78-STRAT .)
+
+*** No solution is obtained (the results of Knuth-Bendix are two states
+*** with equations)
+
+*** the basic one (Knuth-Bendix) does not finish successfully
+(srew < eqs, mtRlS > using compl .)
+*** rewrites: 27348 in 16ms cpu (15ms real) (1648264 rewrites/second)
+*** 	< 'f['x:S,'y:S] =. 'h['x:S,'c.S],
+***	  'f['x:S,'y:S] -> 'h['c.S,'y:S]
+***		  'h['c.S,'c.S] -> 'c.S >
+*** We could use compl ; match < mtEqS, R:RlS > to discard these no solutions.
+
+*** with N-Completion
+(srew < eqs, mtRlS > using N-COMP .)
+*** rewrites: 1448 in 3ms cpu (5ms real) (437991 rewrites/second)
+
+*** with S-Completion
+(srew < eqs, mtRlS > using S-COMP .)
+*** rewrites: 1532 in 3ms cpu (5ms real) (459508 rewrites/second)
+
+(srew < eqs, mtRlS > using ANS-COMP .)
+*** rewrites: 1532 in 3ms cpu (5ms real) (465229 rewrites/second)

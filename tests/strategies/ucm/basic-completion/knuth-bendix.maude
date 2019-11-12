@@ -1,0 +1,40 @@
+***
+*** Basic completion strategies
+*** Knuth-Bendix completion (TERESE, Table 7.7)
+***
+
+sload completion-rules
+
+smod KNUTH-BENDIX-STRAT{X :: MODULE-AND-ORDER} is
+	pr COMPLETION{X} .
+
+	strat compl           @ System .
+	strat deduction : RlS @ System .
+
+	var  E F  : EqS .
+	var  R QR : RlS .
+	var  r    : Rl .
+	vars s t  : Term .
+	var  Sys  : System .
+
+	sd compl := (matchrew Sys s.t. < E s =. t, R > := Sys by
+	               Sys using (
+	                 *** Simplify both sides of the selected equation
+	                 try(Simplify[s <- s]) ;
+	                 try(Simplify[s <- t]) ;
+	                 *** In case it is reduced to an indentity, delete it
+	                 (Delete[E <- E] or-else (
+	                      *** Otherwise, orient the equation as a rule
+	                     Orient[E <- E] ;
+	                     *** and calculate its critical pairs
+	                     deduction(R)
+	                   )
+	                 )
+	              )
+	            ) ! .
+
+	*** R should be the complement of the new rule in the set of rules
+	*** (the partially instantiated pattern will then match that rule)
+	sd deduction(R) := matchrew Sys s.t. < E, R s -> t > := Sys by Sys using
+	                     Deduce[r <- s -> t, QR <- mtRlS] .
+endsm

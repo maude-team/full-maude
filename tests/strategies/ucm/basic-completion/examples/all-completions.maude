@@ -1,0 +1,15 @@
+***
+*** Basic completion strategies
+***
+
+sload ../knuth-bendix
+sload ../N-completion
+sload ../S-completion
+sload ../ANS-completion
+
+smod ALL-COMPLETIONS{X :: MODULE-AND-ORDER} is
+	protecting KNUTH-BENDIX-STRAT{X} .	*** compl
+	protecting N-COMPLETION-STRAT{X} .	*** N-COMP
+	protecting S-COMPLETION-STRAT{X} .	*** S-COMP
+	protecting ANS-COMPLETION-STRAT{X} .	*** ANS-COMP
+endsm

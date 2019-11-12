@@ -1,0 +1,153 @@
+***
+*** Drawing fractals with Maude
+***
+
+load flatMap
+
+fmod FRACTAL is
+	protecting FLOAT .
+	sort Fractal Point .
+
+	op `(_, _`) : Float Float -> Point [ctor format (- - - s - -) prec 40] .
+	op  _ >> _  : Point Point -> Fractal [ctor prec 45] .
+endfm
+
+view Fractal from TRIV to FRACTAL is
+	sort Elt to Fractal .
+endv
+
+fmod SPACE is
+	protecting LIST{Fractal} * (
+		sort List{Fractal} to Space,
+		op __ to __ [prec 46 format (- n -)]
+	) .
+endfm
+
+fmod FRACTAL-FUNCS is
+	protecting SPACE .
+
+	*** Change of coordinates from a system whose X axis is given by the
+	*** first two points. The segment between those is unitary and the Y
+	*** axis has positive orientation respect to the points order.
+	op relativePoint : Point Point Float Float -> Point .
+	*** Point within the oriented segment fixed by two points with proporcional length
+	op fractionPoint : Point Point Float -> Point .
+	*** Third point of an equilateral triangle with positive orientation
+	op equilateralThird : Point Point -> Point .
+	*** The length of the fractal vector
+	op length : Fractal -> Float .
+
+	*** Equations using coordinates
+
+	var X Y X' Y' Z T : Float .
+
+	*** A + (B - A) * Z + perp(B - A) * T
+	eq relativePoint((X, Y), (X', Y'), Z, T) = (X + (X' - X) * Z - (Y' - Y) * T, Y + (Y' - Y) * Z + (X' - X) * T) .
+	eq length((X, Y) >> (X', Y')) = sqrt((X' - X) ^ 2.0 + (Y' - Y) ^ 2.0) .
+
+
+	*** Equations using points
+
+	var A B : Point .
+	var l : Float .
+
+	eq fractionPoint(A, B, l) = relativePoint(A, B, l, 0.0) .
+	eq equilateralThird(A, B) = relativePoint(A, B, 0.5, sqrt(3.0) / 2.0) .
+endfm
+
+mod VON-KOCH is
+	protecting FRACTAL-FUNCS .
+
+	var A B C D E : Point .
+
+	*** Von Koch curve
+	*** (using crl it is less efficient in time and the number of rewrites is the same, but it is more readable)
+	crl [von-koch] : A >> B => 	A >> C   C >> E    E >> D    D >> B
+					if C := fractionPoint(A, B, 1.0 / 3.0) 
+					/\ D := fractionPoint(A, B, 2.0 / 3.0)
+					/\ E := equilateralThird(C, D) .
+endm
+
+mod SIERPINSKI is
+	protecting FRACTAL-FUNCS .
+
+	var A B : Point .
+
+	*** Sierpinski triangle
+	rl [sierpinski] : A >> B => 	A >> fractionPoint(A, B, 0.5)
+					fractionPoint(A, B, 0.5) >> B
+					equilateralThird(A, fractionPoint(A, B, 0.5)) >>
+					equilateralThird(fractionPoint(A, B, 0.5), B) .
+endm
+
+mod CANTOR-DUST is
+	protecting FRACTAL-FUNCS .
+
+	var A B : Point .
+
+	*** Cantor dust
+	rl [cantor-dust] : A >> B =>	A >> fractionPoint(A, B, 1.0 / 3.0)
+					fractionPoint(A, B, 2.0 / 3.0) >> B
+					relativePoint(A, B, 0.0, 2.0 / 3.0) >> relativePoint(A, B, 1.0 / 3.0, 2.0 / 3.0)
+					relativePoint(A, B, 2.0 / 3.0, 2.0 / 3.0) >> relativePoint(A, B, 1.0, 2.0 / 3.0) .
+endm
+
+smod EXPAND-EPSILON{X :: MAP-LIST} is
+	protecting FRACTAL-FUNCS .
+
+	*** Reduces anywhere until the length of the fractals is less than eps
+	strat expandToEpsilon : Float @ Space .
+
+	var F	: Fractal .
+	var Eps : Float .
+
+	sd expandToEpsilon(Eps) := one(amatchrew F s.t. length(F) > Eps by F using st) ! .
+endsm
+
+view Sierpinski from MAP-LIST to SIERPINSKI is
+	sort Elt to Fractal .
+	sort List to Space .
+
+	strat st to expr sierpinski .
+endv
+
+view VonKoch from MAP-LIST to VON-KOCH is
+	sort Elt to Fractal .
+	sort List to Space .
+
+	strat st to expr von-koch .
+endv
+
+view CantorDust from MAP-LIST to CANTOR-DUST is
+	sort Elt to Fractal .
+	sort List to Space .
+
+	strat st to expr cantor-dust .
+endv
+
+smod FRACTALS-STRAT is
+	*** The parameter view can be changed to any of the fractals
+	protecting STRAT-MAP{Sierpinski} * (
+		sort List{Striv0}{Fractals} to Space,
+		op __ to __ [prec 46 format (- n -)]
+	) .
+	protecting EXPAND-EPSILON{Sierpinski} * (
+		sort List{Striv0}{Fractals} to Space,
+		op __ to __ [prec 46 format (- n -)]
+	) .
+
+	protecting NAT .
+
+	strat expandTimes : Nat @ Space .
+
+	var F : Fractal .
+	var S : Space .
+	var N : Nat .
+
+	sd expandTimes(0) := idle .
+	sd expandTimes(s(N)) := map4 ; expandTimes(N) .
+endsm
+
+eof
+
+srew (0.0, 0.0) >> (1.0, 0.0) using expandTimes(4) .

@@ -1,0 +1,186 @@
+****
+*** Linear programming and simplex algorithm
+*** Examples
+***
+
+load linprog
+
+mod SIMPLEX-EXAMPLES is
+	protecting SIMPLEX .
+
+	*** optX examples. Source: exercise sheets of
+	*** Optimización (P. Miranda).
+	ops opt1 opt2 opt3 opt4 opt5 opt6 opt7 opt8 opt9 opt10 opt11 opt12 : -> LinearProgProblem .
+
+	*** ioX examples. Source: exercise sheets of
+	*** Investigación Operativa (M.I. Sobrón).
+	ops io1 io2 io3 io4 io5 -> LinearProgProblem .
+
+	op other : -> LinearProgProblem .
+
+	*** Randomly generated (but modified)
+	ops rand1 rand2 rand3 : -> LinearProgProblem .
+
+	*** Source: http://www.maths.ed.ac.uk/hall/MS-96/MS96010.pdf
+	op cycles : -> SimplexTable .
+
+	eq opt1	= min -2 x(2) + x(3) st (
+		1 x(1) - 2 x(2) + x(3) >= -4,
+		1 x(1) +   x(2) + x(3) <= 9,
+		2 x(1) -   x(2) - x(3) <= 5
+	) .
+
+	eq opt2 = min 1 x(1) + 6 x(2) - 7 x(3) + x(4) + 5 x(5) st (
+		1 x(1) - 3/4 x(2) + 2 x(3) - 1/4 x(4)        = 5,
+		       -1/4  x(2) + 3 x(3) - 3/4 x(4) + x(5) = 5,
+		2 x(1) -     x(2) -   x(3)                   <= 5
+	) .
+
+	eq opt3 = max 3 x(1) + 2 x(2) + x(3) st (
+		2 x(1) +   x(2) - x(3) <= 4,
+		1 x(1) - 2 x(2) + x(3) >= 2
+	) .
+
+	eq opt4 = max 6 x(1) + 4 x(2) st (
+		2 x(1) + 3 x(2) <= 8,
+		3 x(1) +   x(2) <= 12,
+		1 x(1) +   x(2) <= 6
+	) .
+
+	eq opt5 = max 1 x(1) + 2 x(2) st (
+		1  x(1) + x(2) >= 1,
+		-1 x(1) + x(2) <= 3,
+		        1 x(2) <= 5
+	) .
+
+	eq opt6 = max 3 x(1) + 2 x(2) + 1 x(3) st (
+		2 x(1) +   x(2) - x(3) <= 4,
+		1 x(1) - 2 x(2) + x(3) >= 2
+	) .
+
+	eq opt7 = min 9 x(1) + 7 x(2) + 4 x(3) + 2 x(4) + 6 x(5) + 10 x(6) st (
+		1 x(1) + x(2) + x(3) 				= 8,
+				     1 x(4) + x(5) + x(6)	= 5,
+		1 x(1) 		     + x(4) 			= 6,
+		       1 x(2)		    + x(5)		= 4,
+			      1 x(3)	 	   + x(6)	= 3
+	) .
+
+	eq opt8 = min 4 x(1) + 12 x(2) + 18 x(3) st (
+		1 x(1) 	      + 3 x(3) >= 3,
+		       2 x(2) + 2 x(3) >= 5
+	) .
+
+	eq opt9 = min 2 x(1) + 3 x(2) + 5 x(3) + 2 x(4) + 3 x(5) st (
+		1 x(1) +      x(2) + 2 x(3) + x(4) + 3 x(5) >= 4,
+		2 x(1) + (-2) x(2) + 3 x(3) + x(4) +   x(5) >= 3
+	) .
+
+	eq opt10 = max 1 x(1) + x(2) + 3 x(3) st (
+		 1 x(1) + x(2) +   x(3) <= 12,
+		-1 x(1) + x(2)		<= 5,
+		        1 x(2) + 2 x(3)	<= 8,
+		 1 x(1)			<= 3,
+			1 x(2)		<= 6,
+				 1 x(3) <= 4
+	) .
+
+	eq opt11 = min 1 x(1) + 2 x(2) + 3 x(3) - x(4) st (
+		 1 x(1) - x(2) + x(3) - 2 x(4) 	<= 6,
+		-1 x(1) + x(2) - x(3) + x(4)	<= 8,
+		 2 x(1) + x(2) - x(3) 		>= 2,
+		1 x(1)				<= 3,
+		        1 x(2)			<= 4,
+		        1 x(2)			>= 1,
+			       1 x(3)		<= 10,
+				      1 x(4)	<= 5,
+				      1 x(4)	>= 2
+	) .
+
+	eq opt12 = max 2 x(1) + 3 x(2) - 2 x(3) st (
+		1 x(1) + x(2) + x(3)	<= 10,
+		2 x(1) + x(2) - x(3)	>= 5,
+		1 x(1) 			<= 4,
+		       1 x(2)		<= 8,
+			      1 x(3)	>= 2
+	) .
+
+	eq io1 = max 4 x(1) + 5 x(2) + 1 x(3) + 3 x(4) - 5 x(5) + 8 x(6) st (
+		1 x(1)          - 4 x(3) + 3 x(4) +   x(5) +   x(6) <= 1,
+		5 x(1) + 3 x(2) +   x(3)          - 5 x(5) + 3 x(6) <= 4,
+		4 x(1) + 5 x(2) - 3 x(3) + 3 x(4) - 4 x(5) +   x(6) <= 4,
+		-1 x(2)                  + 2 x(4) +   x(5) - 5 x(6) <= 5,
+		-2 x(1) +  x(2) +   x(3) +   x(4) + 2 x(5) + 2 x(6) <= 7,
+		2 x(1) - 3 x(2) + 2 x(3) -   x(4) + 4 x(5) + 5 x(6) <= 5
+	) .
+
+	eq io2 = min 1 x(1) + 2 x(2) st (
+		-3 x(1) +   x(2) <= -1,
+		 1 x(1) -   x(2) <= 1,
+		-2 x(1) + 7 x(2) <= 6,
+		 9 x(1) - 4 x(2) <= -3,
+		-5 x(1) + 2 x(2) <= -3,
+		 7 x(1) - 3 x(2) <= 6
+	) .
+
+	eq io3 = max 8 x(1) - 9 x(2) + 12 x(3) + 4 x(4) + 11 x(5) st (
+		2 x(1) - 3 x(2) + 4 x(3) +   x(4) + 3 x(5) <= 1,
+		1 x(1) + 7 x(2) + 3 x(3) - 2 x(4) +   x(5) <= 1,
+		5 x(1) + 4 x(2) - 6 x(3) + 2 x(4) + 3 x(5) <= 22
+	) .
+
+	eq io4 = min -7 x(1) + 7 x(2) - 2 x(3) - x(4) - 6 x(5) st (
+		 3 x(1) -   x(2) + x(3) - 2 x(4) 		= -3,
+		 2 x(1) +   x(2) 	+   x(4) + x(5) 	= 4,
+		-1 x(1) + 3 x(2) 	- 3 x(4) 	+ x(6)	= 12
+	) .
+
+	eq io5 = min 34 x(1) + 5 x(2) + 19 x(3) + 9 x(4) st (
+		-2 x(1) -   x(2) -   x(3) - x(4) <= -9,
+		 4 x(1) - 2 x(2) + 5 x(3) + x(4) <= 8,
+		-4 x(1) +   x(2) - 3 x(3) - x(4) <= -5
+	) .
+
+	eq other = max 100 x(1) + 10 x(2) + 1 x(3) st (
+		1   x(1)                   <= 100,
+		20  x(1) +    x(2)         <= 10000,
+		200 x(1) + 20 x(2) +  x(3) <= 1000000
+	) .
+
+	eq rand1 = min -5 x(2) - 7 x(3) + 10 x(4) st (
+		-14 x(1) + 5 x(2) + 7 x(3) 		= 6,
+		1 x(1) - 10 x(2) + 10 x(3) - 4 x(4) 	= -7,
+		-2 x(1) - 10 x(2) + 15 x(3) - 19 x(4) 	= 6,
+		-5 x(1) + 4 x(2) + 1 x(3) - 1 x(4) 	= 7
+	) .
+
+
+	eq rand2 = min -5 x(1) + 3 x(2) - 1 x(3) - 4 x(5) st (
+		-5 x(1) + 3 x(2) - 1 x(3) - 4 x(5) = 3,
+		-1 x(1) - 4 x(3) - 6 x(4) + 2 x(5) = 0,
+		-4 x(1) - 6 x(2) + 2 x(3) + 2 x(4) + 6 x(5) = -6
+	) .
+
+	eq rand3 = min -7 x(1) + 16 x(3) + 2 x(4) - 4 x(5) - 5 x(6) - 12 x(9) + 2 x(10) st (
+		8 x(2) + 3 x(3) - 3 x(4) - 5 x(6) + 3 x(7) - 5 x(8) + 6 x(9) >= -3,
+		3 x(1) + 6 x(2) - 1 x(3) + 5 x(4) + 6 x(5) + 8 x(6) + 3 x(7) + 5 x(8) - 4 x(9) <= 6,
+		-4 x(1) + 6 x(2) + 2 x(3) + 3 x(4) + 3 x(7) + 1 x(8) + 3 x(9) - 2 x(10) = 2,
+		-6 x(1) - 1 x(2) - 4 x(3) + 2 x(4) + 4 x(5) + 1 x(7) - 4 x(9) - 2 x(10) <= 7,
+		-7 x(1) - 1 x(3) - 1 x(4) - 4 x(5) - 6 x(6) + 5 x(7) + 5 x(10) >= -7,
+		1 x(9) <= 9
+	) .
+
+
+	eq cycles = TSimplex max @ x(5) x(6) x(7) | (
+		(1/4 x(1) -  8 x(2) -   1 x(3) + 9 x(4) + 1 x(5)                   = 0)
+		(1/2 x(1) - 12 x(2) - 1/2 x(3) + 3 x(4)          + 1 x(6)          = 0)
+		(                       1 x(3)                            + 1 x(7) = 1)
+	) | (
+		3/4 x(1) - 20 x(2) +  1/2 x(3)                   - 6 x(4)          = -3
+	).
+endm
+
+smod MAIN is
+	protecting SIMPLEX-EXAMPLES .
+	protecting SIMPLEX-READY .
+endsm

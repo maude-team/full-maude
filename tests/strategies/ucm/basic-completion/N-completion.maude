@@ -1,0 +1,63 @@
+***
+*** Basic completion strategies
+*** N-completion (Lescanne89, Figure 1)
+***
+
+sload completion-rules
+
+smod N-COMPLETION-STRAT{X :: MODULE-AND-ORDER} is
+	pr COMPLETION{X} .
+	pr PARTITION-AUX{X} .
+
+	strats N-COMP @ System .
+	*** The first argument of these strategies is the set T of rules
+	*** whose critical pairs have not been computed yet. The rules in
+	*** the state term that are not in T are the set R.
+	strats N-COMP success orient deduce simplify-rules : RlS @ System .
+
+	var  e         : Eq .
+	var  r         : Rl .
+	vars E E' F    : EqS .
+	vars R T R' QR : RlS .
+	vars s t       : Term .
+	var  Sys Sys'  : System .
+
+	sd N-COMP := N-COMP(mtRlS) .
+
+	sd N-COMP(T) :=
+		success(T) or-else
+		*** First, equations are oriented and added to T. Then,
+		*** identities are deduced from critical pairs.
+		(match < mtEqS, R > ?
+		  deduce(T) :
+		  orient(T)
+		) .
+
+	*** The procedure succeeds if both T and E are empty
+	sd success(mtRlS) := match < mtEqS, R > .
+
+	sd deduce(r T) := Deduce[r <- r, QR <- mtRlS] ;
+	                  simplify-rules(T) .
+
+	sd simplify-rules(T) :=
+		matchrew Sys s.t. < E, R > := Sys by Sys using (
+		  *** Try to simplify a rule. On success, probe the state to
+		  *** find what changed and possibly update T. If no rule
+		  *** can be simplified, move S to T and continue.
+		  (L-Simplify[QR <- mtRlS] | R-Simplify[QR <- mtRlS]) ?
+		    matchrew Sys' s.t. < E', R' > := Sys' by Sys' using
+		      simplify-rules(combine(T, R, R')) :
+		    N-COMP(T)
+		)  .
+
+	sd orient(T) :=
+		*** Simplify equations exhaustively
+		(Delete | Simplify) ! ;
+		*** If there is any equation left, orient it and add the rule to T
+		(match < mtEqS, R > ? N-COMP(T) :
+		  matchrew Sys s.t. < s =. t E, R > := Sys /\ s > t by Sys using (
+		    Orient[E <- E] ;
+		    N-COMP(s -> t T)
+		  )
+		) .
+endsm

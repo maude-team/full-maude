@@ -1,0 +1,778 @@
+***
+*** Linear programming and simplex algorithm
+***
+
+***
+*** Linear algebra language
+***
+fmod LINPROG-BASE is
+	protecting INT .
+	protecting RAT .
+
+	sorts Variable LinearMonomial LinearExpr .
+	subsorts LinearMonomial < LinearExpr .
+
+	sort LinearEqn LinearConst .
+	subsorts LinearEqn < LinearConst .
+
+	*** Variables (with a total order on them)
+	*** 'h' will be used for slack variables and 'a' for artificial ones in
+	*** the simplex algorithm. The user may also use them or extend the
+	*** variable sort.
+	ops x h a 	: Nat -> Variable [ctor] .
+	op _ < _	: Variable Variable -> Bool .
+
+	*** Monomials (a variable with a coefficient)
+	op _ _ 		: Rat Variable -> LinearMonomial [ctor prec 32 gather (e e)] .
+
+	*** Linear expressions
+	op zero		: -> LinearExpr [ctor] .
+	op _ + _ 	: LinearExpr LinearExpr -> LinearExpr [ctor assoc comm id: zero prec 34] .
+
+	*** Linear constraints
+	op _ <= _	: LinearExpr Rat -> LinearConst [ctor prec 36 gather (e e)] .
+	op _ >= _	: LinearExpr Rat -> LinearConst [ctor prec 36 gather (e e)] .
+	op _ = _ 	: LinearExpr Rat -> LinearEqn [ctor prec 36 gather (e e)] .
+
+
+	*** Derived operations (abusing of notation)
+	op _ * _	: Rat LinearMonomial -> LinearMonomial [prec 32 gather (e e)] .
+	op _ * _	: Rat LinearExpr -> LinearExpr [ditto] .
+	op _ * _ 	: Rat LinearConst -> LinearConst [prec 32 gather (e e)] .
+	op _ / _ 	: LinearConst NzRat -> LinearConst [prec 32 gather (e e)] .
+
+	op _ + _ 	: LinearConst LinearConst -> LinearConst [assoc comm prec 36 gather (E e)] .
+	op _ - _ 	: LinearConst LinearConst -> LinearConst [prec 36 gather (E e)] .
+	op _ - _	: LinearExpr LinearExpr -> LinearExpr [prec 33 gather (E e)] .
+	op _ + _ 	: LinearExpr Variable -> LinearExpr [prec 33 gather (E e)] .
+	op _ - _ 	: LinearExpr Variable -> LinearExpr [prec 33 gather (E e)] .
+
+
+	***
+	*** Equations
+	***
+	var V 		: Variable .
+	var Xp Xp' 	: LinearExpr .
+	var Mn Mn'	: LinearMonomial .
+	var Cst Cst'	: LinearConst .
+	var K K1 K2 	: Rat .
+	var Q 		: NzRat .
+	var N M 	: Int .
+
+	*** Variable order
+	eq x(N) < x(M) 		= N < M .
+	eq h(N) < h(M)		= N < M .
+	eq a(N) < a(M)		= N < M .
+	eq x(N)	< h(M)		= true .
+	eq x(N) < a(M)		= true .
+	eq h(N) < a(M)		= true .
+	eq V < V':Variable	= false [owise] .
+
+	*** Simplification of expressions
+	eq K1 V + K2 V		= (K1 + K2) V .
+	eq 0 V			= zero .
+
+	*** Scalar product and quotient for constraints
+	eq K1 * (K2 V) 		= (K1 * K2) V .
+	eq K * (Mn + Xp) 	= K * Mn + K * Xp .
+	eq K * zero		= zero .
+
+	eq K1 * (Xp <= K)	= if K1 < 0 then K1 * Xp >= K1 * K else K1 * Xp <= K1 * K fi .
+	eq K1 * (Xp >= K)	= if K1 < 0 then K1 * Xp <= K1 * K else K1 * Xp >= K1 * K fi .
+	eq K1 * (Xp = K)	= K1 * Xp = K1 * K .
+
+	eq Cst / Q = (1 / Q) * Cst .
+
+	*** Constraint addition and subtraction
+	eq (Xp <= K1) + (Xp' <= K2)	= (Xp + Xp') <= (K1 + K2) .
+	eq (Xp >= K1) + (Xp' >= K2)	= (Xp + Xp') >= (K1 + K2) .
+	eq (Xp = K1)  + (Xp' = K2)	= (Xp + Xp') = (K1 + K2) .
+	eq (Xp <= K1) + (Xp' = K2)	= (Xp + Xp') <= (K1 + K2) .
+	eq (Xp >= K1) + (Xp' = K2)	= (Xp + Xp') <= (K1 + K2) .
+	eq (Xp >= K1) + (Xp' <= K2)	= (Xp - Xp') >= K1 - K2 .
+
+	eq Xp - Xp' 		= Xp + (-1) * Xp' .
+	eq Cst - Cst' 		= Cst + (-1) * Cst' .
+
+	*** Addition and subtraction of variables
+	eq Xp + V 		= Xp + 1 V .
+	eq Xp - V 		= Xp + (-1) V .
+
+endfm
+
+
+***
+*** Views for some of the previous definitions
+***
+view LinearConst from TRIV to LINPROG-BASE is
+	sort Elt to LinearConst .
+endv
+
+view LinearEqn from TRIV to LINPROG-BASE is
+	sort Elt to LinearEqn .
+endv
+
+view Variable from TRIV to LINPROG-BASE is
+	sort Elt to Variable .
+endv
+
+view Variable< from STRICT-TOTAL-ORDER to LINPROG-BASE is
+	sort Elt to Variable .
+endv
+
+
+
+***
+*** Linear programming problems
+***
+fmod LINPROG is
+	protecting LINPROG-BASE .
+	protecting SET{LinearConst} * (sort Set{LinearConst} to Restrictions) .
+
+	sort LinearProgProblem .
+
+	*** Linear programming problems
+	op min _ st _ : LinearExpr Restrictions -> LinearProgProblem [ctor prec 50] .
+	op max _ st _ : LinearExpr Restrictions -> LinearProgProblem [ctor prec 50] .
+endfm
+
+
+***
+*** Auxiliary functions for the Simplex algorithm
+***
+fmod LINPROG-EXTRA is
+	protecting LINPROG .
+	protecting SET{Variable} .
+
+	*** Helper functions for equations
+	op lhs 		: LinearConst -> LinearExpr .
+	op rhs		: LinearConst -> Rat .
+	*** Transforms the constraint so that the constant term is positive
+	op positive 	: Restrictions -> Restrictions .
+	op positive 	: LinearConst -> LinearConst .
+
+	*** Variables in a linear expression and derivatives
+	op variables	: LinearExpr -> Set{Variable} .
+	op variables	: LinearConst -> Set{Variable} .
+	op variables	: Restrictions -> Set{Variable} .
+
+	*** Maximum index in a set of variables (or zero if empty)
+	op maxIndex	: Set{Variable} -> Nat .
+	*** Minimum variable in the set (if any)
+	op minVar	: Set{Variable} -> Set{Variable} .
+	op minVar	: NeSet{Variable} -> Variable .
+
+	*** Coefficient of a variable in a expression or constraint
+	op coeff	: LinearExpr Variable -> Rat .
+	op coeff	: LinearConst Variable -> Rat .
+
+
+	***
+	*** Equations
+	***
+	var V W 	: Variable .
+	var N		: Nat .
+	var K		: Rat .
+	var Mn		: LinearMonomial .
+	var Xp		: LinearExpr .
+	var Cst		: LinearConst .
+	var Csts	: NeSet{LinearConst} .
+	var Res 	: Restrictions .
+	var Vset 	: Set{Variable} .
+	var Vneset 	: NeSet{Variable} .
+
+
+	*** Access to equation terms
+	eq lhs(Xp <= K)	= Xp .
+	eq lhs(Xp = K)	= Xp .
+	eq lhs(Xp >= K)	= Xp .
+
+	eq rhs(Xp <= K)	= K .
+	eq rhs(Xp = K)  = K .
+	eq rhs(Xp >= K) = K .
+
+	*** Positive constraint
+	eq positive(Cst)		= if rhs(Cst) < 0 then (-1) * Cst else Cst fi .
+	eq positive(empty)		= empty .
+	eq positive((Cst, Csts))	= positive(Cst), positive(Csts) .
+
+	*** Variables in an expression
+	eq variables(zero) 	= empty .
+	eq variables(K V + Xp)	= V, variables(Xp) .
+
+	*** ...in a constraint
+	eq variables(Cst)	= variables(lhs(Cst)) .
+
+	*** ...in a set of equations
+	eq variables((empty).Restrictions)	= empty .
+	eq variables((Cst, Res))		= variables(Cst), variables(Res) .
+
+	*** Maximum index
+	eq maxIndex(empty) 		= 0 .
+	eq maxIndex((x(N), Vset))	= max(N, maxIndex(Vset)) .
+	eq maxIndex((h(N), Vset))	= max(N, maxIndex(Vset)) .
+	eq maxIndex((a(N), Vset))	= max(N, maxIndex(Vset)) .
+	eq maxIndex((V, Vset))		= maxIndex(Vset) [owise] .
+
+	eq minVar(empty)	= empty .
+	eq minVar(V) 		= V .
+	eq minVar((V, Vneset)) = if minVar(Vneset) < V then minVar(Vneset) else V fi .
+
+	*** Coefficient in an expression
+	eq coeff(zero, V) 	= 0 .
+	eq coeff(K W, V)	= if V == W then K else 0 fi .
+	eq coeff(Mn + Xp, V)	= coeff(Mn, V) + coeff(Xp, V) .
+
+	*** ...and in a linear constraint
+	eq coeff(Cst, V) = coeff(lhs(Cst), V) .
+
+endfm
+
+
+***
+*** The simplex table
+***
+fmod SIMPLEX-TABLE is
+	protecting EXT-BOOL .
+	protecting LINPROG-EXTRA .
+	protecting LIST{Variable} .
+	protecting LIST{LinearEqn} * (sort List{LinearEqn} to Equations) .
+
+
+	*** The objective of the optimization
+	sort Direction .
+
+	ops min max : -> Direction [ctor] .
+
+	*** Simplex table sorts
+	sort SimplexTable SimplexTablePhaseI .
+	subsort SimplexTablePhaseI < SimplexTable .
+
+	*** Table constructors
+	*** Its fields are: direction (max or min), variables in the base,
+	*** constraints, and reduced costs (i.e. a linear equation with the
+	*** reduced costs and minus the objective function value as the
+	*** constant term).
+	op TSimplex _ @ _ | _ | _  : Direction List{Variable} Equations LinearEqn -> SimplexTable [ctor format (!y o d d d d d d d)].
+
+	*** Its fields are: objective (max or min), artificial variables, variables in the base,
+	*** equations, reduced costs for the 2nd phase, and reduced cost for the 1st phase.
+	op TSimplexFaseI _ @ _ @  _ | _ | _ @ _ : Direction Set{Variable} List{Variable}
+		Equations LinearEqn LinearEqn -> SimplexTablePhaseI [ctor format (!b o d d d d d d d d d d d)] .
+
+
+	*** Table components accessors
+	op equations		: SimplexTable -> Equations .
+	op objfunction		: SimplexTable -> LinearEqn .
+	op direction		: SimplexTable -> Direction .
+	op basis		: SimplexTable -> List{Variable} .
+	op variables		: SimplexTable -> Set{Variable} .
+
+	*** The equation for a given variable from the basis
+	*** (partial function, the variable must be in the basis)
+	op equation		: SimplexTable Variable ~> LinearEqn .
+
+	*** Remove variables from the simplex table
+	*** (it is needed to pass from the first to the second phase)
+	op removeVars		: SimplexTable Set{Variable} -> SimplexTable .
+
+	*** Other information relevant to the simplex algorithm
+	op negativeColumn? 	: SimplexTable Variable ~> Bool .
+	op enterVars		: SimplexTable -> Set{Variable} .
+	op leaveVars		: SimplexTable Variable -> Set{Variable} .
+	*** Only entering variables whose reduced costs are minima (or maxima)
+	op enterVars*		: SimplexTable -> Set{Variable} .
+
+	*** Current vertex being visited by the algorithm
+	sort Assignement Vertex .
+	subsort Assignement < Vertex .
+
+	*** Vertices are expressed a set of assignments to the variables
+	*** in the basis (as usual, all unassigned variables are zero)
+	op _ <- _		: Variable Rat -> Vertex [prec 40] .
+	op null			: -> Vertex [ctor] .
+	op _ _			: Vertex Vertex -> Vertex [ctor assoc comm id: null gather (e E)] .
+
+
+	*** Get the current vertex
+	op vertex		: SimplexTable -> Vertex .
+
+	*** Get the negated column coefficients
+	*** (this may be a direction of unbounded improvement of the
+	*** objective function)
+	op columnCoeffs		: SimplexTable Variable -> Vertex .
+
+
+	***
+	*** Equations
+	***
+	var Table	: SimplexTable .
+	var Xp		: LinearExpr .
+	var K K' Ko	: Rat .
+	var V W		: Variable .
+	var Vs		: Set{Variable} .
+	var Vlist	: List{Variable} .
+	var Eqs		: Equations .
+	var Of Of1 Of2 	: LinearEqn .
+	var Eqn Eqn'	: LinearEqn .
+	var D 		: Direction .
+	var N		: Nat .
+
+	***
+	*** Access to the table components.
+
+	eq equations(TSimplex D @ Vlist | Eqs | Of) = Eqs .
+	eq equations(TSimplexFaseI D @ Vs @ Vlist | Eqs | Of2 @ Of1) = Eqs .
+
+	eq objfunction(TSimplex D @ Vlist | Eqs | Of) = Of .
+	eq objfunction(TSimplexFaseI D @ Vs @ Vlist | Eqs | Of2 @ Of1) = Of1 .
+
+	eq direction(TSimplex D @ Vlist | Eqs | Of) = D .
+	eq direction(TSimplexFaseI D @ Vs @ Vlist | Eqs | Of2 @ Of1) = min .
+
+	eq basis(TSimplex D @ Vlist | Eqs | Of) = Vlist .
+	eq basis(TSimplexFaseI D @ Vs @ Vlist | Eqs | Of2 @ Of1) = Vlist .
+
+	eq variables(Table) = variables(equations(Table)), variables(objfunction(Table)) .
+
+	op variables : Equations -> Set{Variable} .
+	eq variables(Eqn Eqs) = variables(Eqn), variables(Eqs) .
+
+	***
+	*** Access to the equation for a basis variable
+
+	eq equation(TSimplex D @ Vlist | Eqs | Of, V) = equation(Eqs, Vlist, V) .
+	eq equation(TSimplexFaseI D @ Vs @ Vlist | Eqs | Of2 @ Of1, V) = equation(Eqs, Vlist, V) .
+
+	op equation	: Equations List{Variable} Variable -> LinearEqn .
+
+	eq equation(Eqn Eqs, V Vlist, W) = if V == W then Eqn else equation(Eqs, Vlist, W) fi .
+
+	***
+	*** Is the column for the variable v negative?
+
+	eq negativeColumn?(Table, V) = negativeColumn?(equations(Table), V) .
+
+	op negativeColumn? 	: Equations Variable -> Bool .
+
+	eq negativeColumn?(nil, V) = true .
+	eq negativeColumn?(Eqn Eqs, V) = coeff(lhs(Eqn), V) <= 0 and-then negativeColumn?(Eqs, V) .
+
+	***
+	*** Vertex where the simplex algorithm is
+
+	eq vertex(Table) = vertex(equations(Table), basis(Table)) .
+
+	op vertex	: Equations List{Variable} -> Vertex .
+
+	eq vertex(nil, Vlist)		= null .
+	eq vertex(Eqn Eqs, V Vlist) 	= (V <- rhs(Eqn)) vertex(Eqs, Vlist) .
+
+
+	***
+	*** Current coefficients
+
+	eq columnCoeffs(Table, V) = columnCoeffs(equations(Table), basis(Table), V) .
+
+	op columnCoeffs	: Equations List{Variable} Variable -> Vertex .
+
+	eq columnCoeffs(nil, Vlist, V)		= null .
+	eq columnCoeffs(Eqn Eqs, W Vlist, V)	= (W <- - coeff(Eqn, V)) columnCoeffs(Eqs, Vlist, V) .
+
+
+	***
+	*** Remove variables (from table, equations and expressions)
+
+	eq removeVars(TSimplex D @ Vlist | Eqs | Of, Vs) =
+		TSimplex D @ Vlist | removeVars(Eqs, Vs) | removeVars(Of, Vs) .
+
+	op removeVars 		: Equations Set{Variable} -> Equations .
+	op removeVars 		: LinearExpr Set{Variable} -> LinearExpr .
+
+	eq removeVars((nil).Equations, Vs)	= nil .
+	eq removeVars((Xp = K) Eqs, Vs) 	= (removeVars(Xp, Vs) = K) removeVars(Eqs, Vs) .
+
+	eq removeVars(zero, Vs)			= zero .
+	eq removeVars(K V + Xp, Vs)		= (if V in Vs then zero else K V fi) + removeVars(Xp, Vs) .
+
+
+	***
+	*** Variables that are able to enter and leave the basis
+
+	eq enterVars(Table) 	= enterVars(direction(Table), lhs(objfunction(Table))) .
+
+	op enterVars		: Direction LinearExpr -> Set{Variable} .
+
+	eq enterVars(D, zero) 			= empty .
+	eq enterVars(D, K V + Xp) 		=
+		if D == min and K < 0 or D == max and K > 0 then
+			 V else empty fi, enterVars(D, Xp) .
+
+
+	eq leaveVars(Table, V) 	= leaveVars(direction(Table), equations(Table), basis(Table), V) .
+
+	*** without a candidate (initialization)
+	op leaveVars		: Direction Equations List{Variable} Variable -> Set{Variable} .
+	*** with candidates
+	op leaveVars		: Direction Equations List{Variable} Variable Rat Set{Variable}  -> Set{Variable} .
+
+	eq leaveVars(D, nil, Vlist, V)		= empty .
+	eq leaveVars(D, Eqn Eqs, W Vlist, V)	=
+		if coeff(Eqn, V) > 0 then
+			leaveVars(D, Eqs, Vlist, V, rhs(Eqn) / coeff(Eqn, V), W)
+		else
+			leaveVars(D, Eqs, Vlist, V)
+		fi .
+
+	eq leaveVars(D, nil, Vlist, V, Ko, Vs) 		= Vs .
+	eq leaveVars(D, Eqn Eqs, W Vlist, V, Ko, Vs) 	=
+		if coeff(Eqn, V) > 0 then
+			if rhs(Eqn) / coeff(Eqn, V) == Ko then
+				leaveVars(D, Eqs, Vlist, V, Ko, (W, Vs))
+			else
+				if rhs(Eqn) / coeff(Eqn, V) < Ko then
+					leaveVars(D, Eqs, Vlist, V, rhs(Eqn) / coeff(Eqn, V), W)
+				else
+					leaveVars(D, Eqs, Vlist, V, Ko, Vs)
+				fi
+			fi
+		else
+			leaveVars(D, Eqs, Vlist, V, Ko, Vs)
+		fi .
+
+
+	***
+	*** Extreme entering variables
+
+	eq enterVars*(Table)	= enterVars*(direction(Table), lhs(objfunction(Table)), 0, empty) .
+
+	*** The fourth argument is the current candidates for entering variables
+	*** and the thirds is their reduced cost. As a hack, we can initialize them
+	*** to 0 and empty.
+	op enterVars*		: Direction LinearExpr Rat Set{Variable} -> Set{Variable} .
+
+	eq enterVars*(D, zero, Ko, Vs) 		= Vs .
+	eq enterVars*(D, K V + Xp, Ko, Vs) 	=
+		if K == Ko and K =/= 0 then
+			enterVars*(D, Xp, Ko, (V, Vs))
+		else
+			if (D == min and K < Ko or D == max and K > Ko) then
+				enterVars*(D, Xp, K, V)
+			else
+				enterVars*(D, Xp, Ko, Vs)
+			fi
+		fi .
+endfm
+
+***
+*** Simplex table construction
+***
+mod SIMPLEX-CONSTRUCTION is
+	protecting SIMPLEX-TABLE .
+
+	sort ConstructionState .
+	subsort LinearProgProblem SimplexTable < ConstructionState .
+
+	op <_ :> _> (_)	: Restrictions SimplexTable Nat -> ConstructionState [ctor] .
+
+	var Problem	: LinearProgProblem .
+	var Table	: SimplexTable .
+
+	var F 		: LinearExpr .
+	var Of Of2 Of1	: LinearEqn .
+	var Eqs		: Restrictions .
+	var Eqs'	: Equations .
+	var D		: Direction .
+	var Xp Xc	: LinearExpr .
+	var K K'	: Rat .
+	var N		: Nat .
+	var Vlist	: List{Variable} .
+	var Vs		: Set{Variable} .
+
+	rl [pack] : max F st Eqs  =>
+		< positive(Eqs) :> TSimplex max @ nil | nil | (F = 0) > (maxIndex(variables((Eqs, F = 0))) + 1) .
+	rl [pack] : min F st Eqs  =>
+		< positive(Eqs) :> TSimplex min @ nil | nil | (F = 0) > (maxIndex(variables((Eqs, F = 0))) + 1) .
+
+	***
+	*** No two phases method up to now
+
+	rl [transfer] : < (Xp <= K), Eqs :> TSimplex D @ Vlist | Eqs' | Of > (N)
+		=> < Eqs :> TSimplex D @ Vlist h(N) | Eqs' (Xp + h(N) = K) | Of > (s(N)) .
+
+	rl [transfer] : < (Xp = K), Eqs :> TSimplex D @ Vlist | Eqs' | Of > (N)
+		=> < Eqs :> TSimplexFaseI D @ a(N) @ Vlist a(N) | Eqs' (Xp + a(N) = K) | Of @ ((-1) * (Xp = K)) > (s(N)) .
+
+	rl [transfer] : < (Xp >= K), Eqs :> TSimplex D @ Vlist | Eqs' | Of > (N)
+		=> < Eqs :> TSimplexFaseI D @ a(s(N)) @ Vlist a(s(N)) | Eqs' (Xp - h(N) + a(s(N)) = K) | Of @ ((-1) * (Xp - h(N) = K)) > (N + 2) .
+
+	***
+	*** Two phases method
+
+	rl [transfer] : < (Xp <= K), Eqs :> TSimplexFaseI D @ Vs @ Vlist | Eqs' | Of2 @ Of1 > (N)
+		=> < Eqs :> TSimplexFaseI D @ Vs @ Vlist h(N) | Eqs' (Xp + h(N) = K) | Of2 @ Of1 > (s(N)) .
+
+	rl [transfer] : < (Xp = K), Eqs :> TSimplexFaseI D @ Vs @ Vlist | Eqs' | Of2 @ (Xc = K') > (N)
+		=> < Eqs :> TSimplexFaseI D @ Vs, a(N) @ Vlist a(N) | Eqs' (Xp + a(N) = K) | Of2 @ (Xc - Xp = K' - K) > (s(N)) .
+
+	rl [transfer] :  < (Xp >= K), Eqs :> TSimplexFaseI D @ Vs @ Vlist | Eqs' | Of2 @ (Xc = K') > (N)
+		=> < Eqs :> TSimplexFaseI D @ Vs, a(s(N)) @ Vlist a(s(N)) | Eqs' (Xp - h(N) + a(s(N)) = K) | Of2 @ (Xc - Xp + h(N) = K' - K) > (N + 2) .
+
+	rl [unpack] : < empty :> Table > (N) => Table .
+endm
+
+
+***
+*** Simplex algorithm execution
+***
+
+mod SIMPLEX-EXECUTION is
+	protecting SIMPLEX-TABLE .
+
+	sort SimplexState .
+	subsort SimplexTable < SimplexState .
+
+	***
+	*** Other states of the simplex algorithm
+	***
+
+	*** Pivoting (this is simplified equationally to a simplex table)
+	op pivot	: SimplexTable Variable Variable -> SimplexState .
+	op pivot(_, enters: _, leaves: _, _) { _ :vars> _, _ :eqns> _ } :
+		SimplexTable Variable Variable LinearEqn List{Variable} List{Variable} Equations Equations -> SimplexState .
+
+	*** Optimal solution with the objective function value
+	op solution	 	: Rat Vertex -> SimplexState [ctor format (g o)] .
+
+	*** The problem is unbounded following (vertex and direction given as witness)
+	op unbounded		: Vertex Vertex -> SimplexState [ctor format (r o)] .
+
+	*** The problem is unfeasable (empty polytope)
+	op unfeasable		: -> SimplexState [ctor format (r o)] .
+
+
+	var V Ve Vl		: Variable .
+	var Table		: SimplexTable .
+	var D 			: Direction .
+	var Vs Vs'		: List{Variable} .
+	var Eqs Eqs' Eqe	: Equations .
+	var Vset R S		: Set{Variable} .
+	var Eqn	Eqn'		: LinearEqn .
+	var Of2 Of1		: LinearEqn .
+	var Xp 			: LinearExpr .
+	var K			: Rat .
+
+
+	*** The main part of the simplex algorithm: pivoting, so that Ve enter
+	*** the basis and Vl leaves it. We build a "translation" term to equationally
+	*** apply the required linear transformations one equation at a time.
+	*** (the resulting equation for Ve is precalculated because it will be
+	*** frecuently used)
+	eq pivot(Table, Ve, Vl) = pivot(Table, enters: Ve, leaves: Vl, equation(Table, Vl) / coeff(equation(Table, Vl), Ve))
+		{ basis(Table) :vars> nil, equations(Table) :eqns> nil } .
+
+	*** Dealing with the equation for Vl (Vl is replaced by Ve in the basis)
+	eq pivot(Table, enters: Ve, leaves: Vl, Eqe) { Vl Vs :vars> Vs', Eqn Eqs :eqns> Eqs' } =
+		pivot(Table, enters: Ve, leaves: Vl, Eqe) { Vs :vars> Vs' Ve, Eqs :eqns> Eqs' Eqe } .
+
+	*** Not Vl case (zeros are made in the Ve's column)
+	eq pivot(Table, enters: Ve, leaves: Vl, Eqe) { V Vs :vars> Vs', Eqn Eqs :eqns> Eqs' } =
+		pivot(Table, enters: Ve, leaves: Vl, Eqe) { Vs :vars> Vs' V, Eqs :eqns> Eqs'
+			(Eqn - coeff(Eqn, Ve) * Eqe) } [owise] .
+
+	*** When the equation transformations have finished, the table
+	*** has to be reassembled and the objective function updated
+
+	eq pivot(TSimplex D @ Vs | Eqs | Eqn, enters: Ve, leaves: Vl, Eqe)
+		{ nil :vars> Vs', nil :eqns> Eqs' } =
+			TSimplex D @ Vs' | Eqs' | (Eqn - coeff(Eqn, Ve) * Eqe) .
+
+	eq pivot(TSimplexFaseI D @ Vset @ Vs | Eqs | Of2 @ Of1, enters: Ve, leaves: Vl, Eqe)
+		{ nil :vars> Vs', nil :eqns> Eqs' } =
+			TSimplexFaseI D @ Vset @ Vs' | Eqs' | (Of2 - coeff(Of2, Ve) * Eqe) @ (Of1 - coeff(Of1, Ve) * Eqe) .
+
+
+	*** Two-phase method: feasable solution found, go to phase 2
+	rl [phase2] : TSimplexFaseI D @ Vset @ Vs | Eqs | Of2 @ (Xp = 0) =>
+			removeVars(TSimplex D @ Vs | Eqs | Of2, Vset) .
+
+	*** Two-phase method: the problem is unfeasable
+	crl [unfeas] : Table => unfeasable
+		if TSimplexFaseI D @ Vset @ Vs | Eqs | Of2 @ (Xp = K) := Table /\ K =/= 0 /\ enterVars(Table) == empty .
+
+	*** A pivoting step in the simplex algorithm (with some degrees of freedom)
+	crl [pivot] : Table => pivot(Table, Ve, Vl) if Ve, R := enterVars(Table) /\ Vl, S := leaveVars(Table, Ve) .
+
+	*** Final simplex table: an optimal solution has been found
+	crl [finish] : Table => solution(- K, vertex(Table))
+		if TSimplex D @ Vs | Eqs | (Xp = K) := Table /\ enterVars(Table) == empty .
+
+	*** Unbounded problem
+	crl [unbounded] : Table => unbounded(vertex(Table), columnCoeffs(Table, Ve) Ve <- 1)
+		if Ve, R := enterVars(Table) /\ negativeColumn?(Table, Ve) .
+endm
+
+mod SIMPLEX is
+	protecting SIMPLEX-CONSTRUCTION .
+	protecting SIMPLEX-EXECUTION .
+
+	sort LPState .
+	subsort ConstructionState SimplexState < LPState .
+endm
+
+***
+*** Lexicographic rules for cycle prevention
+***
+fmod SIMPLEX-LEXICO is
+	*** This module depends not only on the main functions provided
+	*** by the following, but also on some auxiliary ones.
+	protecting SIMPLEX-TABLE .
+
+	*** Return the leave variable according to the lexicographic rule
+	*** and the order given to the variables
+	*** Arguments: (table, leave candidates, entering variable)
+	op lexVar : SimplexTable Set{Variable} Variable -> Variable .
+
+	var Table	: SimplexTable .
+	var V W Vmin	: Variable .
+	var Vlist	: List{Variable} .
+	var Vs		: Set{Variable} .
+	var Eqn Eqn'	: LinearEqn .
+	var Eqs		: Equations .
+
+
+	eq lexVar(Table, Vs, V) = lexMin(lexEqs(equations(Table), basis(Table), Vs, V),
+		lexFilter(basis(Table), Vs), variables(Table)) .
+
+	*** Filters the equations for the candidates for leaving
+	*** (and divide them by the pivoting coefficient)
+	op lexEqs : Equations List{Variable} Set{Variable} Variable -> Equations .
+
+	eq lexEqs(nil, nil, Vs, W) = nil .
+	eq lexEqs(Eqn Eqs, V Vlist, Vs, W) = if V in Vs then
+			(Eqn / coeff(Eqn, W)) lexEqs(Eqs, Vlist, Vs, W)
+		else
+			lexEqs(Eqs, Vlist, Vs, W)
+		fi .
+
+	*** Filters the list of basis variables
+	op lexFilter : List{Variable} Set{Variable} -> List{Variable} .
+
+	eq lexFilter(nil, Vs) = nil .
+	eq lexFilter(V Vlist, Vs) = if V in Vs then
+		V lexFilter(Vlist, Vs)
+	else
+		lexFilter(Vlist, Vs)
+	fi .
+
+	*** Get the minimum equation of a list according to lexicographic order
+	op lexMin : Equations List{Variable} Set{Variable} -> Variable .
+
+	eq lexMin(Eqn, V, Vs) = V .
+	ceq lexMin(Eqn Eqs, V Vlist, Vs) = lexMin(Eqn, Eqn', V, W, Vs)
+		if W := lexMin(Eqs, Vlist, Vs) /\ Eqn' := equation(Eqs, Vlist, W) .
+
+	*** Compare two equations according to lexicographic order (that cannot be the same)
+	op lexMin : LinearEqn LinearEqn Variable Variable Set{Variable} -> Variable .
+
+	ceq lexMin(Eqn, Eqn', V, W, Vs) = V if Vmin := minVar(Vs)
+		/\ coeff(Eqn, Vmin) < coeff(Eqn', Vmin) .
+	ceq lexMin(Eqn, Eqn', V, W, Vs) = W if Vmin := minVar(Vs)
+		/\ coeff(Eqn, Vmin) > coeff(Eqn', Vmin) .
+
+	ceq lexMin(Eqn, Eqn', V, W, Vs) = lexMin(removeVars(Eqn, Vmin), removeVars(Eqn', Vmin), V, W, delete(Vmin, Vs))
+		if Vmin := minVar(Vs) [owise] .
+endfm
+
+sth PIVOTING-STRAT is
+	protecting SIMPLEX-TABLE .
+
+	strat pivotingStrat @ SimplexTable .
+endsth
+
+smod SIMPLEX-PIVOTING is
+	protecting SIMPLEX-EXECUTION .
+	protecting SIMPLEX-LEXICO .
+
+	***
+	*** Alternative pivoting strategies
+	*** Only bland and lexico guarantee the absence of cycles
+	***
+	strats blind minmax bland lexico @ SimplexTable .
+
+
+	var T 		: SimplexTable .
+	var Ve Vl	: Variable .
+	var R S		: Set{Variable} .
+
+	*** Pivoting without taking care of which variables enter or leaves
+	sd blind := pivot .
+
+	*** Only 'entering variables' with extreme reduced cost are allowed to enter
+	sd minmax := matchrew T s.t.
+			Ve, R := enterVars*(T)
+		by T using pivot[Ve <- Ve] .
+
+	*** Bland rule (it is deterministic and loops are prevented)
+	sd bland := matchrew T s.t.
+			Ve := minVar(enterVars(T)) /\
+			Vl := minVar(leaveVars(T, Ve))
+		by T using pivot[Ve <- Ve, Vl <- Vl] .
+
+	*** Lexicographic rule (deterministic and prevents loops)
+	sd lexico := matchrew T s.t.
+			Ve := minVar(enterVars*(T)) /\
+			Vl := lexVar(T, leaveVars(T, Ve), Ve)
+		by T using pivot[Ve <- Ve, Vl <- Vl] .
+endsm
+
+view Bland from PIVOTING-STRAT to SIMPLEX-PIVOTING is
+	strat pivotingStrat to bland .
+endv
+
+view Lexico from PIVOTING-STRAT to SIMPLEX-PIVOTING is
+	strat pivotingStrat to lexico .
+endv
+
+smod SIMPLEX-STRAT{X :: PIVOTING-STRAT} is
+	protecting SIMPLEX .
+
+	*** Solve a linear programming problem using the simplex algorithm
+	*** (there are two steps: table construction and execution)
+	strat solve free @ LPState .
+
+	*** Builds a table (using one)
+	strat makeTable @ ConstructionState .
+
+	*** Simplex algorithm strategy
+	strats step simplex @ SimplexState .
+
+
+	***
+	*** Strategy definitions
+	***
+	var T 		: SimplexTable .
+	var Ve Vl	: Variable .
+	var R S		: Set{Variable} .
+
+
+	sd solve := makeTable ; simplex .
+
+	*** Build a table (among the possible ones)
+	sd makeTable := pack ; one(transfer) * ; unpack .
+
+	*** First try to finish the algorithm detecting unboundness, normal
+	*** termination, change of phase or an unfeasible problem
+	sd step := (unbounded | finish | phase2 | unfeas) or-else pivotingStrat .
+
+	sd simplex := step ? simplex : idle .
+
+	*** Free application of all available rules
+	*** (almost normal rewriting but restricted to top)
+	sd free := one(top(all)) ? free : idle .
+endsm
+
+smod SIMPLEX-READY is
+***	protecting SIMPLEX-STRAT{Bland} .
+	protecting SIMPLEX-STRAT{Lexico} .
+endsm

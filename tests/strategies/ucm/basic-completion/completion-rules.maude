@@ -1,0 +1,94 @@
+***
+*** Basic completion strategies
+*** Generic completion rules
+***
+
+sload critical-pairs.maude
+
+mod COMPLETION{X :: MODULE-AND-ORDER} is
+	pr CRITICAL-PAIRS{ForgetOrder}{X} .
+
+	sort System .
+	op <_,_> : EqS RlS -> System .
+
+	vars E F CPs      : EqS .
+	vars R DR T R' QR : RlS .
+	vars r            : Rl .
+	vars s t u        : Term .
+
+	*** orienting an equation
+	crl [Orient] : < E s =. t , R >
+                    => < E, R s -> t > if s > t .
+
+	*** adding equations
+	rl [Deduce2] : < E, R >
+                   => < E F, R > [nonexec] . *** if  s <-- u --> t
+
+	*** add critical pairs
+	crl [Deduce] : < E, R QR >
+	            => < E equations(critical-pairs(r, R)), R QR >
+	if r R' := R QR .
+
+	*** simplifying an equation
+	crl [Simplify] : < E s =. t, R >
+                      => < E u =. t, R >
+		if u := reduce(s, R) .
+
+	*** simplifying the RHS of a rule
+	*** (using only a subset R of the rules)
+	crl [R-Simplify] : < E, R QR s -> t >
+	                => < E, R QR s -> u >
+		if u := reduce(t, R) .
+
+	*** simplifying the LHS of a rule
+	*** (using only a subset R of the rules)
+	crl [L-Simplify] : < E, R QR s -> t >
+	                => < E u =. t, R QR >
+		if u := reduce>(s -> t, R) .
+
+	*** deleting a trivial equation
+	rl [Delete] : < E s =. s, R >
+	           => < E, R > .
+endm
+
+fmod PARTITION-AUX{X :: MODULE-AND-ORDER} is
+	pr CRITICAL-PAIRS{ForgetOrder}{X} .
+
+	vars r r'       : Rl .
+	vars R S A T DR : RlS .
+
+	*** Assuming that a single rule has changed or disappeared from
+	*** the initial rule set R to the final set R', combine(T, R, R')
+	*** produces a T which has suffered the same change.
+
+	op combine : RlS RlS RlS -> RlS .
+
+	eq combine(T r, R r, R r') = T r .
+	eq combine(T r, R r, R) = T .
+	eq combine(T, R, S) = T [owise] .
+
+	*** Set operations on rule sets
+
+	*** Is a rule in the set?
+	op in : RlS RlS -> Bool .
+	eq in(r, r R) = true .
+	eq in(r, R) = false [owise] .
+
+	*** Intersection
+	op intersect : RlS RlS -> RlS .
+	eq intersect(R, mtRlS) = mtRlS .
+	eq intersect(R, S) = intersectAux(R, S, mtRlS) .
+
+	op intersectAux : RlS RlS RlS -> RlS .
+	eq intersectAux(mtRlS, S, A) = A .
+	eq intersectAux(r R, S, A) = intersectAux(R, S, if in(r, S) then r A else A fi) .
+
+	*** Set difference
+	op diff : RlS RlS -> RlS .
+	eq diff(R, mtRlS) = R .
+	eq diff(R, S) = diffAux(R, S, mtRlS) .
+
+	op diffAux : RlS RlS RlS -> RlS .
+	eq diffAux(mtRlS, S, A) = A .
+	eq diffAux(r R, S, A) = diffAux(R, S, if in(r, S) then A else r A fi) .
+endfm

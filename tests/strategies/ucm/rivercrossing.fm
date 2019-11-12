@@ -1,0 +1,49 @@
+***
+*** River crossing example
+***
+
+(mod RIVER-CROSSING is
+	sort Side Group .
+
+	ops left right : -> Side .
+	op change : Side -> Side .
+	ops s w g c : Side -> Group .
+	op __ : Group Group -> Group [assoc comm] .
+	op init : -> Group .
+
+	vars S S' : Side .
+
+	eq change(left) = right .
+	eq change(right) = left .
+
+	eq init = s(left) w(left) g(left) c(left) .
+
+	crl [wolf-eats] : w(S) g(S) s(S') => w(S) s(S') if S =/= S' .
+	crl [goat-eats] : c(S) g(S) s(S') => g(S) s(S') if S =/= S' .
+
+	rl [shepherd-alone] : s(S) => s(change(S)) .
+	rl [wolf] : s(S) w(S) => s(change(S)) w(change(S)) .
+	rl [goat] : s(S) g(S) => s(change(S)) g(change(S)) .
+	rl [cabbage] : s(S) c(S) => s(change(S)) c(change(S)) .
+endm)
+
+(smod RIVER-CROSSING-STRAT is
+	pr RIVER-CROSSING .
+
+	strat eating @ Group .
+	sd eating := (wolf-eats | goat-eats) ! .
+
+	strat oneCrossing @ Group .
+	sd oneCrossing := shepherd-alone | wolf | goat | cabbage .
+
+	strat allCE @ Group .
+	sd allCE := (eating ; oneCrossing) * .
+endsm)
+
+(srew init using allCE ; (match (s(right) w(right) g(right) c(right))) .)
+
+---(
+rewrites: 103867 in 160ms cpu (425ms real) (649168 rewrites/second)     25-may-07
+result Group :
+        c(right)g(right)s(right)w(right)
+---)

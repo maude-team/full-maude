@@ -1,0 +1,84 @@
+***
+*** Basic completion strategies
+*** Example 7.2.6
+***
+
+sload all-completions	*** Suffix -old for the old version
+sload lpo.maude
+
+fmod EX726-ORDER is
+	pr QID .
+	op _>>_ : Qid Qid -> Bool .
+
+	*** g > h > f > a
+
+	eq 'g >> 'h = true .
+	eq 'g >> 'f = true .
+	eq 'g >> 'a = true .
+	eq 'h >> 'f = true .
+	eq 'h >> 'a = true .
+	eq 'f >> 'a = true .
+endfm
+
+view Ex726Order from STRICT-ORDER to EX726-ORDER is
+	sort Qid to Qid .
+endv
+
+view Ex726 from MODULE-AND-ORDER to LPO{Ex726Order} + META-MODULE is
+	*** Module
+	op MOD to term (fmod 'M is
+	                 protecting 'BOOL .
+	                 sorts 'S .
+	                 none
+	                 op 'g : 'S 'S -> 'S [none] .
+	                 op 'h : 'S 'S -> 'S [none] .
+	                 op 'f : 'S -> 'S [none] .
+	                 op 'a : nil -> 'S [none] .
+	                 none
+	                 none
+	                endfm) .
+
+	*** Term order
+	var T T' : Term .
+	op T > T' to term T >lpo T' .
+endv
+
+fmod EX726 is
+	pr EQS-RULES{ForgetOrder}{Ex726} .
+
+	 op eqs : -> EqS .
+	 eq eqs = ('h['x:S, 'y:S] =. 'f['x:S]
+	           'h['x:S, 'y:S] =. 'f['y:S]
+	           'g['x:S, 'y:S] =. 'h['x:S, 'y:S]
+	           'g['x:S, 'y:S] =. 'a.S ) .
+endfm
+
+smod EX726-STRAT is
+	pr EX726 .
+	pr ALL-COMPLETIONS{Ex726} .
+endsm
+
+select FULL-MAUDE .
+loop init .
+(select EX726-STRAT .)
+
+*** Common solutions (the second is a renaming)
+***	< mtEqS,'f['x:S] -> 'a.S 'g['x:S,'y:S] -> 'a.S 'h['x:S,'y:S] -> 'a.S >
+***	< mtEqS,'f['y:S] -> 'a.S 'g['x:S,'y:S] -> 'a.S 'h['x:S,'y:S] -> 'a.S >
+
+*** with the basic one (Knuth-Bendix)
+(srew < eqs, mtRlS > using compl .)
+*** rewrites: 211564 in 222ms cpu (221ms real) (949330 rewrites/second)
+*** (gives 10 solution, some are renaming but some others can be simplified)
+
+*** with N-Completion
+(srew < eqs, mtRlS > using N-COMP .)
+*** rewrites: 174957 in 302ms cpu (304ms real) (578016 rewrites/second)
+
+*** with S-Completion
+(srew < mtRlS, mtRlS, mtRlS, eqs > using S-COMP .)
+*** rewrites: 84362 in 56ms cpu (58ms real) (1492815 rewrites/second)
+
+*** con ANS-Completion
+(srew < mtRlS, mtRlS, mtRlS, mtRlS, mtRlS, eqs > using ANS-COMP .)
+*** rewrites: 36290 in 46ms cpu (46ms real) (779692 rewrites/second)

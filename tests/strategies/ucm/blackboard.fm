@@ -1,0 +1,83 @@
+***
+*** Blackboard example
+***
+*** Source: Deduction, Strategies, and Rewriting (Section 4.1)
+***
+
+(mod BLACKBOARD is
+	protecting NAT .
+
+	sort Blackboard .
+	subsort Nat < Blackboard .
+
+	op __ : Blackboard Blackboard -> Blackboard [assoc comm] .
+
+	vars M N : Nat .
+
+	rl [play] : M N => (M + N) quo 2 .
+	rl [inc] : M => M + 1 .
+endm)
+
+(mod EXT-BLACKBOARD is
+	including NAT .
+	including BLACKBOARD .
+
+	ops max min : Blackboard -> Nat .
+	op remove : Nat Blackboard -> Blackboard .
+
+	vars M N X Y : Nat .
+	var B : Blackboard .
+
+	eq max(N) = N .
+	eq max(N B) = if N > max(B) then N else max(B) fi .
+
+	eq min(N) = N .
+	eq min(N B) = if N < min(B) then N else min(B) fi .
+
+	eq remove(X, X B) = B .
+endm)
+
+(smod BLACKBOARD-STRAT is
+	protecting EXT-BLACKBOARD .
+
+	var B : Blackboard .
+	var X Y M N : Nat .
+
+	strat maxmin @ Blackboard .
+	sd maxmin := (matchrew B s.t. X := max(B) /\ Y := min(B) by B using play[M <- X , N <- Y] ) ! .
+
+	strat maxmax @ Blackboard .
+	sd maxmax := (matchrew B s.t. X := max(B) /\ Y := max(remove(X, B)) by B using play[M <- X , N <- Y] ) ! .
+
+	strat minmin @ Blackboard .
+	sd minmin := (matchrew B s.t. X := min(B) /\ Y := min(remove(X, B)) by B using play[M <- X , N <- Y] ) ! .
+endsm)
+
+(srew 2 4 6 8 using play .)
+---(
+srewrite in BLACKBOARD : 2 4 6 8 using play .
+
+Solution 1
+result Blackboard: 3 6 8
+Solution 2
+result Blackboard: 4 4 8
+Solution 3
+result Blackboard: 4 5 6
+Solution 4
+result Blackboard: 2 5 8
+Solution 5
+result Blackboard: 2 6 6
+Solution 6
+result Blackboard: 2 4 7
+
+No more solutions.
+---)
+
+(srew [1] 2 4 6 8 using play .)
+
+---(
+srewrite [1] in BLACKBOARD : 2 4 6 8 using play .
+
+Solution 1
+result Blackboard: 3 6 8
+---)

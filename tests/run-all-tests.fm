@@ -84,5 +84,22 @@ load bug-reports/riesco/show-view.fm
 load strategies/hanoi-solve.fm
 load strategies/queens.fm
 load strategies/striv.fm
----)
 load strategies/prolog.fm
+load strategies/ucm/blackboard.fm
+load strategies/ucm/rivercrossing.fm
+load strategies/ucm/insertion-sort.fm
+load strategies/ucm/ccs2.fm
+---)
+load strategies/ucm/congruence.fm
+load strategies/ucm/basic-completion/examples/example-0.fm
+load strategies/ucm/basic-completion/examples/example-6.2.7.fm
+----load strategies/ucm/basic-completion/examples/example-7.1.1.fm
+load strategies/ucm/basic-completion/examples/example-7.2.6.fm
+load strategies/ucm/basic-completion/examples/example-ex7.8.fm
+----load strategies/ucm/basic-completion/examples/example-groups.fm
+---- load strategies/ucm/basic-completion/examples/follow-deductions.fm
+---- what's with this example? is the strategy-aware model checker operative?
+load strategies/ucm/ATMNetwork.fm
+load strategies/ucm/hanoi.fm
+load strategies/ucm/15puzzle.fm
+load strategies/ucm/prolog.fm

@@ -1,0 +1,172 @@
+***
+*** Calculus of communicating systems (CCS) (Robin Milner, 1980)
+***
+*** Source: Implementing CCS in Maude 2.
+***
+
+(fmod ACTION is
+	protecting QID .
+	sorts Label Act .  subsorts Qid < Label < Act .
+	op tau : -> Act [ctor] .	*** Internal or silent action
+	op ~_ : Label -> Label [ctor prec 10] .
+	eq ~ ~ L:Label = L:Label .
+endfm)
+
+(fmod PROCESS is
+	protecting ACTION .
+	sorts ProcessId Process .  subsorts Qid < ProcessId < Process .
+	op 0      : -> Process [ctor] .
+	op _._    : Act Process -> Process [ctor prec 25] .
+	op _+_    : Process Process -> Process [ctor assoc comm prec 35] .
+	op _|_    : Process Process -> Process [ctor assoc comm prec 30] .
+	op _`[_/_`] : Process Label Label -> Process [ctor prec 20] .
+	op _\_    : Process Label -> Process [ctor prec 20] .
+endfm)
+
+(fmod CCS-CONTEXT is
+	extending PROCESS .
+	sorts Process? Context .
+	subsort Process < Process? .
+	op _=def_ : ProcessId Process -> Context [ctor prec 40] .
+	op nil : -> Context [ctor] .
+	op _&_ : Context Context -> Context [ctor assoc comm prec 42 id: nil] .
+	op _definedIn_ : ProcessId Context -> Bool .
+	op def : ProcessId Context -> Process? .
+	op not-defined : -> Process? [ctor] .
+	op context : -> Context .
+
+	var X : ProcessId .
+	var P : Process .
+	var C : Context .
+
+	eq X definedIn (X =def P & C) = true .
+	eq X definedIn C = false [owise] .
+	eq def(X, (X =def P & C)) = P .
+	eq def(X, C) = not-defined [owise] .
+endfm)
+
+(mod CCS-SEMANTICS is
+	protecting CCS-CONTEXT .
+
+	sort ActProcess .  subsort Process < ActProcess .
+
+	*** {A}P means that the process P has performed the action A
+	op `{_`}_ : Act ActProcess -> ActProcess .
+
+	vars L M         : Label .
+	vars A B         : Act .
+	vars P P' Q Q' R : Process .
+	var  X           : ProcessId .
+	var  AP          : ActProcess .
+	var  N           : Nat .
+
+	*** Prefix
+	rl [prefix] : A . P => {A}P .
+
+	*** Summation
+	crl [sum] : P + Q => {A}P' if P => {A}P' .
+
+	*** Composition
+	crl [par1] : P | Q => {A}(P' | Q) if P => {A}P' .
+	crl [par2] : P | Q => {tau}(P' | Q') if P => {L}P' /\ Q => {~ L}Q' .
+
+	*** Restriction
+	crl [res] : P \ L => {A}(P' \ L) if P => {A}P'
+	                         /\ A =/= L /\ A =/= ~ L .
+
+	*** Relabelling
+	crl [rel] : P[M / L] => {M}(P'[M / L]) if P =>{L}P' .
+	crl [rel] : P[M / L] => {~ M}(P'[M / L]) if P =>{~ L}P' .
+	crl [rel] : P[M / L] => {A}(P'[M / L]) if P =>{A}P'
+	                               /\ A =/= L /\ A =/= ~ L .
+
+	*** Definition
+	crl [def] : X => {A}P if (X definedIn context) /\ def(X,context) => {A}P .
+
+	***
+	*** Reflexive, transitive closure
+
+	rl [zero] : P => P .
+	crl [more] : P => {A}AP if P => {A}Q /\ Q => AP .
+
+	***
+	*** Weak semantics
+
+	sorts Act*Process OActProcess .
+
+	op `{tau`}*_ : Process -> Act*Process .
+	op `{`{_`}`}_ : Act Process -> OActProcess .
+
+	subsorts Process < Act*Process OActProcess .
+
+	rl [tau0]  : P => {tau}* P .
+	crl [tau+] : P => {tau}* R if P => { tau } Q /\  Q => {tau}* R .
+
+	crl [weak] : P => {{A}}P' if P  => {tau}* Q  /\
+	                             Q  => {A}Q'     /\ A =/= tau /\
+	                             Q' => {tau}* P' .
+endm)
+
+(mod EXAMPLE is
+	protecting CCS-SEMANTICS .
+
+	eq context = ('Proc   =def  'a . 'b . 'Proc) &
+	             ('Proc2  =def  'a . tau . 'Proc2 + tau . 'b . 'Proc2) &
+	             *** Vending machine: depending on the inserted coin (1p
+	             *** or 2p), a big or little product can be requested by
+	             *** pushing a button. When it is collected, the machine
+	             *** goes back to the initial state.
+		     ('Ven    =def  '2p . 'VenB  +  '1p . 'VenL)  &
+	             ('VenB   =def  'big . 'collectB . 'Ven)    &
+	             ('VenL   =def  'little . 'collectL . 'Ven)   &
+	             *** Level crossing: a car or a train can try to pass the
+	             *** the crossing. up opens the barrier for the car and
+	             *** down closes it. green and red refer to the train
+		     *** semaphore. ~ ccross and ~ tcross indicate that the
+	             *** car and train are crossing.
+	             ('Road   =def  'car . 'up . ~ 'ccross . ~ 'down . 'Road)  &
+	             ('Rail   =def  'train . 'green . ~ 'tcross . ~ 'red . 'Rail) &
+	             ('Signal =def  ~ 'green . 'red . 'Signal
+	                            + ~ 'up . 'down . 'Signal) &
+	             ('Crossing =def ('Road | 'Rail | 'Signal)
+	                                \ 'green \ 'red \ 'up \ 'down) .
+
+endm)
+
+(smod CCS-STRAT is
+	protecting CCS-SEMANTICS .
+
+	*** A single execution step
+	strat ccs @ Process .
+	sd ccs := top(prefix) or-else
+	          top(sum{ccs}) or-else
+	          (top(par1{ccs}) |
+	           top(par2{ccs, ccs})) or-else
+	          top(res{ccs}) or-else
+	          top(rel{ccs}) or-else
+	          top(def{ccs}) .
+
+	*** An arbitrary execution in CSS
+	strats trans trans2 trans3 @ Process .
+	sd trans  := top(zero) | top(more{ccs, trans}) .
+	sd trans2 := top(more{ccs, trans2}) * .
+	sd trans3 := idle | top(more{ccs, trans3}) .
+
+	*** Weak semantics
+	strats tauS weakS @ Process .
+	sd tauS := tau0 | tau+{ccs, tauS} .
+	sd weakS := weak{tauS, ccs, tauS} .
+endsm)
+
+(smod CCS-MAIN is
+	protecting CCS-STRAT .
+	protecting EXAMPLE .
+endsm)
+
+(srew [1] 'Crossing using ccs .)
+
+(srew [1] 'Ven using trans ; match {'2p}{'big}{'collectB}AP:ActProcess .)
+
+(srew [2] 'Ven using trans ; match {'1p}{'little}AP:ActProcess .)
+
+----continue 2 .

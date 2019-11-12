@@ -1,0 +1,442 @@
+***
+*** Basic completion strategies
+*** Infrastructure and critical pairs computation
+***
+*** Mostly taken from the Maude Church-Rosser checker tool code and papers.
+***
+
+
+***
+*** Parameterized theories to indicate the problem
+*** signature and term order
+***
+
+fth MODULE is
+	protecting META-MODULE .
+
+	op MOD : -> FModule .
+endfth
+
+fth MODULE-AND-ORDER is
+	including MODULE .
+
+	op _>_ : Term Term -> Bool .
+endfth
+
+view ForgetOrder from MODULE to MODULE-AND-ORDER is
+	*** identity
+endv
+
+
+***
+*** Equations and rules specification
+***
+
+fmod EQS-RULES{X :: MODULE} is
+	pr META-LEVEL .
+
+	sort Eq EqS Rl RlS .
+	subsort Eq < EqS .
+	subsort Rl < RlS .
+
+	op _=._ : Term Term -> Eq [comm prec 60] .
+	op _->_ : Term Term -> Rl [prec 60] .
+	op mtEqS : -> EqS .
+	op __ : EqS EqS -> EqS [assoc comm id: mtEqS prec 70] .
+	eq E:Eq E:Eq = E:Eq .
+
+	op mtRlS : -> RlS .
+	op __ : RlS RlS -> RlS [assoc comm id: mtRlS prec 70] .
+	eq R:Rl R:Rl = R:Rl .
+
+	vars Q F            : Qid .
+	var  IL             : ImportList .
+	var  SS             : SortSet .
+	var  SSDS           : SubsortDeclSet .
+	var  OPDS           : OpDeclSet .
+	var  MAS            : MembAxSet .
+	vars EQS EQS'       : EquationSet .
+	vars T T' s t s' t' : Term .
+	vars R R'           : Rl .
+	var  RS             : RlS .
+	var  N              : Nat .
+	var  C              : Constant .
+	var  V              : Variable .
+	var  TL             : TermList .
+	var  NeTL           : NeTermList .
+
+	op createMod : RlS -> FModule .
+	op createEqs : RlS -> EquationSet .
+
+	eq createMod(RS) = setEqs(MOD, createEqs(RS)) .
+	eq createEqs(mtRlS) = none .
+	eq createEqs(s -> t RS) = (eq s = t [none] .) createEqs(RS) .
+
+	op setEqs : FModule EquationSet -> FModule .
+	eq setEqs(fmod Q is IL sorts SS . SSDS OPDS MAS EQS endfm, EQS') =
+	          fmod Q is IL sorts SS . SSDS OPDS MAS EQS' endfm .
+
+	op reduce : Term RlS ~> Term .
+	ceq reduce(T, RS) = T'
+	 if T' := getTerm(metaReduce(createMod(RS), T)) /\
+	    T =/= T' .
+
+	op reduce> : Rl RlS ~> Term .
+	ceq reduce>( s -> t, s' -> t' RS) = T
+	 if s' == getTerm(metaReduce(createMod(s -> t), s')) /\
+	    T := getTerm(metaReduce(createMod(s' -> t'), s)) /\
+	    s =/= T .
+
+	op least-rule : RlS ~> Rl .
+
+	eq least-rule(R RS) = minRule(R, size(R), RS) .
+
+	op minRule : Rl Nat RlS -> Rl .
+	op size : Rl -> Nat .
+	op dsize : TermList -> Nat .	*** deep size
+	eq minRule(R, N, mtRlS) = R .
+	eq minRule(R, N, R' RS) = if size(R') < N then minRule(R', size(R'), RS)
+	                          else minRule(R, N, RS)
+	                          fi .
+
+	eq size(s -> t) = dsize(s) + dsize(t) .
+	eq dsize(V) = 1 .
+	eq dsize(C) = 1 .
+	eq dsize(F[TL]) = 1 + dsize(TL) .
+	eq dsize((T, NeTL)) = dsize(T) + dsize(NeTL) .
+endfm
+
+
+***
+*** Extended operations on terms and position
+***
+
+fmod EXT-TERM is
+	pr META-TERM .
+
+	sorts Position PositionSet .
+	subsort Position < PositionSet .
+	subsort Nat < Position .
+
+	op emptyPos : -> Position .
+	op pos : Position Position -> Position [assoc] .
+	op nullPos : -> Position .
+
+	op emptyPosSet : -> PositionSet .
+	op posSet : PositionSet PositionSet -> PositionSet
+	        [assoc comm id: emptyPosSet] .
+
+	vars T T'         : Term .
+	var  F            : Qid .
+	var  C            : Constant .
+	var  X Y          : Variable .
+	var  TL           : TermList .
+	var  P            : Position .
+	var  PS           : PositionSet .
+	var  N            : Nat .
+	vars Subst Subst' : Substitution .
+
+	*** Takes a term an a position and returns its subterm t|p or error
+	op getSubterm : Term Position ~> Term .
+
+	op getSubterm1 : TermList Nat ~> Term .
+
+	eq getSubterm(T, emptyPos) = T .
+	eq getSubterm(F[TL], N) = getSubterm1(TL, N) .
+
+	eq getSubterm(F[TL], pos(N, P)) = getSubterm(getSubterm1(TL, N), P) .
+
+	eq getSubterm1((T, TL), 1) = T .
+	eq getSubterm1((T, TL), N) = getSubterm1(TL, sd(N, 1)) [owise] .
+
+	*** Takes a term t and t' and a position and returns the term t
+	*** where the position p has been replaced by t'
+	op replace : Term Term Position ~> Term .
+
+	op replace1 : TermList Term Position ~> Term .
+
+	eq replace(T, T', emptyPos) = T' .
+
+	eq replace(F[TL], T', N) = F[replace1(TL, T', N)] .
+
+	eq replace1((T, TL), T', 1) = (T', TL) .
+	eq replace1((T, TL), T', N) = (T, replace1(TL, T', sd(N, 1))) [owise] .
+
+	eq replace(F[TL], T', pos(N, P)) = F[replace1(TL, T', pos(N, P))] .
+
+	eq replace1((T, TL), T', pos(1, P)) = (replace(T, T', P), TL) .
+	eq replace1((T, TL), T', pos(N, P)) = (T, replace1(TL, T', pos(sd(N, 1), P))) [owise] .
+
+	*** Takes a module and a term and returns the set of nonvariable
+	*** positions of t
+	op allNonVarPos : Term -> PositionSet .
+
+	op allNonVarPos1 : Term Position PositionSet -> PositionSet .
+	op nextPosition : Term Position -> Position .
+	op nextPositionUp : Term Position -> Position .
+
+	eq allNonVarPos(T)
+	  = posSet(emptyPos, allNonVarPos1(T, emptyPos, emptyPosSet)) .
+
+	eq allNonVarPos1(T, P, PS)
+	  = if nextPosition(T, P) == nullPos
+	    then PS
+	    else (if (getSubterm(T, nextPosition(T, P)) :: Variable)
+	          then allNonVarPos1(T, nextPosition(T, P), PS)
+	          else allNonVarPos1(T, nextPosition(T, P),
+	                             posSet(nextPosition(T, P), PS))
+	          fi)
+	    fi .
+
+	eq pos(emptyPos, P) = P .
+
+	eq nextPosition(T, P)
+	  = if getSubterm(T, pos(P, 1)) :: Term
+	    then pos(P, 1)
+	    else nextPositionUp(T, P)
+	    fi .
+
+	eq nextPositionUp(T, emptyPos) = nullPos .
+
+	eq nextPositionUp(T, N)
+	  = if getSubterm(T, (N + 1)) :: Term
+	    then (N + 1)
+	    else nullPos
+	    fi .
+
+	eq nextPositionUp(T, pos(P, N))
+	  = if getSubterm(T, pos(P, (N + 1))) :: Term
+	    then pos(P, (N + 1))
+	    else nextPositionUp(T, P)
+	    fi .
+
+	*** Applies a substitution to a term
+	op substitute : Term Substitution -> Term .
+	op substitute1 : TermList Substitution -> TermList .
+
+	eq substitute(T, none) = T .
+	eq substitute(X, ((Y <- T); Subst))
+	  = if X == Y then T else substitute(X, Subst) fi .
+	eq substitute(C, ((Y <- T); Subst)) = C .
+	eq substitute(F[TL], Subst) = F[substitute1(TL, Subst)] .
+	eq substitute1((T, TL), Subst)
+	  = (substitute(T, Subst), substitute1(TL, Subst)) .
+	eq substitute1(empty, Subst) = empty .
+
+
+	op _@_ : Substitution Substitution -> Substitution [assoc prec 70] .
+
+	eq substitute(T, Subst @ Subst') = substitute(substitute(T, Subst), Subst') .
+
+	op _is-in_ : Variable TermList -> Bool .
+	eq X is-in Y = (X == Y) .
+	eq X is-in C = false .
+	eq X is-in F[TL] = X is-in TL .
+	ceq X is-in (T, TL) = (X is-in T) or (X is-in TL) if TL =/= empty .
+endfm
+
+
+***
+*** Variable renaming
+***
+
+fmod RENAME{X :: MODULE} is
+	pr CONVERSION .
+	pr EQS-RULES{X} .
+
+	op rename : TermList Nat -> Term .
+	op maxNum : TermList -> Nat .
+	op getNum : Variable -> Nat .
+	op incNum : Variable Nat -> Variable .
+	op getNum : String -> Nat .
+	op getNum : String String -> Nat .
+	op setNum : String Nat -> String .
+	op isDigit : Char -> Bool .
+	op convert : String -> Nat .
+
+	vars S S'          : String .
+	var  C             : Char .
+	var  V             : Variable .
+	var  CO            : Constant .
+	var  F             : Qid .
+	vars TL TL'        : TermList .
+	var  N             : Nat .
+	vars T T1 T2 T3 T4 : Term .
+
+	eq isDigit(C) = ("0" <= C) and (C <= "9") .
+
+	eq convert(S) = if S == "" then 0 else rat(S,10) fi .
+
+	eq getNum(S) = getNum(S, "") .
+
+	eq getNum(S,S') =
+	   if length(S) == 0 then convert(S')
+	   else if isDigit(substr(S, sd(length(S), 1), length(S))) then
+	            getNum(substr(S,0,sd(length(S), 1)), substr(S, sd(length(S), 1), length(S)) + S')
+	        else convert(S')
+	        fi
+	   fi .
+
+	eq setNum(S,N) =
+	   if length(S) == 0 then string(N,10)
+	   else if isDigit(substr(S, sd(length(S), 1), length(S))) then
+	            setNum(substr(S,0,sd(length(S), 1)), N)
+	        else S + string(N,10)
+	        fi
+	   fi .
+
+	eq getNum(V) = getNum(string(getName(V))) .
+
+	eq incNum(V, N) = qid( setNum(string(getName(V)),N + getNum(V)) +
+	                       ":" + string(getType(V))) .
+
+	eq maxNum(CO) = 0 .
+	eq maxNum(V) = getNum(V) .
+	eq maxNum(F[TL]) = maxNum(TL) .
+	ceq maxNum((T,TL)) = max(maxNum(T), maxNum(TL)) if TL =/= empty .
+
+
+	eq rename(CO, N) = CO .
+	eq rename(V, N) = incNum(V, N) .
+	eq rename(F[TL], N) = F[rename(TL, N)] .
+	ceq rename((T,TL), N) = (rename(T, N), rename(TL, N)) if TL =/= empty .
+
+	op rename : Rl Rl -> Rl .
+	ceq rename(T1 -> T2 , T3 -> T4) = (rename(T1, N) -> rename(T2, N))
+	if N := max(maxNum(T3), maxNum(T4)) + 1 .
+
+endfm
+
+
+***
+*** Syntactical unification
+***
+
+fmod UNIFICATION is
+	pr EXT-TERM .
+
+	sorts Pair PairSet .
+	subsort Pair < PairSet .
+	op _?=?_ : Term Term -> Pair [comm prec 60] .
+	op none : -> PairSet .
+	op __ : PairSet PairSet -> PairSet [assoc comm id: none prec 70] .
+
+	op unify : Term Term ~> Substitution .
+	op unify : PairSet ~> Substitution .
+	op genPairs : TermList TermList ~> PairSet .
+	op substitute : PairSet Substitution -> PairSet .
+
+	vars X Y    : Variable .
+	var  C      : Constant .
+	var  PS     : PairSet .
+	vars F G    : Qid .
+	vars T T'   : Term .
+	vars TL TL' : TermList .
+	var  SB     : Substitution .
+
+	eq unify(T,T') = unify( T ?=? T') .
+
+	*** Martelli-Montanari rules
+	eq unify(none) = none .
+	eq unify( X ?=? X PS ) = unify(PS) .
+	eq unify( C ?=? C PS ) = unify(PS) .
+	eq unify( F[TL] ?=? F[TL'] PS ) = unify( genPairs(TL, TL') PS ) .
+	ceq unify( X ?=? T PS ) = X <- T @ unify( substitute(PS, X <- T)) if not(X is-in T) .
+
+	eq genPairs(empty, empty) = none .
+	eq genPairs( (T,TL), (T',TL') ) = T ?=? T' genPairs(TL, TL') .
+
+	eq substitute((none).PairSet, SB) = none .
+	eq substitute( T ?=? T' PS, SB) = (substitute(T, SB) ?=? substitute(T',SB)) substitute(PS, SB) .
+endfm
+
+
+***
+*** Critical pairs
+***
+
+fmod CRITICAL-PAIRS{X :: MODULE} is
+	pr UNIFICATION .
+	pr META-LEVEL .
+	pr RENAME{X} .
+
+	var  M                  : Module .
+	vars T T' T1 T1' T2 T2' : Term .
+	vars CP CP'             : CritPair .
+	vars CPS CPS'           : CritPairSet .
+	vars R R'               : Rl .
+	vars RS RS' RS''        : RlS .
+	var  P                  : Position .
+	var  PS                 : PositionSet .
+	var  Subst              : Substitution .
+	var  SB?                : [Substitution] .
+
+	vars X F S              : Qid .
+	vars T'' T1'' T2''      : Term .
+	var  TL                 : TermList .
+
+	*** Critical pairs and critical pair sets
+
+	sort CritPair .
+	op cp : Term Term -> CritPair .
+
+	sort CritPairSet .
+	subsort CritPair < CritPairSet .
+	op emptyCritPairSet : -> CritPairSet .
+	op critPairSet : CritPairSet CritPairSet -> CritPairSet
+	        [assoc comm id: emptyCritPairSet] .
+
+
+	op critPairs1 : RlS RlS -> CritPairSet .
+	op critPairs2 : Rl RlS -> CritPairSet .
+	op critPairs3 : Rl Rl PositionSet -> CritPairSet .
+	op critPairs4 : Rl Rl Position Substitution -> CritPairSet .
+
+	op left : Rl -> Term .
+	eq left(T -> T') = T .
+
+	eq critPairs1(R RS, RS') = critPairSet(critPairs1(RS, RS'), critPairs2(R, RS')) .
+	eq critPairs1(mtRlS, RS) = emptyCritPairSet .
+
+	eq critPairs2(R, (R' RS))
+	  = critPairSet(critPairs2(R, RS),
+	                critPairs3(rename(R,R'), R', allNonVarPos(left(R)))) .
+	eq critPairs2(R, mtRlS) = emptyCritPairSet .
+
+	eq critPairs3( T1 -> T1', T2 -> T2', posSet(P, PS))
+	  = critPairSet(critPairs3(T1 -> T1', T2 -> T2', PS),
+	                critPairs4(T1 -> T1', T2 -> T2', P, unify(getSubterm(T1, P), T2))) .
+	eq critPairs3(R, R', emptyPosSet) = emptyCritPairSet .
+
+	eq critPairs4(T1 -> T1', T2 -> T2', P, Subst)
+	  = cp(substitute(T1', Subst), replace(substitute(T1, Subst), substitute(T2', Subst), P)) .
+	eq critPairs4(R, R', P, SB?) = emptyCritPairSet [owise] .
+
+
+	op critical-pairs : Rl RlS -> CritPairSet .
+	eq critical-pairs(R, R' RS) = critPairSet(critPairs2(R,R'),
+	                                          critPairs2(R',R),
+	                                          critical-pairs(R, RS)) .
+	eq critical-pairs(R, mtRlS) = emptyCritPairSet .
+
+	op equations : CritPairSet -> EqS .
+
+	eq equations(emptyCritPairSet) = mtEqS .
+	eq equations(critPairSet(cp(T,T'), CPS)) = (T =. T') equations(CPS) .
+
+	op delete : CritPairSet -> CritPairSet .
+
+	eq delete(critPairSet(cp(T, T'), CPS))
+	  = if T == T'
+	    then delete(CPS)
+	    else critPairSet(cp(T, T'), delete(CPS))
+	    fi .
+	eq delete(emptyCritPairSet) = emptyCritPairSet .
+
+	op simplify : CritPairSet Module -> CritPairSet .
+
+	eq simplify(critPairSet(cp(T, T'), CPS), M)
+	  = critPairSet(cp(getTerm(metaReduce(M, T)), getTerm(metaReduce(M, T'))),
+	      simplify(CPS, M)) .
+	eq simplify(emptyCritPairSet, M) = emptyCritPairSet .
+endfm

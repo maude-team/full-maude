@@ -1,0 +1,29 @@
+***
+*** Parametric backtracking algorithm.
+***
+*** Source: Deduction, Strategies and Rewriting. Section 4.3
+***
+
+fth BT-ELEMS-BASE is
+	protecting BOOL .
+	sort State .
+
+	op isOk : State -> Bool .
+	op isSolution : State -> Bool .
+endfth
+
+sth BT-ELEMS is
+	including BT-ELEMS-BASE .
+
+	strat expand @ State .
+endsth
+
+smod BT-STRAT{X :: BT-ELEMS} is
+	var S : X$State .
+
+	strat solve @ X$State .
+	sd solve := (match S s.t. isSolution(S)) ? idle
+		: (expand ;
+			match S s.t. isOk(S) ;
+			solve) .
+endsm

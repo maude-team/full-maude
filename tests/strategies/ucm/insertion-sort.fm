@@ -1,0 +1,71 @@
+***
+*** Insertion sort
+***
+*** Source: Deduction, Strategies, and Rewriting. Section 4.2
+***
+
+(mod SORTING is
+	pr NAT .
+
+	sort Value .  subsorts Nat < Value .
+	sorts Pair PairSet .
+	subsort Pair < PairSet .
+
+	op `(_`,_`) : Nat Value -> Pair .
+	op empty : -> PairSet .
+	op __ : PairSet PairSet -> PairSet [assoc comm id: empty] .
+
+	op length : PairSet -> Nat .
+
+	eq length(empty) = 0 .
+	eq length((I, V) PS ) = length(PS) + 1 .
+
+	op generate : Nat Nat -> PairSet .
+
+	eq generate(J,J) = ( J, 1 ) .
+	ceq generate(I, J) = ( I, sd(J,I) + 1 ) generate(I + 1,J) if I > 0 .
+
+	vars I J : Nat .
+	vars V W : Value .
+	var PS : PairSet .
+
+	rl [switch] : (J, V) (I, W) => (J, W) (I, V) .
+endm)
+
+
+*** Y := 2
+*** while Y <= N
+***     X := Y
+***     while X > 1
+***         switch X-1 X if needed
+***         X := X - 1
+***     Y := Y + 1
+
+
+(smod INSERTION-SORT-STRAT is
+	pr SORTING .
+
+	strat switch : Nat Nat @ PairSet .
+	strat insert : Nat @ PairSet .
+	strat insort : Nat @ PairSet .
+
+	vars X Y J I : Nat .
+	vars V W : Value .
+	var PS : PairSet .
+
+	sd switch(X, Y) := switch[J <- X , I <- Y] .
+
+	sd insert(1) := idle .
+	csd insert(s(X)) := try(amatch (X, V) (s(X), W) s.t. V > W ;
+	                        switch(X, s(X)) ;
+	                        insert(X))
+	                    if X > 0 .
+
+	sd insort(Y) := try(match PS s.t. Y <= length(PS) ;
+	                    insert(Y) ;
+	                    insort(Y + 1)) .
+endsm)
+
+(srew generate(1,20) using insort(2) .)
+
+(srew (1,8)(2,3)(3,15)(4,5)(5,2) using insort(2) .)

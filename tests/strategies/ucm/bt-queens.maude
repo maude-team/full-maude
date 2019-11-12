@@ -1,0 +1,52 @@
+***
+*** Queens problem, using the generic backtracking algorithm.
+***
+
+load backtracking
+
+mod QUEENS is
+	protecting LIST{Nat} .
+	protecting SET{Nat} .
+
+	op isOk : List{Nat} -> Bool .
+	op ok : List{Nat} Nat Nat -> Bool .
+	op isSolution : List{Nat} -> Bool .
+
+	vars N M Diff : Nat .
+	var  L        : List{Nat} .
+	var  S        : Set{Nat} .
+
+	eq isOk(L N) = ok(L, N, 1) .
+	eq ok(nil, M, Diff) = true .
+	ceq ok(L N, M, Diff) = ok(L, M, Diff + 1)
+		if N =/= M /\ N =/= M + Diff /\ M =/= N + Diff .
+	eq isSolution(L) = (size(L) == 8) .
+
+	crl [next] : L => L N if N,S := 1, 2, 3, 4, 5, 6, 7, 8 .
+endm
+
+smod QUEENS-STRAT is
+	pr QUEENS .
+
+	strat expand @ List{Nat} .
+	*** A rule labeled expand already exists so the empty parenthesis
+	*** must be used to distinguish the rule from the strategy
+	sd expand := top(next) .
+endsm
+
+view QueensBT from BT-ELEMS to QUEENS-STRAT is
+	sort State to List{Nat} .
+
+	strat expand to expand .
+endv
+
+smod QUEENS-BT-STRAT is
+	including BT-STRAT{QueensBT} .
+endsm
+
+
+eof
+
+srew [1] nil using solve .
+continue 1 .
+continue 2 .

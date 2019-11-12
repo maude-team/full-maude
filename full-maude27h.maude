@@ -29,7 +29,7 @@ set show loop stats off .
 set show loop timing off .
 ----set show advisories off .
 
-fmod BANNER is
+fmod FM-BANNER is
   pr STRING .
   op banner : -> String .
   eq banner = "Full Maude 2.7h September 19th 2019" .
@@ -82,7 +82,7 @@ set include BOOL off .
 set include TRUTH-VALUE on .
 set show advisories off .
 
-mod CONFIGURATION is
+mod FM-CONFIGURATION is
   sorts Attribute AttributeSet .
   subsort Attribute < AttributeSet .
   op none : -> AttributeSet  [ctor] .
@@ -98,8 +98,8 @@ mod CONFIGURATION is
   op <> : -> Portal [ctor] .
 endm
 
-mod CONFIGURATION+ is
-  including CONFIGURATION .
+mod FM-CONFIGURATION+ is
+  including FM-CONFIGURATION .
   op <_:_|`> : Oid Cid -> Object .
   op getClass : Object -> Cid .
   ---- eq < O:Oid : C:Cid | > = < O:Oid : C:Cid | none > .
@@ -115,12 +115,12 @@ set include TRUTH-VALUE off .
 *** Narrowing and Equational Unification
 *** by Santiago Escobar
 ***
-fmod META-LEVEL-MNPA is
+fmod FM-META-LEVEL-MNPA is
   pr META-LEVEL * (op `{_`,_`} : Term Nat -> SmtResult to `{_`,_`}Smt )  .
 endfm
 
-fmod UNIFICATIONTRIPLE is
-  protecting META-LEVEL-MNPA .
+fmod FM-UNIFICATIONTRIPLE is
+  protecting FM-META-LEVEL-MNPA .
   protecting INT .
 
   --- UnificationPair --------------------------------------------
@@ -149,10 +149,10 @@ fmod UNIFICATIONTRIPLE is
 
 endfm
 
-fmod TERM-HANDLING is
+fmod FM-TERM-HANDLING is
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting EXT-BOOL . *** For and-then
+  protecting FM-META-LEVEL-MNPA .
+  protecting EXT-BOOL .
 
   var T T' T'' : Term .
   var C C' : Constant .
@@ -327,10 +327,10 @@ fmod TERM-HANDLING is
 
 endfm
 
-fmod SUBSTITUTION-HANDLING is
+fmod FM-SUBSTITUTION-HANDLING is
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting TERM-HANDLING .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-TERM-HANDLING .
 
   var S S' Subst Subst' : Substitution .
   var V V' : Variable .
@@ -504,9 +504,9 @@ fmod SUBSTITUTION-HANDLING is
    = false [owise] .
 endfm
 
-fmod TERMSET is
-  protecting META-LEVEL-MNPA .
-  protecting SUBSTITUTION-HANDLING .
+fmod FM-TERMSET is
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-SUBSTITUTION-HANDLING .
 
   sort TermSet .
   subsort Term < TermSet .
@@ -527,16 +527,16 @@ fmod TERMSET is
 
 endfm
 
-fmod RENAMING is
+fmod FM-RENAMING is
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting TERM-HANDLING .
-  protecting SUBSTITUTION-HANDLING .
-  protecting TERMSET .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-TERM-HANDLING .
+  protecting FM-SUBSTITUTION-HANDLING .
+  protecting FM-TERMSET .
   protecting CONVERSION .
   protecting QID .
   protecting INT .
-  protecting UNIFICATIONTRIPLE .
+  protecting FM-UNIFICATIONTRIPLE .
 
   var S S' Subst Subst' : Substitution .
   var V V' : Variable .
@@ -694,11 +694,11 @@ fmod RENAMING is
 
 endfm
 
-fmod SUBSTITUTIONSET is
-  protecting SUBSTITUTION-HANDLING .
-  protecting META-LEVEL-MNPA .
-  protecting TERMSET .
-  protecting RENAMING .
+fmod FM-SUBSTITUTIONSET is
+  protecting FM-SUBSTITUTION-HANDLING .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-TERMSET .
+  protecting FM-RENAMING .
 
   sort SubstitutionSet NeSubstitutionSet .
   subsort Substitution < NeSubstitutionSet < SubstitutionSet .
@@ -783,10 +783,10 @@ fmod SUBSTITUTIONSET is
 
 endfm
 
-fmod UNIFICATIONPAIRSET is
-  protecting SUBSTITUTIONSET .
-  protecting RENAMING .
-  protecting UNIFICATIONTRIPLE .
+fmod FM-UNIFICATIONPAIRSET is
+  protecting FM-SUBSTITUTIONSET .
+  protecting FM-RENAMING .
+  protecting FM-UNIFICATIONTRIPLE .
 
   vars V V' : Variable .
   vars U U' : UnificationPair .
@@ -869,10 +869,10 @@ fmod UNIFICATIONPAIRSET is
 
 endfm
 
-fmod UNIFICATIONTRIPLESET is
-  protecting SUBSTITUTIONSET .
-  protecting RENAMING .
-  protecting UNIFICATIONPAIRSET .
+fmod FM-UNIFICATIONTRIPLESET is
+  protecting FM-SUBSTITUTIONSET .
+  protecting FM-RENAMING .
+  protecting FM-UNIFICATIONPAIRSET .
 
   vars V V' : Variable .
   var C : Constant .
@@ -1018,12 +1018,12 @@ fmod UNIFICATIONTRIPLESET is
      [US' | if S instantiatesAbove NextVar then empty else {S,S',N} fi ] .
 endfm
 
-fmod MODULE-HANDLING is
+fmod FM-MODULE-HANDLING is
   protecting INT .
-  protecting META-LEVEL-MNPA .
-  protecting EXT-BOOL . *** From Full Maude
-  protecting SUBSTITUTION-HANDLING .
-  protecting UNIFICATIONTRIPLESET .
+  protecting FM-META-LEVEL-MNPA .
+  protecting EXT-BOOL .
+  protecting FM-SUBSTITUTION-HANDLING .
+  protecting FM-UNIFICATIONTRIPLESET .
 
   var T T' T'' T1 T2 Lhs Rhs : Term .
   var C C' : Constant .
@@ -2505,10 +2505,10 @@ fmod MODULE-HANDLING is
 
 endfm
 
-fmod VARIANT is
-  pr SUBSTITUTION-HANDLING .
-  pr MODULE-HANDLING .
-  pr META-LEVEL-MNPA .
+fmod FM-VARIANT is
+  pr FM-SUBSTITUTION-HANDLING .
+  pr FM-MODULE-HANDLING .
+  pr FM-META-LEVEL-MNPA .
 
   var M : Module .
   vars T T' TS TS' CtTS CtTS' Lhs Rhs : Term .
@@ -2565,14 +2565,14 @@ fmod VARIANT is
 
 endfm
 
-fmod META-MINIMIZE-BINDINGS is
-  pr SUBSTITUTION-HANDLING .
-  pr MODULE-HANDLING .
-  pr SUBSTITUTIONSET .
-  pr UNIFICATIONTRIPLESET .
+fmod FM-META-MINIMIZE-BINDINGS is
+  pr FM-SUBSTITUTION-HANDLING .
+  pr FM-MODULE-HANDLING .
+  pr FM-SUBSTITUTIONSET .
+  pr FM-UNIFICATIONTRIPLESET .
   pr CONVERSION .
-  pr META-LEVEL-MNPA .
-  pr VARIANT .
+  pr FM-META-LEVEL-MNPA .
+  pr FM-VARIANT .
 
   vars M : Module .
   vars T T' T1 T2 T3 : Term .
@@ -2703,7 +2703,7 @@ fmod META-MINIMIZE-BINDINGS is
   eq remDup(S) = S [owise] .
 endfm
 
-fmod TYPEOFNARROWING is
+fmod FM-TYPEOFNARROWING is
   pr QID .
   pr META-TERM .
 
@@ -2782,7 +2782,7 @@ fmod TYPEOFNARROWING is
   eq typeOfRelation( '! ) = '! .
 endfm
 
-fmod IRR-FLAGS is
+fmod FM-IRR-FLAGS is
   sort IrrFlags .
   op __ : IrrFlags IrrFlags -> IrrFlags [assoc comm id: none] .
   op none : -> IrrFlags [ctor] .
@@ -2791,9 +2791,9 @@ fmod IRR-FLAGS is
   op minimal-unifiers : -> IrrFlags [ctor] .
 endfm
 
-fmod EFLAGS is
-  pr TYPEOFNARROWING .
-  pr IRR-FLAGS .
+fmod FM-EFLAGS is
+  pr FM-TYPEOFNARROWING .
+  pr FM-IRR-FLAGS .
 
   sort EFlags .
   subsort IrrFlags < EFlags .
@@ -2818,15 +2818,15 @@ fmod EFLAGS is
   eq [ X:EFlags ] = none [owise] .
 endfm
 
-fmod RESULT-CONTEXT-SET is
+fmod FM-RESULT-CONTEXT-SET is
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting TERM-HANDLING .
-  protecting SUBSTITUTION-HANDLING .
-  protecting RENAMING .
-  protecting SUBSTITUTIONSET .
-  protecting UNIFICATIONTRIPLESET .
-  protecting MODULE-HANDLING .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-TERM-HANDLING .
+  protecting FM-SUBSTITUTION-HANDLING .
+  protecting FM-RENAMING .
+  protecting FM-SUBSTITUTIONSET .
+  protecting FM-UNIFICATIONTRIPLESET .
+  protecting FM-MODULE-HANDLING .
 
   vars T T' TS CtTS : Term .
   var TP : Type .
@@ -3024,13 +3024,13 @@ fmod RESULT-CONTEXT-SET is
 
 endfm
 
-fmod META-MATCH is
-  protecting TERM-HANDLING .
-  protecting MODULE-HANDLING .
-  protecting SUBSTITUTION-HANDLING .
-  protecting META-LEVEL-MNPA .
-  protecting RENAMING .
-  protecting SUBSTITUTIONSET .
+fmod FM-META-MATCH is
+  protecting FM-TERM-HANDLING .
+  protecting FM-MODULE-HANDLING .
+  protecting FM-SUBSTITUTION-HANDLING .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-RENAMING .
+  protecting FM-SUBSTITUTIONSET .
 
   vars T T' : Term .
   vars TL TL' : TermList .
@@ -3088,13 +3088,13 @@ fmod META-MATCH is
    = canonice(M,T) == canonice(M,T') .
 
 endfm
-fmod VARIANT-HANDLING is
-  pr SUBSTITUTION-HANDLING .
-  pr META-MINIMIZE-BINDINGS .
-  pr RESULT-CONTEXT-SET .
-  pr MODULE-HANDLING .
-  pr META-LEVEL-MNPA .
-  pr VARIANT .
+fmod FM-VARIANT-HANDLING is
+  pr FM-SUBSTITUTION-HANDLING .
+  pr FM-META-MINIMIZE-BINDINGS .
+  pr FM-RESULT-CONTEXT-SET .
+  pr FM-MODULE-HANDLING .
+  pr FM-META-LEVEL-MNPA .
+  pr FM-VARIANT .
 
   var M : Module .
   vars T T' TS TS' CtTS CtTS' Lhs Rhs : Term .
@@ -3149,11 +3149,11 @@ fmod VARIANT-HANDLING is
 
 endfm
 
-fmod RIGIDIFE is
-  protecting UNIFICATIONTRIPLESET .
-  protecting MODULE-HANDLING .
-  protecting RESULT-CONTEXT-SET .
-  protecting VARIANT .
+fmod FM-RIGIDIFE is
+  protecting FM-UNIFICATIONTRIPLESET .
+  protecting FM-MODULE-HANDLING .
+  protecting FM-RESULT-CONTEXT-SET .
+  protecting FM-VARIANT .
 
   vars V V' : Variable .
   var C : Constant .
@@ -3393,17 +3393,17 @@ fmod RIGIDIFE is
 
 endfm
 
-fmod META-E-UNIFICATION is
-  pr TYPEOFNARROWING .
-  pr EFLAGS .
-  pr RESULT-CONTEXT-SET .
-  pr SUBSTITUTION-HANDLING .
-  pr META-MINIMIZE-BINDINGS .
-  pr RESULT-CONTEXT-SET .
-  pr MODULE-HANDLING .
-  pr META-LEVEL-MNPA .
-  pr VARIANT .
-  pr RIGIDIFE .
+fmod FM-META-E-UNIFICATION is
+  pr FM-TYPEOFNARROWING .
+  pr FM-EFLAGS .
+  pr FM-RESULT-CONTEXT-SET .
+  pr FM-SUBSTITUTION-HANDLING .
+  pr FM-META-MINIMIZE-BINDINGS .
+  pr FM-RESULT-CONTEXT-SET .
+  pr FM-MODULE-HANDLING .
+  pr FM-META-LEVEL-MNPA .
+  pr FM-VARIANT .
+  pr FM-RIGIDIFE .
 
   *** Repeated definitions to avoid cross calls between modules ************
   op normalizedSubstitution? : Module SubstitutionSet -> Bool .
@@ -3834,16 +3834,16 @@ fmod META-E-UNIFICATION is
 
 endfm
 
-fmod META-ACU-UNIFICATION is
-  pr TERM-HANDLING .
-  pr SUBSTITUTION-HANDLING .
-  pr MODULE-HANDLING .
-  pr SUBSTITUTIONSET .
-  pr UNIFICATIONPAIRSET .
+fmod FM-META-ACU-UNIFICATION is
+  pr FM-TERM-HANDLING .
+  pr FM-SUBSTITUTION-HANDLING .
+  pr FM-MODULE-HANDLING .
+  pr FM-SUBSTITUTIONSET .
+  pr FM-UNIFICATIONPAIRSET .
   pr CONVERSION .
-  pr META-LEVEL-MNPA .
-  pr META-MINIMIZE-BINDINGS .
-  pr META-E-UNIFICATION .
+  pr FM-META-LEVEL-MNPA .
+  pr FM-META-MINIMIZE-BINDINGS .
+  pr FM-META-E-UNIFICATION .
 
   var M : Module .
   vars T T' : Term .
@@ -3918,8 +3918,8 @@ fmod META-ACU-UNIFICATION is
      fi .
 endfm
 
-fmod META-UNIFICATION is
-  pr META-ACU-UNIFICATION .
+fmod FM-META-UNIFICATION is
+  pr FM-META-ACU-UNIFICATION .
 
   var M : Module .
   var T T' : Term .
@@ -3943,8 +3943,8 @@ fmod META-UNIFICATION is
 endfm
 
 fmod META-MSG-UNIFICATION is
-  pr META-ACU-UNIFICATION .
-  pr META-MATCH .
+  pr FM-META-ACU-UNIFICATION .
+  pr FM-META-MATCH .
 
   var M : Module .
   vars T T' T1# T2# T1$ T2$ T1 T2 : Term .
@@ -4015,15 +4015,15 @@ fmod META-MSG-UNIFICATION is
 
 
 endfm
-fmod ORDERS-TERM-SUBSTITUTION is
-  protecting TERM-HANDLING .
-  protecting SUBSTITUTION-HANDLING .
-  protecting META-MATCH .
-  protecting META-LEVEL-MNPA .
-  protecting META-UNIFICATION .
-  protecting META-E-UNIFICATION .
-  protecting RENAMING .
-  protecting SUBSTITUTIONSET .
+fmod FM-ORDERS-TERM-SUBSTITUTION is
+  protecting FM-TERM-HANDLING .
+  protecting FM-SUBSTITUTION-HANDLING .
+  protecting FM-META-MATCH .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-META-UNIFICATION .
+  protecting FM-META-E-UNIFICATION .
+  protecting FM-RENAMING .
+  protecting FM-SUBSTITUTIONSET .
   protecting META-MSG-UNIFICATION .
 
   vars T T' : Term .
@@ -4333,11 +4333,11 @@ fmod ORDERS-TERM-SUBSTITUTION is
 endfm
 fmod META-NORMALIZE is
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting META-UNIFICATION .
-  protecting RESULT-CONTEXT-SET .
-  protecting ORDERS-TERM-SUBSTITUTION .
-  protecting TYPEOFNARROWING .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-META-UNIFICATION .
+  protecting FM-RESULT-CONTEXT-SET .
+  protecting FM-ORDERS-TERM-SUBSTITUTION .
+  protecting FM-TYPEOFNARROWING .
 
   vars T T' TOrig Lhs Rhs TS TS' CtTS CtTS' : Term .
   var V : Variable .
@@ -4587,18 +4587,18 @@ fmod META-NORMALIZE is
 
 endfm
 
-fmod META-E-NARROWING is
+fmod FM-META-E-NARROWING is
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting META-UNIFICATION .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-META-UNIFICATION .
   protecting META-MSG-UNIFICATION .
-  protecting META-E-UNIFICATION .
-  protecting RESULT-CONTEXT-SET .
-  protecting ORDERS-TERM-SUBSTITUTION .
-  protecting TYPEOFNARROWING .
+  protecting FM-META-E-UNIFICATION .
+  protecting FM-RESULT-CONTEXT-SET .
+  protecting FM-ORDERS-TERM-SUBSTITUTION .
+  protecting FM-TYPEOFNARROWING .
   protecting META-NORMALIZE .
-  protecting UNIFICATIONTRIPLESET .
-  protecting RIGIDIFE .
+  protecting FM-UNIFICATIONTRIPLESET .
+  protecting FM-RIGIDIFE .
 
   var T T' T'' TOrig Lhs Lhs' Rhs Rhs'  : Term .
   var CT' TS TS' TS'' CtTS CtTS' CtTS'' : Term .
@@ -5237,13 +5237,13 @@ fmod META-E-NARROWING is
 
 endfm
 
-fmod META-NARROWING-SEARCH is
-  protecting META-E-NARROWING .
+fmod FM-META-NARROWING-SEARCH is
+  protecting FM-META-E-NARROWING .
   protecting META-TERM .
-  protecting META-LEVEL-MNPA .
-  protecting META-UNIFICATION .
-  protecting RESULT-CONTEXT-SET .
-  protecting ORDERS-TERM-SUBSTITUTION .
+  protecting FM-META-LEVEL-MNPA .
+  protecting FM-META-UNIFICATION .
+  protecting FM-RESULT-CONTEXT-SET .
+  protecting FM-ORDERS-TERM-SUBSTITUTION .
 
   var T T' TOrig Lhs Rhs TS TS' CtTS CtTS' : Term .
   var V : Variable .
@@ -5747,7 +5747,7 @@ view Bound from TRIV to META-LEVEL is
   sort Elt to Bound .
 endv
 
-view Oid from TRIV to CONFIGURATION is
+view Oid from TRIV to FM-CONFIGURATION is
   sort Elt to Oid .
 endv
 
@@ -5788,7 +5788,7 @@ endv
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod EXTENDED-SORTS is
+fmod FM-EXTENDED-SORTS is
   ---- Any modification in this module must be reflected in the metamodule
   ---- used in eq addInfoConds in module UNIT-BUBBLE-PARSING
   sorts @SortToken@ @ViewToken@ @Sort@ @Kind@ @Type@ @SortList@
@@ -5811,7 +5811,7 @@ endfm
 ******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod OPERATOR-ATTRIBUTES is
+fmod FM-OPERATOR-ATTRIBUTES is
   sorts @Attr@ @AttrList@ @Hook@ @HookList@ @Bubble@ @UBubble@ @StBubble@
          @EqLBubble@ @RlLBubble@ @SdLBubble@ @RCBubble@ @RBubble@ @Token@ @NeTokenList@ .
   subsort @Attr@ < @AttrList@ .
@@ -5851,8 +5851,8 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod FM-MOD-EXPRS is
-  including OPERATOR-ATTRIBUTES .
-  including EXTENDED-SORTS .
+  including FM-OPERATOR-ATTRIBUTES .
+  including FM-EXTENDED-SORTS .
 
   sorts @Map@ @MapList@ .
   subsort @Map@ < @MapList@ .
@@ -5894,7 +5894,7 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod SIGNATURES is
+fmod FM-SIGNATURES is
   inc FM-MOD-EXPRS .
 
   sorts @SortDecl@ @SubsortRel@ @SubsortDecl@ @OpDecl@ .
@@ -5966,8 +5966,8 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod STATEMENTS is
-  including SIGNATURES .
+fmod FM-STATEMENTS is
+  including FM-SIGNATURES .
   including QID-LIST .
 
   sorts @ImportDecl@ @EqDecl@ @RlDecl@ @StDecl@ @MbDecl@ @VarDecl@ .
@@ -6003,8 +6003,8 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod MODULES is
-  including STATEMENTS .
+fmod FM-MODULES is
+  including FM-STATEMENTS .
 
   sorts @DeclList@ @Module@ @Parameter@ @List<Parameter>@ .
   sorts @Interface@ .
@@ -6045,8 +6045,8 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod VIEWS is
-  including MODULES .
+fmod FM-VIEWS is
+  including FM-MODULES .
 
   sorts @ViewDecl@ @ViewDeclList@ @View@ .
   subsorts @VarDecl@ < @ViewDecl@ < @ViewDeclList@ .
@@ -6079,7 +6079,7 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod COMMANDS is
+fmod FM-COMMANDS is
   including FM-MOD-EXPRS .
 
   sorts @Command@ .
@@ -6197,8 +6197,8 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod FULL-MAUDE-SIGN is
-  including VIEWS .
-  including COMMANDS .
+  including FM-VIEWS .
+  including FM-COMMANDS .
 
   sort @Input@ .
   subsorts @Command@ @Module@ @View@ < @Input@ .
@@ -6221,7 +6221,7 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod PRINT-SYNTAX-ERROR is
+fmod FM-PRINT-SYNTAX-ERROR is
 ---  protecting META-LEVEL + PRE-VARIANT .
   protecting META-LEVEL .
   protecting INT .
@@ -6299,7 +6299,7 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod EXT-QID-LIST is
+fmod FM-EXT-QID-LIST is
   pr QID-LIST .
 
   op qidList2Qid : QidList -> Qid .
@@ -6384,8 +6384,8 @@ fmod EXT-QID-LIST is
   eq replace(nil, QI, QI') = nil .
 endfm
 
-fmod HELP is
-  pr EXT-QID-LIST .
+fmod FM-HELP is
+  pr FM-EXT-QID-LIST .
   op fm-help : -> QidList .
   eq fm-help
     = string2qidList("Additional commands available:") '\n
@@ -6428,7 +6428,7 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod VIEW-EXPR is
+fmod FM-VIEW-EXPR is
   pr META-MODULE .
 
 ----@  sort ViewExpression .
@@ -6463,9 +6463,9 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod VIEW-EXPR-TO-QID is
-  pr VIEW-EXPR .
-  pr EXT-QID-LIST .
+fmod FM-VIEW-EXPR-TO-QID is
+  pr FM-VIEW-EXPR .
+  pr FM-EXT-QID-LIST .
 
   op viewExp2Qid : ViewExpression -> Qid .
   op parameterList2Qid : ParameterList -> Qid .
@@ -6525,13 +6525,13 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod EXT-SORT is
+fmod FM-EXT-SORT is
 ---  pr META-LEVEL + PRE-VARIANT .
   pr META-LEVEL .
   pr EXT-BOOL .
-  pr VIEW-EXPR-TO-QID .
-  pr EXT-QID-LIST .
-  pr TERMSET .
+  pr FM-VIEW-EXPR-TO-QID .
+  pr FM-EXT-QID-LIST .
+  pr FM-TERMSET .
 
 *** We define operations extending the built-in functions \texttt{sameKind}
 *** and \texttt{leastSort}, respectively, to lists of sorts and
@@ -6875,7 +6875,7 @@ endv
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod INT-LIST is
+fmod FM-INT-LIST is
   pr META-MODULE .
   pr INT .
   sort IntList .
@@ -6899,9 +6899,9 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod EXT-DECL is
-  pr EXT-SORT .
-  pr INT-LIST .
+fmod FM-EXT-DECL is
+  pr FM-EXT-SORT .
+  pr FM-INT-LIST .
 
   var  QI : Qid .
   vars QIL QIL' : QidList .
@@ -7004,18 +7004,18 @@ fmod EXT-DECL is
   eq rulify((none).EquationSet) = none .
 endfm
 
-**** The module EXT-TERM extends META-LEVEL with definitions of several
+**** The module FM-EXT-TERM extends META-LEVEL with definitions of several
 **** operations that manipulate terms: definitions for positions and operations
 **** to get the subterm of a given term at a given position, to replace the
 **** subterm of a term at a given position by another term, to get all the
 **** nonvariable positions in a term, to apply a substitution to a term, and to
 **** get a copy of a term in which all the variables in it have been renamed.
 
-fmod EXT-TERM is
+fmod FM-EXT-TERM is
 ---  pr META-LEVEL + PRE-VARIANT .
   pr META-LEVEL .
   pr EXT-BOOL .
-  pr EXT-DECL .
+  pr FM-EXT-DECL .
 
   vars T T' : Term .
   vars F X : Qid .
@@ -7160,8 +7160,8 @@ red allNonVarPos(
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod O-O-DECL is
-  pr EXT-SORT .
+fmod FM-O-O-DECL is
+  pr FM-EXT-SORT .
 
   vars QIL QIL' : QidList .
 
@@ -7238,9 +7238,9 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod FMAP is
+fmod FM-FMAP is
   inc META-MODULE .
-  pr EXT-SORT .
+  pr FM-EXT-SORT .
 
   *** renamings
   op class_to_ : Sort Sort -> Renaming .
@@ -7304,7 +7304,7 @@ endfm
 
 fmod MOD-EXPR is
   inc META-MODULE .
-  pr FMAP .
+  pr FM-FMAP .
 
   op TUPLE`[_`] : NzNat -> ModuleExpression .
   op POWER`[_`] : NzNat -> ModuleExpression .
@@ -7424,7 +7424,7 @@ endfm
 
 fmod MOD-NAME-TO-QID is
   pr MOD-NAME .
-  pr EXT-QID-LIST .
+  pr FM-EXT-QID-LIST .
 
   op header2Qid : Header -> Qid .
   op header2QidList : Header -> QidList .
@@ -7496,8 +7496,8 @@ endfm
 -------------------------------------------------------------------------------
 
 fmod UNIT is
-  pr EXT-DECL .
-  pr O-O-DECL .
+  pr FM-EXT-DECL .
+  pr FM-O-O-DECL .
   pr MOD-NAME-TO-QID .
 ---  inc META-LEVEL + PRE-VARIANT .
   inc META-LEVEL .
@@ -8549,7 +8549,7 @@ endfm
 
 fmod AX-COHERENCE-COMPLETION is
   inc UNIT .
-----  inc MODULE-HANDLING * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
+----  inc FM-MODULE-HANDLING * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
 
   vars V W : Variable .
   var  C : Constant .
@@ -9061,8 +9061,8 @@ endfm
 
 fmod VIEW is
   ex META-VIEW .
-  pr VIEW-EXPR .
-  inc FMAP .
+  pr FM-VIEW-EXPR .
+  inc FM-FMAP .
 
   *** mappings
   op class_to_. : Sort Sort -> SortMapping .
@@ -9466,7 +9466,7 @@ view ModuleName from TRIV to MOD-NAME is
   sort Elt to ModuleName .
 endv
 
-view ViewExpression from TRIV to VIEW-EXPR is
+view ViewExpression from TRIV to FM-VIEW-EXPR is
   sort Elt to ViewExpression .
 endv
 
@@ -9609,7 +9609,7 @@ fmod DATABASE is
                 op p2_ to modExp)) {Database, ModuleExpression} .
   pr PRE-VIEW .
   pr UNIT .
-  pr VIEW-EXPR-TO-QID .
+  pr FM-VIEW-EXPR-TO-QID .
 
   op evalModule : Module OpDeclSet Database -> Database .
   *** its definition is in the module EVALUATION
@@ -10446,7 +10446,7 @@ endfm
 fmod MOVE-DOWN is
   pr UNIT .
   pr CONVERSION .
-  pr INT-LIST .
+  pr FM-INT-LIST .
 
   op downTerm : Term -> [Term] .
   op downModule : Term -> [Module] .
@@ -10816,8 +10816,8 @@ endfm
 
 fmod MOD-EXP-PARSING is
   pr MOVE-DOWN .
-  pr INT-LIST .
-  pr VIEW-EXPR-TO-QID .
+  pr FM-INT-LIST .
+  pr FM-VIEW-EXPR-TO-QID .
 
   vars T T' T'' T3 T4 : Term .
   vars T? T?' : [Term] .
@@ -11064,7 +11064,7 @@ fmod BUBBLE-PARSING is
   pr MOVE-UP .
   pr MOVE-DOWN .
   pr MOD-EXP-PARSING .
-  pr PRINT-SYNTAX-ERROR .
+  pr FM-PRINT-SYNTAX-ERROR .
 
   vars T T' : Term .
   vars M M' : Module .
@@ -11287,7 +11287,7 @@ fmod UNIT-BUBBLE-PARSING is
   pr DATABASE .
   pr MOVE-UP .
   pr MOVE-DOWN .
-  pr PRINT-SYNTAX-ERROR .
+  pr FM-PRINT-SYNTAX-ERROR .
 
   vars T T' T'' T1 T2 T3 T4 : Term .
   vars T? T?' : [Term] .
@@ -12080,21 +12080,21 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod EXT-TERMSET is
-  protecting TERMSET .
+fmod FM-EXT-TERMSET is
+  protecting FM-TERMSET .
   op |_| : TermSet -> Nat .
   eq | X:Term | T:TermSet | = 1 + | T:TermSet | .
   eq | emptyTermSet | = 0 .
 endfm
 
-view TermSet from TRIV to EXT-TERMSET is
+view TermSet from TRIV to FM-EXT-TERMSET is
   sort Elt to TermSet .
 endv
 
 fmod O-O-TO-SYSTEM-MOD-TRANSF is
   pr DATABASE .
   pr CONVERSION .
-  pr EXT-TERMSET .
+  pr FM-EXT-TERMSET .
 
   var  DB : Database .
   var  I : Nat .
@@ -13262,10 +13262,10 @@ endfm
 *******************************************************************************
 -------------------------------------------------------------------------------
 
-fmod RENAMING-SET-APPL-ON-TERM is
+fmod FM-RENAMING-SET-APPL-ON-TERM is
   pr UNIT .
-  pr FMAP .
-  pr EXT-SORT .
+  pr FM-FMAP .
+  pr FM-EXT-SORT .
 
   var  R : Renaming .
   vars RS RS' RS'' SRS ORS : RenamingSet .
@@ -13753,10 +13753,10 @@ view RenamingSet from TRIV to META-LEVEL is
   sort Elt to RenamingSet .
 endv
 
-fmod RENAMING-SET-APPL-ON-UNIT is
-  pr RENAMING-SET-APPL-ON-TERM .
-  pr INT-LIST .
-  pr VIEW-EXPR .
+fmod FM-RENAMING-SET-APPL-ON-UNIT is
+  pr FM-RENAMING-SET-APPL-ON-TERM .
+  pr FM-INT-LIST .
+  pr FM-VIEW-EXPR .
 
   op applyMapsToModule : RenamingSet Module Module -> Module .
   op applyMapsToModuleAux : RenamingSet RenamingSet RenamingSet Module Module -> Module .
@@ -14477,7 +14477,7 @@ endfm
 
 fmod INST-EXPR-EVALUATION is
   pr EVALUATION .
-  pr RENAMING-SET-APPL-ON-UNIT .
+  pr FM-RENAMING-SET-APPL-ON-UNIT .
   inc MOD-EXPR .
   inc MOD-NAME .
   pr DATABASE .
@@ -15600,14 +15600,14 @@ endfm
 *** single unit is accomplished by the \texttt{applyMapsToModule} function,
 *** discussed in Section~\ref{applyMapsToModule}.
 
-fmod RENAMING-EXPR-EVALUATION is
+fmod FM-RENAMING-EXPR-EVALUATION is
   pr DATABASE .
-  pr RENAMING-SET-APPL-ON-UNIT .
+  pr FM-RENAMING-SET-APPL-ON-UNIT .
   pr EVALUATION .
   inc MOD-EXPR .
   pr MOD-EXPR-EVAL .
   pr INST-EXPR-EVALUATION .
-  pr FMAP .
+  pr FM-FMAP .
 
   vars ME ME' : ModuleExpression .
   var  MNS MNS' MNS'' MNS3 MNS4 : Set{ModuleName} .
@@ -16391,7 +16391,7 @@ endfm
 fmod UNION-EXPR is
   inc MOD-EXPR .
   pr INST-EXPR-EVALUATION .
-  pr RENAMING-EXPR-EVALUATION .
+  pr FM-RENAMING-EXPR-EVALUATION .
   pr EVALUATION .
 
   vars QI X : Qid .
@@ -16955,7 +16955,7 @@ fmod UNIT-DECL-PARSING is
   pr DATABASE .
   pr MOVE-DOWN .
   pr INST-EXPR-EVALUATION .
-  pr RENAMING-EXPR-EVALUATION .
+  pr FM-RENAMING-EXPR-EVALUATION .
   pr UNION-EXPR .
   pr N-TUPLE-EXPR .
   pr N-POWER-EXPR .
@@ -17735,12 +17735,12 @@ endfm
 *** module is not necessary.
 
 fmod DECL-META-PRETTY-PRINT is
-  pr EXT-DECL .
-  pr O-O-DECL .
+  pr FM-EXT-DECL .
+  pr FM-O-O-DECL .
   pr UNIT .
   pr CONVERSION .
-  pr INT-LIST .
-  pr VIEW-EXPR-TO-QID .
+  pr FM-INT-LIST .
+  pr FM-VIEW-EXPR-TO-QID .
   pr META-LEVEL .
 
   op metaPrettyPrintStrategy : Module Strategy ~> QidList .
@@ -18124,7 +18124,7 @@ endfm
 
 fmod UNIT-META-PRETTY-PRINT is
   pr UNIT .
-  pr RENAMING-EXPR-EVALUATION .
+  pr FM-RENAMING-EXPR-EVALUATION .
   pr DECL-META-PRETTY-PRINT .
 
   op eMetaPrettyPrint : Module Module -> QidList .
@@ -18432,7 +18432,7 @@ endfm
 
 fmod MAP-SET-META-PRETTY-PRINT is
   pr DECL-META-PRETTY-PRINT .
-  pr FMAP .
+  pr FM-FMAP .
   pr UNIT .
 
   op eMetaPrettyPrint : RenamingSet -> QidList .
@@ -18492,7 +18492,7 @@ endfm
 fmod VIEW-META-PRETTY-PRINT is
   pr DATABASE .
   pr MAP-SET-META-PRETTY-PRINT .
-  pr RENAMING-SET-APPL-ON-UNIT .
+  pr FM-RENAMING-SET-APPL-ON-UNIT .
   pr UNIT-META-PRETTY-PRINT .
 
   op eMetaPrettyPrint : Database View -> QidList .
@@ -18646,7 +18646,7 @@ fmod UNIT-PROCESSING is
   pr DATABASE .
   pr UNIT-DECL-PARSING .
   pr EVALUATION .
-  pr RENAMING-SET-APPL-ON-UNIT .
+  pr FM-RENAMING-SET-APPL-ON-UNIT .
   pr META-FULL-MAUDE-SIGN .
   pr MOD-EXP-PARSING .
 
@@ -19119,7 +19119,7 @@ fmod COMMAND-PROCESSING is
                  op p1_ to getDatabase,
                  op p2_ to getQidList)) {Database, QidList} .
   pr META-FULL-MAUDE-SIGN .
-  pr META-NARROWING-SEARCH * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
+  pr FM-META-NARROWING-SEARCH * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
 
   eq getDatabase(<< DB ; qidError(QIL) >>) = warning(DB, QIL) .
   eq getQidList(<< DB ; qidError(QIL) >>) = QIL .
@@ -19220,6 +19220,14 @@ fmod COMMAND-PROCESSING is
   op tupleTMBOBDerror : QidList -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
   op tupleTMSBOBDerror : QidList -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] .
   op tupleTMOBNerror : QidList -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
+  op getMsg : [Tuple{Term,Module,Bool,OpDeclSet,Database}] -> QidList .
+  op getMsg : [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] -> QidList .
+  op getMsg : [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] -> QidList .
+  op getMsg : [Tuple{Term,Module,OpDeclSet,Bound,Nat}] -> QidList .
+  eq getMsg(tupleTMBODerror(QIL)) = QIL .
+  eq getMsg(tupleTMBOBDerror(QIL)) = QIL .
+  eq getMsg(tupleTMSBOBDerror(QIL)) = QIL .
+  eq getMsg(tupleTMOBNerror(QIL)) = QIL .
 
   pr 5TUPLE{Term,Module,Bool,OpDeclSet,Database}
        * (op ((_,_,_,_,_)) to `{_`,_`,_`,_`,_`},
@@ -19625,7 +19633,7 @@ fmod COMMAND-PROCESSING is
       then (eMetaPrettyPrint(leastSort(getModule(TM), getTerm(TM)))
             '\s '\b ': '\o '\n '\s '\s
             eMetaPrettyPrint(getModule(TM), getTerm(TM)) '\n)
-      else getMsg(getTerm(TM))
+      else getMsg(TM)
       fi
     if TM := solveBubblesRed(T, M,
                included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
@@ -19644,7 +19652,7 @@ fmod COMMAND-PROCESSING is
             eMetaPrettyPrint(getModule(TM),
               getTerm(metaReduce(getModule(TM), getTerm(TM))))
             '\n)
-      else getMsg(getTerm(metaReduce(getModule(TM), getTerm(TM))))
+      else ('\b 'Error: '\o 'Incorrect 'command)
       fi
     if TM := solveBubblesRed(T, M,
                included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
@@ -19719,7 +19727,7 @@ fmod COMMAND-PROCESSING is
             '\s '\b ': '\o '\n '\s '\s
             eMetaPrettyPrint(getModule(TMVB), getTerm(RP))
             '\n)
-      else getMsg(getTerm(TMVB))
+      else getMsg(TMVB)
       fi
     if TMVB := solveBubblesRew(T, M,
                 included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
@@ -19785,6 +19793,9 @@ fmod COMMAND-PROCESSING is
               included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
               idle, unbounded, VDS, DB) .
   eq procSrew(ME, unitError(QIL), T, VDS, DB, SrwOpt) = qidError(QIL) .
+  eq procSrew(ME, M, T, VDS, DB, SrwOpt)
+    = '\b 'Error: '\o 'Incorrect 'input 
+    [owise] .
 
   eq solveBubblesSrew('ububble[T], M, B, St, D, VDS, DB)
     = solveBubblesSrew('bubble[T], M, B, St, D, VDS, DB) .
@@ -20555,9 +20566,9 @@ fmod COMMAND-PROCESSING is
 
 ----  op axCohComplete : SModule -> SModule .       ---- Defined later in module AX-COHERENCE-COMPLETION
 
-  sort IdsToRemove .                             ---- moved from VARIANTS
-  ops all non-handled : -> IdsToRemove .         ---- moved from VARIANTS
-  op removeIds : Module IdsToRemove ~> Module .  ---- moved from VARIANTS
+  sort IdsToRemove .                             ---- moved from FM-VARIANTS
+  ops all non-handled : -> IdsToRemove .         ---- moved from FM-VARIANTS
+  op removeIds : Module IdsToRemove ~> Module .  ---- moved from FM-VARIANTS
 
   ceq procNarrowSearch2(M, T, T', CD, QI, D, D')
     = if Mx:[Module] :: Module and RTS:[ResultTripleSet] :: ResultTripleSet
@@ -20739,8 +20750,7 @@ fmod COMMAND-PROCESSING is
                   B,
                   getVars(solveBubblesRew(T, M, B, I, VDS, DB)),
                   DB)
-           else getMsg(getTerm(solveBubblesRew(T, M, B, I, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'match 'command. '\n)
+           else getMsg(solveBubblesRew(T, M, B, I, VDS, DB))
            fi
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
@@ -20875,8 +20885,7 @@ fmod COMMAND-PROCESSING is
                getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
                getVars(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))),
              getBound(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-      else getMsg(getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'match 'command. '\n)
+      else getMsg(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
@@ -21029,8 +21038,7 @@ fmod COMMAND-PROCESSING is
                getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
                getVars(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))),
              getBound(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-      else getMsg(getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'id-unify 'command. '\n)
+      else getMsg(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
@@ -21059,7 +21067,7 @@ fmod COMMAND-PROCESSING is
       fi
      procIdUnify3(M, UP, I + 1, SS:SubstitutionSet) .
 
-  *** VARIANT-UNIFY
+  *** FM-VARIANT-UNIFY
 
   ceq procVariantUnify(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
@@ -21070,8 +21078,7 @@ fmod COMMAND-PROCESSING is
                getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
                getVars(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))),
              getBound(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-      else getMsg(getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'variant 'unify 'command. '\n)
+      else getMsg(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
@@ -21120,13 +21127,12 @@ fmod COMMAND-PROCESSING is
                getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
                getVars(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))),
              getBound(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-      else getMsg(getTerm(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'asymmetric 'variant 'unify 'command. '\n)
+      else getMsg(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB))
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
   ---op axCohComplete : SModule -> SModule . --- Defined later in module AX-COHERENCE-COMPLETION
-  ---op removeIds : Module ~> Module . ---Defined later in module VARIANTS
+  ---op removeIds : Module ~> Module . ---Defined later in module FM-VARIANTS
 
   ceq procAsymmetricVariantUnify2(M, T =? T', D)
     = if X:[SubstitutionSet] :: SubstitutionSet
@@ -21173,8 +21179,7 @@ fmod COMMAND-PROCESSING is
                getTerm(solveBubblesRewUnify(T, M, B, D, VDS, DB)),
                getVars(solveBubblesRewUnify(T, M, B, D, VDS, DB))),
              getBound(solveBubblesRewUnify(T, M, B, D, VDS, DB)))
-      else getMsg(getTerm(solveBubblesRewUnify(T, M, B, D, VDS, DB)))
-                ----('\r 'Error: '\o 'Incorrect 'get 'variants 'command. '\n)
+      else getMsg(solveBubblesRewUnify(T, M, B, D, VDS, DB))
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
 
@@ -21228,8 +21233,8 @@ endfm
 ---- - something else?
 
 fmod CHECK-INPUT-MODULE is
-  inc EXT-TERM .
-  inc MODULE-HANDLING  * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
+  inc FM-EXT-TERM .
+  inc FM-MODULE-HANDLING  * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
   inc COMMAND-PROCESSING .
 
   op checkModule : Module -> Bool .
@@ -21348,21 +21353,21 @@ endfm
 
 --------------------------------------------------------------------------------
 
-view SubstitutionSet from TRIV to SUBSTITUTIONSET is
+view SubstitutionSet from TRIV to FM-SUBSTITUTIONSET is
   sort Elt to SubstitutionSet .
 endv
 
 fmod MODULE-VARIANTS is
   inc CHECK-INPUT-MODULE .
-  inc META-NARROWING-SEARCH * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
+  inc FM-META-NARROWING-SEARCH * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
   inc UNIT .
   pr 2TUPLE{SubstitutionSet, Nat}
       * (op `(_`,_`) : SubstitutionSet Nat -> Tuple{SubstitutionSet, Nat} to <_;_>,
          op p1_ : Tuple{SubstitutionSet, Nat} -> SubstitutionSet to getSubst,
          op p2_ : Tuple{SubstitutionSet, Nat} -> Nat to getIndex) .
   pr CONVERSION .
-  pr EXT-TERM .
-  pr EXT-DECL .
+  pr FM-EXT-TERM .
+  pr FM-EXT-DECL .
   pr 2TUPLE{Module,Module}
       * (op `(_`,_`) : Module Module -> Tuple{Module, Module} to <_;_>) .
 
@@ -21846,9 +21851,9 @@ endfm
 *** \subsection{The \texttt{CONFIGURATION+} Module}
 ***
 
-*** change (2/20/2002): CONFIGURATION is now part of the prelude
+*** change (2/20/2002): FM-CONFIGURATION is now part of the prelude
 ***
-*** fmod CONFIGURATION is
+*** fmod FM-CONFIGURATION is
 ***   sort Oid Cid Attribute AttributeSet Configuration Object Msg .
 ***
 ***   subsort Attribute < AttributeSet .
@@ -21893,14 +21898,14 @@ endfm
 mod DATABASE-HANDLING is
 ---  inc META-LEVEL + PRE-VARIANT .
   inc META-LEVEL .
-  inc CONFIGURATION .
+  inc FM-CONFIGURATION .
   pr VIEW-META-PRETTY-PRINT .
   pr VIEW-PROCESSING .
   pr COMMAND-PROCESSING .
   pr PREDEF-UNITS .
   pr MODULE-VARIANTS .
   pr AX-COHERENCE-COMPLETION .
-  pr HELP .
+  pr FM-HELP .
 
   var  F : Qid .
   var  QIL : QidList .
@@ -22488,7 +22493,7 @@ mod FULL-MAUDE is
   pr META-FULL-MAUDE-SIGN .
   pr DATABASE-HANDLING .
   inc LOOP-MODE .
-  pr BANNER .
+  pr FM-BANNER .
 
 *** The state of the persistent system, which is supported by the built-in
 *** module \texttt{LOOP-MODE}, described in Section~\ref{loop}, is represented

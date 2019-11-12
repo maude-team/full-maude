@@ -1,0 +1,132 @@
+***
+*** Basic completion strategies
+*** ANS completion (Lescanne89, Figure 3)
+***
+
+sload ../critical-pairs.maude
+
+mod ANS-COMPLETION{X :: MODULE-AND-ORDER} is
+	pr CRITICAL-PAIRS{ForgetOrder}{X} .
+
+	sort System .
+	op <_,_,_,_,_,_> : RlS RlS RlS RlS RlS EqS -> System .  *** A N C T S E
+
+	var  E F          : EqS .
+	var  r            : Rl .
+	vars A N C T T' S : RlS .
+	vars s t u        : Term .
+
+	rl [Deduce] : < A, N, C, T, S, E >
+	           => < A, N, C, T, S, E F > [nonexec] . *** if  s <-- u --> t
+
+	crl [Orient] : < A, N, C, T, S, E s =. t >
+	            => < A, N, C, T, S s -> t, E >
+		if s > t .
+
+	rl [Delete] : < A, N, C, T, S, E s =. s >
+	           => < A, N, C, T, S, E > .
+
+	crl [Simplify] : < A, N, C, T, S, E s =. t >
+	              => < A, N, C, T, S, E u =. t >
+	 	if u := reduce(s, A N C T) .
+
+	crl [R-Simplify] : < A s -> t, N, C, T, S, E >
+	                => < A s -> u, N, C, T, S, E >
+		if u := reduce(t, S) .
+
+	crl [R-Simplify] : < A, N s -> t, C, T, S, E >
+	                => < A, N s -> u, C, T, S, E >
+		if u := reduce(t, S) .
+
+	crl [R-Simplify] : < A, N, C s -> t, T, S, E >
+	                => < A, N, C s -> u, T, S, E >
+		if u := reduce(t, S) .
+
+	crl [R-Simplify] : < A, N, C, T s -> t, S, E >
+	                => < A, N, C, T s -> u, S, E >
+		if u := reduce(t, S) .
+
+	crl [L-Simplify] : < A s -> t, N, C, T, S, E >
+	                => < A, N, C, T, S, E u =. t >
+		if u := reduce>(s -> t, S) .
+
+	crl [L-Simplify] : < A, N s -> t, C, T, S, E >
+	                => < A, N, C, T, S, E u =. t >
+		if u := reduce>(s -> t, S) .
+
+	crl [L-Simplify] : < A, N, C s -> t, T, S, E >
+	                => < A, N, C, T, S, E u =. t >
+		if u := reduce>(s -> t, S) .
+
+	crl [L-Simplify] : < A, N, C, T s -> t, S, E >
+	                => < A, N, C, T, S, E u =. t >
+		if u := reduce>(s -> t, S) .
+
+
+	rl [move] : < A, r N, C, T, S, E >
+	         => < r A, N, C, T, S, E > .
+
+	rl [concatT&S] : < A, N, C, T, S, E >
+	              => < A, N, C, T S, mtRlS, E > .
+
+	rl [AC2N] : < A, N, C, T, S, E >
+	         => < mtRlS, A N C, mtRlS, T, S, E > .
+
+	crl [fillC] : < A, N, C, T, S, E >
+	           => < mtRlS, A N, r, T', S, E >
+		if  r := least-rule(T)
+		/\ r T' := T .
+endm
+
+smod ANS-COMPLETION-STRAT-OLD{X :: MODULE-AND-ORDER} is
+	pr ANS-COMPLETION{X} .
+
+	strats ANS-COMP success orient simplify-eqs @ System .
+	strats deduce deduction simplify-rules      @ System .
+	strats internal-deduction new-loop          @ System .
+
+	var  e           : Eq .
+	vars r r'        : Rl .
+	vars E F         : EqS .
+	vars R A N C T S : RlS .
+	vars s t         : Term .
+	var  Sys         : System .
+
+
+	sd ANS-COMP :=  success             or-else
+	                simplify-rules      or-else
+	                orient              or-else
+	                deduce              or-else
+	                internal-deduction  or-else
+	                new-loop .
+
+	sd success := match < A, N, mtRlS, mtRlS, mtRlS, mtEqS > .
+
+	sd simplify-rules := match < A, N, C, T, r S, E > ;
+	                     (L-Simplify | R-Simplify) ! ;
+	                     concatT&S ;
+	                     ANS-COMP .
+
+	sd orient := match < A, N, C, T, mtRlS, e E > ;
+	             simplify-eqs ;
+	             (match < A, N, C, T, S, mtEqS > or-else Orient) ;
+	             ANS-COMP .
+
+	sd simplify-eqs := (Delete | Simplify) ! .
+
+	sd deduce := match < A, r N, r', T, mtRlS, mtEqS > ;
+	             deduction ;
+	             ANS-COMP .
+
+	sd deduction := matchrew Sys s.t. < A, r N, r', T, S, E > := Sys
+	                  /\ r := least-rule(r N) by Sys using
+	                  (Deduce[F <- equations(critical-pairs(r', r))] ;
+	                  move[r <- r]) .
+
+	sd internal-deduction := matchrew Sys s.t. < A, mtRlS, r, T, mtRlS, mtEqS > := Sys
+	                           by Sys using (Deduce[F <- equations(critical-pairs(r, r))] ;
+	                                         AC2N) ;
+                                 ANS-COMP .
+
+	sd new-loop := fillC ; ANS-COMP .
+endsm

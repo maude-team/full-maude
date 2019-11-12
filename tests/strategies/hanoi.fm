@@ -16,8 +16,6 @@
   rl  [move] : (S) [L1 D1] (T) [nil]   => (S) [L1] (T) [D1] .
 endm)
 
-eof
-
 (select HANOI .)
 ----(rew (0)[3 2 1] (1)[nil] (2)[nil] .)
 
