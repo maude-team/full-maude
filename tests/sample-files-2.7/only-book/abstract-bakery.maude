@@ -2,8 +2,8 @@
   ---- by the Maude team
   ---- checked Church-Rosser using the CRC tool
 
-  load bakery.maude
-  
+  sload bakery.maude
+
   mod ABSTRACT-BAKERY is
     including BAKERY  .
     vars P Q : Mode .

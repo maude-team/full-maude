@@ -1,14 +1,14 @@
   ---- from the book All About Maude
   ---- by the Maude team
 
-  load model-checker.maude
-  load bakery.maude
-  load deadlock-free-mod-expr.maude . ---- assumes Full Maude is already running
+  sload model-checker.maude
+  sload bakery.maude
+  sload deadlock-free-mod-expr.maude . ---- assumes Full Maude is already running
 
   select FULL-MAUDE .
   loop init .
 
-  load df-abstract-bakery-preds.fm
+  sload df-abstract-bakery-preds.fm
 
  (mod DF-ABSTRACT-BAKERY-CHECK is
     including MODEL-CHECKER .

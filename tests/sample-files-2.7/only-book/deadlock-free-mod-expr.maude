@@ -5,7 +5,7 @@
   set show loop timing off .
   set show advisories off .
 
-  load deadlock-freedom.maude
+  sload deadlock-freedom.maude
 
   fmod DEADLOCK-FREE-BANNER is
     pr STRING .
@@ -22,7 +22,7 @@
   fmod DEADLOCK-FREE-META-SIGN is
     pr META-LEVEL .
     pr META-FULL-MAUDE-SIGN .
-    pr UNIT .
+    pr FM-UNIT .
 
     op DEADLOCK-FREE-GRAMMAR : -> FModule .
 
@@ -31,11 +31,11 @@
   endfm
 
   fmod DEADLOCK-FREE-EXPR is
-    inc MOD-EXPR .
-    pr INST-EXPR-EVALUATION .
-    pr EVALUATION .
+    inc FM-MOD-EXPR .
+    pr FM-INST-EXPR-EVALUATION .
+    pr FM-EVALUATION .
     pr DEADLOCK-FREEDOM .
-    pr MOD-EXP-PARSING .
+    pr FM-MOD-EXP-PARSING .
 
     vars N N' : NzNat .
     var  PDL : ParameterDeclList .
@@ -68,7 +68,7 @@
   *** Some auxiliary functions are defined in order
   *** to generate the different declarations in the module.
 
-    op DEADLOCK-FREE`[_,_`] : ModuleExpression Sort -> ModuleExpression .
+    op DEADLOCK-FREE[_,_] : ModuleExpression Sort -> ModuleExpression .
 
     ceq evalModExp(DEADLOCK-FREE[ME, S], PDL, DB)
       = if unitInDb(DEADLOCK-FREE[ME', S], DB')
@@ -127,9 +127,9 @@
 *** it uses UNIFICATION-GRAMMAR instead of GRAMMAR to parse inputs.
 
 mod FULL-MAUDE is
-  pr DATABASE-HANDLING .
+  pr FM-DATABASE-HANDLING .
   inc LOOP-MODE .
-  pr BANNER .
+  pr FM-BANNER .
   pr DEADLOCK-FREE-META-SIGN .
   pr DEADLOCK-FREE-BANNER .
   pr DEADLOCK-FREE-EXPR .
@@ -199,7 +199,7 @@ endm
 
 loop init .
 
-trace exclude FULL-MAUDE .
+----trace exclude FULL-MAUDE .
 
 set show loop stats on .
 set show loop timing on .

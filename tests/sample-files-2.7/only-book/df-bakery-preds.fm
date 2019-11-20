@@ -5,14 +5,14 @@
   ---- load bakery.maude
   ---- select FULL-MAUDE .
   ---- loop init .
-  
-  load df-bakery.fm
-  
+
+  sload df-bakery.fm
+
  (mod DF-BAKERY-PREDS is
-    protecting DF-BAKERY .  
+    protecting DF-BAKERY .
     including SATISFACTION .
     subsort EConfig < State .
-    ops 1wait 2wait 1crit 2crit : -> Prop [ctor] . 
+    ops 1wait 2wait 1crit 2crit : -> Prop [ctor] .
     vars P Q : Mode .
     vars X Y : Nat .
     eq {< wait, X, Q, Y >} |= 1wait = true .

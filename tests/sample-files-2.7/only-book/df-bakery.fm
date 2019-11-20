@@ -1,10 +1,11 @@
   ---- from the book All About Maude
   ---- by the Maude team
 
-  ---- load bakery.maude ---- include it in the main file 
+  ---- load bakery.maude ---- include it in the main file
   ---- select FULL-MAUDE .
   ---- loop init .
-  
+
+
  (mod DF-BAKERY is
     protecting DEADLOCK-FREE[BAKERY, BState] .
   endm)

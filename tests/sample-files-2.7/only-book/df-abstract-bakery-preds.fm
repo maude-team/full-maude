@@ -5,9 +5,9 @@
   ---- load bakery.maude
   ---- select FULL-MAUDE .
   ---- loop init .
-  
-  load df-abstract-bakery.fm
-  load df-bakery-preds.fm
+
+  sload df-abstract-bakery.fm
+  sload df-bakery-preds.fm
 
  (mod DF-ABSTRACT-BAKERY-PREDS is
     protecting DF-ABSTRACT-BAKERY .

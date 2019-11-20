@@ -1,5 +1,5 @@
 set trace off .
-set trace select on .
+set trace select off .
 trace select ----solveBubblesCond
              ----solveBubbles
              ----metaParseStrategy
@@ -13,8 +13,8 @@ trace select ----solveBubblesCond
              ----evalPreModule2
              ----evalPreModule3
              ----procModule4
-             evalModExp
-             crtCopyRen
+             ----evalModExp
+             ----crtCopyRen
              ----unitInst
              ----unitInstAux
              ----evalModule
@@ -22,7 +22,7 @@ trace select ----solveBubblesCond
              ----solveBubblesModAux
              ----solveBubblesOps
              ----solveBubblesEq
-             ----metaParse
+             metaParse
              ----metaParseStrategy
              ----addDecls
              ----setStratDefs
@@ -72,6 +72,7 @@ trace select ----solveBubblesCond
              ----getFlatModuleNeg
              ----getVars
              ----metaPrettyPrintStrategy
+             ----parseModExp
              .
 set print conceal on .
 print conceal fmod_is_sorts_.____endfm

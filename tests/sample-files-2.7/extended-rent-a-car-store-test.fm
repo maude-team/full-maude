@@ -10,7 +10,7 @@
     op ExtStoreConf : -> Configuration [memo] .
     eq ExtStoreConf
       = < 'S : Store |
-           discounts : 
+           discounts :
              (((Staff, EconomyCar), 20),
               ((Staff, MidSizeCar), 30),
               ((Staff, FullSizeCar), 40),
@@ -25,7 +25,7 @@
            rates : ((EconomyCar, 100),
                     (MidSizeCar, 150),
                     (FullSizeCar, 200)),
-           customers : ('C1, 'C2), 
+           customers : ('C1, 'C2),
            cars : ('A1, 'A3, 'A5),
            rentals : empty, calendar : 'C >
         < 'C1 : Staff | cash : 5000, debt : 0 >

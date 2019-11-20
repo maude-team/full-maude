@@ -4,7 +4,7 @@ set show timing off .
 set show loop timing off .
 load trace.maude
 
----(
+----(
 load sample-files-2.7/rew-seq-extended-rent-a-car-store.fm
 load sample-files-2.7/rew-seq-rent-a-car-store.fm
 load sample-files-2.7/check-rrobin.fm
@@ -20,6 +20,7 @@ load sample-files-2.7/polynomial.fm
 load sample-files-2.7/power-ex.fm
 load sample-files-2.7/set-max.fm
 load sample-files-2.7/only-book/8-puzzle.fm
+----)
 load sample-files-2.7/only-book/df-abstract-bakery-check.fm
   set show loop stats off .
   set show loop timing off .
@@ -89,7 +90,6 @@ load strategies/ucm/blackboard.fm
 load strategies/ucm/rivercrossing.fm
 load strategies/ucm/insertion-sort.fm
 load strategies/ucm/ccs2.fm
----)
 load strategies/ucm/congruence.fm
 load strategies/ucm/basic-completion/examples/example-0.fm
 load strategies/ucm/basic-completion/examples/example-6.2.7.fm
