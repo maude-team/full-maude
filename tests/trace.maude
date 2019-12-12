@@ -1,78 +1,8 @@
 set trace off .
-set trace select off .
-trace select ----solveBubblesCond
-             ----solveBubbles
-             ----metaParseStrategy
-             ----procModule1
-             ----procModule2
-             ----procModule3
-             ----procModule4
-             ----parseDecl
-             ----evalPreModule
-             ----evalPreModule1
-             ----evalPreModule2
-             ----evalPreModule3
-             ----procModule4
-             ----evalModExp
-             ----crtCopyRen
-             ----unitInst
-             ----unitInstAux
-             ----evalModule
-             ----solveBubblesMod
-             ----solveBubblesModAux
-             ----solveBubblesOps
-             ----solveBubblesEq
-             metaParse
-             ----metaParseStrategy
-             ----addDecls
-             ----setStratDefs
-             ----createCopy
-             ----prepPar
-             ----prepParImports
-             ----setName
-             ----applyMapsToModule
-             ----applyMapsToModuleAux
-             ----applyMapsToStratDcls
-             ----applyMapsToStratDcl
-             ----applyMapsToStratDefs
-             ----applyMapsToStratDef
-             ----applyMapsToStrategy
-             ----imageOfCallStrategy
-             ----getRightStratMaps
-             ----procSrew
-             ----procSrew2
-             ----solveBubblesSrew
-             ----solveBubblesSrew2
-             ----solveBubblesSrew3
-             ----maps2rens
-             ----breakMb
-             ----breakMbAux
-             ----parseSort
-             ----parseType
-             ----evalViewExpression
-             ----procView
-             ----procViewAux
-             ----solvebubbles
-             ----procView2
-             ----viewInst
-             ----prepViewExpression
-             ----evalModExp
-             ----viewInst
-             ----viewInstAux
-             ----insertView
-             ----maps2rens
-             ----genMapsSorts
-             ----setSortMappings
-             ----setOpMappings
-             ----applyMapsToMaps
-             ----getTermModule
-             ----getTopModule
-             ----getInternalModule
-             ----getFlatModule
-             ----getFlatModuleNeg
-             ----getVars
-             ----metaPrettyPrintStrategy
-             ----parseModExp
+set trace select on .
+trace select procRed
+             solveBubblesRed
+             solveBubblesRed2
              .
 set print conceal on .
 print conceal fmod_is_sorts_.____endfm

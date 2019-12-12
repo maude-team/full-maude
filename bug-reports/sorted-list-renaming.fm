@@ -1,0 +1,14 @@
+(fmod SORTED-LIST{X :: TRIV} is
+   pr LIST{X} .
+endfm)
+
+(view Object from TRIV to CONFIGURATION is
+   sort Elt to Object .
+endv)
+
+(mod NODE is
+----  pr (LIST * (op __ to _++_)){Object} .
+   pr (SORTED-LIST * (op __ to _++_)){Object} .
+endm)
+
+(show module .)

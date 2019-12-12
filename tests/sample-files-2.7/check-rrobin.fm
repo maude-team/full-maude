@@ -3,7 +3,7 @@
   ---- by the Maude team
 
   load model-checker.maude
-  
+
   select FULL-MAUDE .
   loop init .
 
@@ -50,9 +50,14 @@
 
   load view-5.fm
 
-  (reduce in CHECK-RROBIN{5} :  
+  (show module CHECK-RROBIN{5} .)
+
+  (reduce in CHECK-RROBIN{5} :
             modelCheck(init, [] ~ twoInCrit) .)
----(         
+
+  eof
+  
+---(
 rewrites: 24439 in 20ms cpu (81ms real) (1221950 rewrites/second)
 reduce in CHECK-RROBIN{5}:
   modelCheck(init,[]~ twoInCrit)
@@ -61,9 +66,9 @@ result Bool :
 ---)
 
 
-  (reduce in CHECK-RROBIN{5} : 
+  (reduce in CHECK-RROBIN{5} :
             modelCheck(init, [] guaranteedReentrance) .)
----(            
+---(
 rewrites: 28198 in 60ms cpu (112ms real) (469966 rewrites/second)
 reduce in CHECK-RROBIN{5}:
   modelCheck(init,[]guaranteedReentrance)

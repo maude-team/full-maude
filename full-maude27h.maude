@@ -5719,8 +5719,8 @@ view EquationSet from TRIV to META-MODULE is
   sort Elt to EquationSet .
 endv
 
-view OpDeclSet from TRIV to META-MODULE is
-  sort Elt to OpDeclSet .
+view VariableSet from TRIV to META-LEVEL is
+  sort Elt to VariableSet .
 endv
 
 view ImportList from TRIV to META-MODULE is
@@ -9408,7 +9408,7 @@ fmod PRE-VIEW is
 
   sort PreView .
   op preview_from_to_is____endpv : Header ModuleExpression ModuleExpression
-       OpDeclSet SortMappingSet OpMappingSet StratMappingSet -> PreView
+       VariableSet SortMappingSet OpMappingSet StratMappingSet -> PreView
        [ctor format (nir! o r! o r! o r! o o o o r! o)] .
   op null : -> PreView .
 
@@ -9416,7 +9416,7 @@ fmod PRE-VIEW is
   op getPars : PreView -> ParameterDeclList .
   op getFrom : PreView -> ModuleExpression .
   op getTo : PreView -> ModuleExpression .
-  op getVars : PreView -> OpDeclSet .
+  op getVars : PreView -> VariableSet .
   op getSortMappings : PreView -> SortMappingSet .
   op getOpMappings : PreView -> OpMappingSet .
   op getStratMappings : PreView -> StratMappingSet .
@@ -9426,7 +9426,7 @@ fmod PRE-VIEW is
   var  VE : ViewExpression .
   var  VH : Header .
   vars PDL PDL' : ParameterDeclList .
-  vars VDS VDS' : OpDeclSet .
+  vars VDS VDS' : VariableSet .
   vars SMS SMS' : SortMappingSet .
   vars OMS OMS' : OpMappingSet .
   vars TMS TMS' : StratMappingSet .
@@ -9448,7 +9448,7 @@ fmod PRE-VIEW is
   op addMaps : SortMappingSet PreView -> PreView .
   op addMaps : OpMappingSet PreView -> PreView .
   op addMaps : StratMappingSet PreView -> PreView .
-  op addVars : OpDeclSet PreView -> PreView .
+  op addVars : VariableSet PreView -> PreView .
 
   eq addMaps(SMS, preview VH from ME to ME' is VDS SMS' OMS TMS endpv)
     = preview VH from ME to ME' is VDS (SMS SMS') OMS TMS endpv .
@@ -9591,12 +9591,12 @@ fmod INFO is
 
   sort ModuleInfo .
   op <_;_;_;_;_;_;_;_> : ModuleName Default{Term} Module Module Module
-       OpDeclSet Set{ModuleName} Set{ViewExpression} -> ModuleInfo
+       VariableSet Set{ModuleName} Set{ViewExpression} -> ModuleInfo
      [ctor
       format
         (nig o g n+++io g nio g nio g nio g nio g nio g nio n---ig o)] .
   op <_;_;_;_;_;_;_;_> : ModuleName Module Module Module Module
-       OpDeclSet Set{ModuleName} Set{ViewExpression} -> ModuleInfo
+       VariableSet Set{ModuleName} Set{ViewExpression} -> ModuleInfo
      [ctor
       format
       (nig ur! g n+++io g nio g nio g nio g nio g nio g nio n---ig o)] .
@@ -9686,7 +9686,7 @@ fmod DATABASE is
   pr FM-UNIT .
   pr FM-VIEW-EXPR-TO-QID .
 
-  op evalModule : Module OpDeclSet Database -> Database .
+  op evalModule : Module VariableSet Database -> Database .
   *** its definition is in the module FM-EVALUATION
 
   op procModule : Qid Database -> Database .
@@ -9720,7 +9720,8 @@ fmod DATABASE is
   vars IL IL' : ImportList .
   var  VIf : ViewInfo .
   var  UIf : ModuleInfo .
-  vars OPDS VDS VDS' : OpDeclSet .
+  vars OPDS : OpDeclSet .
+  vars VDS VDS' : VariableSet .
   var  PV : PreView .
   vars T T' : Term .
   var  DT : Default{Term} .
@@ -10144,35 +10145,39 @@ fmod DATABASE is
 *** the flat version of a module is entered in the database, its corresponding
 *** top module is already present in it.
 
-  pr 3TUPLE{Term,OpDeclSet,Module}
-       * (op ((_,_,_)) to <_;_;_>) .
+  pr 3TUPLE{Term,VariableSet,Module} * (op ((_,_,_)) to <_;_;_>) .
+
+*** extended variable set
+  op variableSetError : QidList -> [VariableSet] [ctor format (r o)] .
+  eq variableSetError(QIL) variableSetError(QIL') = variableSetError(QIL QIL') .
+
 
 ----  sort Tuple{Term,OpDeclSet,Module} .
 ----  op <_;_;_> : Default{Term} OpDeclSet Module -> Tuple{Term,OpDeclSet,Module} .
-  op error : QidList -> [Tuple{Term,OpDeclSet,Module}] .
+  op error : QidList -> [Tuple{Term,VariableSet,Module}] .
 
   op insTermModule : ModuleName Module Database -> Database .
   op insTermModule : ModuleName Term Database -> Database .
   op insertTopModule : ModuleExpression [Module] Database -> Database .
   op insertInternalModule : ModuleExpression [Module] Database -> Database .
   op insertFlatModule : ModuleExpression [Module] Database -> Database .
-  op insertVars : ModuleExpression [OpDeclSet] Database -> Database .
-  op getTermModule : ModuleExpression Database -> [Tuple{Term,OpDeclSet,Module}] .
+  op insertVars : ModuleExpression [VariableSet] Database -> Database .
+  op getTermModule : ModuleExpression Database -> [Tuple{Term,VariableSet,Module}] .
   op getTopModule : ModuleExpression Database -> [Module] .
   op getInternalModule : ModuleExpression Database -> [Module] .
   op getFlatModule : ModuleExpression Database -> [Module] .
   op getFlatModuleNeg : ModuleExpression Database -> [Module] .
-  op getVars : ModuleExpression Database -> [OpDeclSet] .
+  op getVars : ModuleExpression Database -> [VariableSet] .
   op insertTopModule : ParameterDecl [Module] Database -> Database .
   op insertInternalModule : ParameterDecl [Module] Database -> Database .
   op insertFlatModule : ParameterDecl [Module] Database -> Database .
   op insertVars : ParameterDecl [OpDeclSet] Database -> Database .
-  op getTermModule : ParameterDecl Database -> [Tuple{Term,OpDeclSet,Module}] .
+  op getTermModule : ParameterDecl Database -> [Tuple{Term,VariableSet,Module}] .
   op getTopModule : ParameterDecl Database -> [Module] .
   op getInternalModule : ParameterDecl Database -> [Module] .
   op getFlatModule : ParameterDecl Database -> [Module] .
   op getFlatModuleNeg : ParameterDecl Database -> [Module] .
-  op getVars : ParameterDecl Database -> [OpDeclSet] .
+  op getVars : ParameterDecl Database -> [VariableSet] .
 
   eq insTermModule(MN, T,
        db(< MN ; DT ; U ; U' ; U'' ; VDS ; MNS ; VES > MIS, MNS',
@@ -10297,7 +10302,7 @@ fmod DATABASE is
           MNS', VIS, VES', MNS'', MNS3, MNS4, QIL))
     = db(< MN ; U' ; U'' ; U3 ; U4 ; VDS ; MNS ; VES > MIS,
          MNS', VIS, VES', MNS'', MNS3, MNS4, QIL) .
-  eq insertVars(MN, opDeclError(QIL), DB) = warning(DB, QIL) .
+  eq insertVars(MN, variableSetError(QIL), DB) = warning(DB, QIL) .
 
   eq getTermModule(MN,
        db(< MN ; null ; U ; U' ; U'' ; VDS ; MNS ; VES > MIS,
@@ -11148,8 +11153,9 @@ fmod BUBBLE-PARSING is
   vars DB DB' : Database .
   var  TL : TermList .
   var  S : Sort .
-  vars QI QI' F : Qid .
-  var  VDS : OpDeclSet .
+  var  QI QI' F : Qid .
+  var  OPDS : OpDeclSet .
+  var  VDS : VariableSet .
   var  C : Constant .
   var  V : Variable .
   var  N : Nat .
@@ -11173,53 +11179,33 @@ fmod BUBBLE-PARSING is
 *** \verb~'up['token[T], 'bubble[T']]~ for terms \texttt{T} and \texttt{T'}.
 *** The function \texttt{solveUps} will evaluate them.
 
-  op solveBubbles : Term Module Bool OpDeclSet Database -> [Term] .
+  op solveBubbles : Term Module Bool VariableSet Database -> [Term] .
   op solveUps : TermList Database -> [TermList] .
   op solveUpsCondition : Condition Database -> Condition .
   op solveUpsModExp : TermList Database -> [TermList] .
-  op constsToVars : Term OpDeclSet -> Term [memo] .
-  op constsToVars : TermList OpDeclSet -> TermList [memo] .
-  op constsToVarsAux : Constant OpDeclSet -> Qid [memo] .
-
-  eq constsToVars(F[TL], VDS) = F[constsToVars(TL, VDS)] .
-  eq constsToVars(C, VDS) = constsToVarsAux(C, VDS) .
-  eq constsToVars(V, VDS) = V .
-  eq constsToVars(qidError(QIL), VDS) = qidError(QIL) .
-  ceq constsToVars((T, TL), VDS)
-    = (constsToVars(T, VDS), constsToVars(TL, VDS))
-    if TL =/= empty .
-
-  eq constsToVarsAux(C, (op F : nil -> Tp [none] .) VDS)
-    = if getName(C) == F
-      then qid(string(F) + ":" + string(Tp))
-      else constsToVarsAux(C, VDS)
-      fi .
-  eq constsToVarsAux(C, none) = C .
 
   eq solveBubbles('ububble[T], M, true, VDS, DB)
     = solveBubbles('bubble[T], M, true, VDS, DB) .
   ceq solveBubbles('bubble[T], M, true, VDS, DB)
     *** if META-LEVEL is a submodule the ups need to be solved
     = if RP :: ResultPair
-      then solveUps(constsToVars(getTerm(RP), VDS), DB)
+      then solveUps(getTerm(RP), DB)
       else qidError('\r 'Warning: '\o printSyntaxError(RP, QIL) '\n
                     '\r 'Error: '\o 'no 'parse 'for QIL '\n)
       fi
-    if M' := addOps(VDS, M)
-       /\ QIL := downQidList(T)
-       /\ RP := metaParse(M', QIL, anyType) .
+    if QIL := downQidList(T)
+    /\ RP := metaParse(M, VDS, QIL, anyType) .
 
   eq solveBubbles('ububble[T], M, false, VDS, DB)
     = solveBubbles('bubble[T], M, false, VDS, DB) .
   ceq solveBubbles('bubble[T], M, false, VDS, DB)
     = if RP :: ResultPair
-      then constsToVars(getTerm(RP), VDS)
+      then getTerm(RP)
       else qidError('\r 'Warning: '\o printSyntaxError(RP, QIL) '\n
                     '\r 'Error: '\o 'no 'parse 'for QIL '\n)
       fi
-    if M' := addOps(VDS, M)
-       /\ QIL := downQidList(T)
-       /\ RP := metaParse(M', QIL, anyType) .
+    if QIL := downQidList(T)
+    /\ RP := metaParse(M, VDS, QIL, anyType) .
 
 *** The \texttt{solveBubbles1} function is in charge of calling the function
 *** \texttt{metaParse}. The flag indicating the inclusion of the module
@@ -11304,24 +11290,25 @@ fmod BUBBLE-PARSING is
     = solveUpsModExp('upTerm[T, 'bubble[T']], DB) .
   ceq solveUpsModExp('upTerm[T, 'bubble[T']], DB)
     = if included('META-MODULE, getImports(getInternalModule(MN, DB')), DB')
-      then if metaParse(U, QIL, anyType) :: ResultPair
-           then up(solveUps(getTerm(metaParse(U, QIL, anyType)), DB'))
+      then if metaParse(U, VDS, QIL, anyType) :: ResultPair
+           then up(solveUps(getTerm(metaParse(U, VDS, QIL, anyType)), DB'))
            else qidError('\r 'Warning: '\o
                   'No 'parse 'for 'argument 'of 'up
-                  printSyntaxError(metaParse(U, QIL, anyType), QIL)
+                  printSyntaxError(metaParse(U, VDS, QIL, anyType), QIL)
                   '\n)
            fi
-      else if metaParse(U, QIL, anyType) :: ResultPair
-           then up(getTerm(metaParse(U, QIL, anyType)))
+      else if metaParse(U, VDS, QIL, anyType) :: ResultPair
+           then up(getTerm(metaParse(U, VDS, QIL, anyType)))
            else qidError('\r 'Warning: '\o
                   'No 'parse 'for 'argument 'of 'up
-                  printSyntaxError(metaParse(U, QIL, anyType), QIL)
+                  printSyntaxError(metaParse(U, VDS, QIL, anyType), QIL)
                   '\n)
            fi
       fi
     if < DB' ; MN > := evalModExp(parseModExp(T), DB)
-       /\ U := getFlatModule(MN, DB')
-       /\ QIL := downQidList(T').
+    /\ U := getFlatModule(MN, DB')
+    /\ VDS := getVars(MN, DB')
+    /\ QIL := downQidList(T').
   ceq solveUpsModExp('upTerm[T, 'bubble[T']], DB)
     = qidError('\r 'Error: 'op '\o 'Module header2QidList(ME) 'not 'in 'database. '\n)
     if ME := parseModExp(T)
@@ -11395,7 +11382,8 @@ fmod UNIT-BUBBLE-PARSING is
   var  Rl : Rule .
   var  RlS Rls : RuleSet .
   var  OPD : OpDecl .
-  vars OPDS OPDS' OPDS'' VDS : OpDeclSet .
+  vars OPDS OPDS' OPDS'' : OpDeclSet .
+  var  VDS : VariableSet .
   var  CD? : [Condition] .
   var  Ct : Constant .
   var  RP : [ResultPair] .
@@ -11404,10 +11392,6 @@ fmod UNIT-BUBBLE-PARSING is
   var  SDcs StratDecls : StratDeclSet .
   var  Strat : Strategy .
   vars Strat? Strat1? Strat2? : Strategy? .
-
-  op vars : OpDeclSet -> QidSet .
-  eq vars(op V : nil -> Ty [none] . VDS) = qid(string(V) + ":" + string(Ty)) ; vars(VDS) .
-  eq vars(none) = none .
 
 *** In the parsing of bubbles themselves, we consider three different cases:
 *** The case of having one single bubble in which no context is
@@ -11420,12 +11404,12 @@ fmod UNIT-BUBBLE-PARSING is
 *** the case of one single bubble without context, which is handled by the
 *** function \texttt{solveBubbles3}.
 
-  op solveBubblesEq : Term Term Module Bool OpDeclSet Database -> Term .
-  op solveBubblesCEq : Term Term Module Bool OpDeclSet Database -> Term .
-  op solveBubblesRl : Term Term Module Bool OpDeclSet Database -> Term .
-  op solveBubblesCRl : Term Term Module Bool OpDeclSet Database -> Term .
-  op solveBubbles2 : Term [Type] Module Bool OpDeclSet Database -> Term .
-  op solveBubblesCond : Term Module Module Bool OpDeclSet Database -> [Condition] .
+  op solveBubblesEq : Term Term Module Bool VariableSet Database -> Term .
+  op solveBubblesCEq : Term Term Module Bool VariableSet Database -> Term .
+  op solveBubblesRl : Term Term Module Bool VariableSet Database -> Term .
+  op solveBubblesCRl : Term Term Module Bool VariableSet Database -> Term .
+  op solveBubbles2 : Term [Type] Module Bool VariableSet Database -> Term .
+  op solveBubblesCond : Term Module Module Bool VariableSet Database -> [Condition] .
 
   op conditionError : QidList -> [Condition] [ctor format (r o)] .
 
@@ -11438,91 +11422,87 @@ fmod UNIT-BUBBLE-PARSING is
   ceq solveBubblesEq(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
-           then solveUps(constsToVars(getTerm(RP), VDS), DB)
-           else constsToVars(getTerm(RP), VDS)
+           then solveUps(getTerm(RP), DB)
+           else getTerm(RP)
            fi
       else qidError('\r 'Warning:
                  '\o printSyntaxError(RP, QIL '= QIL') '\n
                  '\r 'Error: '\o 'no 'parse 'for 'eq QIL '\s '= '\s QIL' '\n)
       fi
-    if M' := addOps((VDS
-                     op 'eq_=_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
+    if M' := addOps(op 'eq_=_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .,
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', 'eq QIL '= QIL' '., '@@@) .
+       /\ RP := metaParse(M', VDS, 'eq QIL '= QIL' '., '@@@) .
 
   ceq solveBubblesCEq(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
-           then solveUps(constsToVars(getTerm(RP), VDS), DB)
-           else constsToVars(getTerm(RP), VDS)
+           then solveUps(getTerm(RP), DB)
+           else getTerm(RP)
            fi
       else qidError('\r 'Warning:
                  '\o printSyntaxError(RP, '`( QIL '`) '= '`( QIL' '`)) '\n
                  '\r 'Error: '\o 'no 'parse 'for 'ceq QIL '\s '= '\s QIL' '\n)
       fi
-    if M' := addOps((VDS
-                     op 'eq_=_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
+    if M' := addOps(op 'eq_=_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .,
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', 'eq QIL '= QIL' '., '@@@) .
+       /\ RP := metaParse(M', VDS, 'eq QIL '= QIL' '., '@@@) .
 
   eq solveBubblesRl('ububble[T], 'ububble[T'], M, B, VDS, DB)
     = solveBubblesRl(T, T', M, B, VDS, DB) .
   ceq solveBubblesRl(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
-           then solveUps(constsToVars(getTerm(RP), VDS), DB)
-           else constsToVars(getTerm(RP), VDS)
+           then solveUps(getTerm(RP), DB)
+           else getTerm(RP)
            fi
       else qidError('\r 'Warning:
                  '\o printSyntaxError(RP, QIL '=> QIL') '\n
                  '\r 'Error: '\o 'no 'parse 'for 'rl QIL '\s '=> '\s QIL' '\n)
       fi
-    if M' := addOps((VDS
-                     op 'rl_=>_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
+    if M' := addOps(op 'rl_=>_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .,
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', 'rl QIL '=> QIL' '., '@@@)
+       /\ RP := metaParse(M', VDS, 'rl QIL '=> QIL' '., '@@@)
     [owise] .
   ceq solveBubblesCRl(T, T', M, B, VDS, DB)
     = if RP :: ResultPair
       then if B
-           then solveUps(constsToVars(getTerm(RP), VDS), DB)
-           else constsToVars(getTerm(RP), VDS)
+           then solveUps(getTerm(RP), DB)
+           else getTerm(RP)
            fi
       else qidError('\r 'Warning:
                  '\o printSyntaxError(RP, QIL '=> QIL') '\n
                  '\r 'Error: '\o 'no 'parse 'for 'crl QIL '\s '=> '\s QIL' '\n)
       fi
-    if M' := addOps((VDS
-                     op 'rl_=>_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .),
+    if M' := addOps(op 'rl_=>_. : 'Universal 'Universal -> '@@@ [poly(1 2) gather('& '&)] .,
                addSorts('@@@, M))
        /\ QIL := downQidList(T)
        /\ QIL' := downQidList(T')
-       /\ RP := metaParse(M', 'rl QIL '=> QIL' '., '@@@)
+       /\ RP := metaParse(M', VDS, 'rl QIL '=> QIL' '., '@@@)
     [owise] .
 
   ceq solveBubbles2(T, T?:Type?, M, true, VDS, DB)
     = if RP :: ResultPair
-      then solveUps(constsToVars(getTerm(RP), VDS), DB)
+      then solveUps(getTerm(RP), DB)
       else qidError('\r 'Warning:
                  '\o printSyntaxError(RP, QIL) '\n
                  '\r 'Error: 'No 'parse 'for QIL '\n)
       fi
     if QIL := downQidList(T)
-       /\ RP := metaParse(M, QIL, T?:Type?) .
+       /\ RP := metaParse(M, VDS, QIL, T?:Type?) .
   ceq solveBubbles2(T, T?:Type?, M, false, VDS, DB)
     = if RP :: ResultPair
-      then constsToVars(getTerm(RP), VDS)
+      then getTerm(RP)
       else qidError('\r 'Warning: '\o printSyntaxError(RP, QIL) '\n
                  '\r 'Error: 'No 'parse 'for QIL '\n)
       fi
     if QIL := downQidList(T)
-       /\ RP := metaParse(M, QIL, T?:Type?) .
+       /\ RP := metaParse(M, VDS, QIL, T?:Type?) .
 
   op addInfoConds : Module -> [Module] .
   op addInfoConds : Module SortSet -> Module .
@@ -11561,50 +11541,44 @@ fmod UNIT-BUBBLE-PARSING is
 
   ceq solveBubblesCond(T, M, M', B, VDS, DB)
     = if 'Bool in getSorts(M)
-         and-then metaParse(M, QIL, 'Bool) :: ResultPair
+         and-then metaParse(M, VDS, QIL, 'Bool) :: ResultPair
       then if B
-           then solveUps(constsToVars(getTerm(metaParse(M, QIL, 'Bool)), VDS), DB)
-                = 'true.Bool
-           else constsToVars(getTerm(metaParse(M, QIL, 'Bool)), VDS)
-                = 'true.Bool
+           then solveUps(getTerm(metaParse(M, VDS, QIL, 'Bool)), DB) = 'true.Bool
+           else getTerm(metaParse(M, VDS, QIL, 'Bool)) = 'true.Bool
            fi
-      else if metaParse(M', QIL, '@Condition@) :: ResultPair
+      else if metaParse(M', VDS, QIL, '@Condition@) :: ResultPair
            then if B
-                then solveUpsCondition(
-                       parseCond(getTerm(metaParse(M', QIL, '@Condition@)), VDS), DB)
-                else parseCond(getTerm(metaParse(M', QIL, '@Condition@)), VDS)
+                then solveUpsCondition(parseCond(getTerm(metaParse(M', VDS, QIL, '@Condition@))), DB)
+                else parseCond(getTerm(metaParse(M', VDS, QIL, '@Condition@)))
                 fi
            else conditionError('\r 'Warning: '\o
-                  printSyntaxError(metaParse(M', QIL, '@Condition@), QIL) '\n)
+                  printSyntaxError(metaParse(M', VDS, QIL, '@Condition@), QIL) '\n)
            fi
       fi
     if QIL := downQidList(T) .
 
-  op parseCond : Term OpDeclSet -> Condition .
+  op parseCond : Term -> Condition .
 
-  eq parseCond('_/\_[T, T'], VDS) = parseCond(T, VDS) /\ parseCond(T', VDS) .
-  eq parseCond('_=_[T, T'], VDS)
-    = constsToVars(T, VDS) = constsToVars(T', VDS) .
-  eq parseCond('_:_[T, T'], VDS) = constsToVars(T, VDS) : getName(T') .
-  eq parseCond('_:=_[T, T'], VDS)
-    = constsToVars(T, VDS) := constsToVars(T', VDS) .
-  eq parseCond('_=>_[T, T'], VDS)
-    = constsToVars(T, VDS) => constsToVars(T', VDS) .
-  eq parseCond(T, VDS) = constsToVars(T, VDS) = 'true.Bool [owise] .
+  eq parseCond('_/\_[T, T']) = parseCond(T) /\ parseCond(T') .
+  eq parseCond('_=_[T, T']) = T = T' .
+  eq parseCond('_:_[T, T']) = T : getName(T') .
+  eq parseCond('_:=_[T, T']) = T := T' .
+  eq parseCond('_=>_[T, T']) = T => T' .
+  eq parseCond(T) = T = 'true.Bool [owise] .
 
 *** Since bubbles can only appear in the identity or special attributes in the
 *** declaration of operators, in equations, membership axioms, and rules, the
 *** evaluation of bubbles on a preunit is reduced to calls to the
 *** \texttt{solveBubbles} functions on each of these sTS of declarations.
 
-  op solveBubblesMod : Module OpDeclSet RuleSet Module Bool OpDeclSet Database -> Module .
-  op solveBubblesModAux : Module RuleSet Module Module Bool OpDeclSet Database -> Module .
+  op solveBubblesMod : Module OpDeclSet RuleSet Module Bool VariableSet Database -> Module .
+  op solveBubblesModAux : Module RuleSet Module Module Bool VariableSet Database -> Module .
 
-  op solveBubbles : EquationSet Module [Module] Bool OpDeclSet Database -> EquationSet .
-  op solveBubbles : RuleSet Module [Module] Bool OpDeclSet Database -> RuleSet .
-  op solveBubbles : MembAxSet Module [Module] Bool OpDeclSet Database -> MembAxSet .
-  op solveBubbles : StratDefSet Module [Module] Bool OpDeclSet Database -> StratDefSet .
-  op solveBubbles : Condition Module Bool OpDeclSet Database -> Condition .
+  op solveBubbles : EquationSet Module [Module] Bool VariableSet Database -> EquationSet .
+  op solveBubbles : RuleSet Module [Module] Bool VariableSet Database -> RuleSet .
+  op solveBubbles : MembAxSet Module [Module] Bool VariableSet Database -> MembAxSet .
+  op solveBubbles : StratDefSet Module [Module] Bool VariableSet Database -> StratDefSet .
+  op solveBubbles : Condition Module Bool VariableSet Database -> Condition .
   op solveBubblesOps : OpDeclSet OpDeclSet Module Module -> OpDeclSet .
   op solveBubblesOps : OpDeclSet OpDeclSet Module -> OpDeclSet .
   op solveBubblesOpsAux : OpDeclSet Module -> OpDeclSet .
@@ -11617,13 +11591,12 @@ fmod UNIT-BUBBLE-PARSING is
           setEqs(
             setMbs(
               setRls(PU,
-                solveBubbles(getRls(PU), M', M'', B, VDS, DB)),
-              solveBubbles(getMbs(PU), M', M'', B, VDS, DB)),
-            solveBubbles(getEqs(PU), M', M'', B, VDS, DB)),
-          solveBubblesOps(getOps(PU), OPDS, M')),
+                solveBubbles(getRls(PU), M, M'', B, VDS, DB)),
+              solveBubbles(getMbs(PU), M, M'', B, VDS, DB)),
+            solveBubbles(getEqs(PU), M, M'', B, VDS, DB)),
+          solveBubblesOps(getOps(PU), OPDS, M)),
         Rls, M, M'', B, VDS, DB)
-    if M' := addOps(VDS, M)
-    /\ M'' := addInfoConds(M') .
+    if M'' := addInfoConds(M) .
 
   eq solveBubblesModAux(PU, Rls, M, M', B, VDS, DB)
     = setStratDefs(PU,
@@ -11706,8 +11679,8 @@ fmod UNIT-BUBBLE-PARSING is
        * (op p1_ to term, op p2_ to attrSet,
           op `(_`,_`) : Term AttrSet -> Tuple{Term,AttrSet} to `{_`,_`}) .
 
-  op pullStmtAttrOut : Term OpDeclSet -> [Tuple{Term,AttrSet}] .
-  op pullStmtAttrOutAux : Term TermList AttrSet OpDeclSet -> [Tuple{Term,AttrSet}] .
+  op pullStmtAttrOut : Term VariableSet -> [Tuple{Term,AttrSet}] .
+  op pullStmtAttrOutAux : Term TermList AttrSet VariableSet -> [Tuple{Term,AttrSet}] .
   op pullLabelOut : Term -> [Tuple{Term,AttrSet}] .
 
   eq pullStmtAttrOut(QI, VDS) = {QI, none} .
@@ -11747,10 +11720,10 @@ fmod UNIT-BUBBLE-PARSING is
     if printArg(TL'', VDS) : QidList .
   eq pullStmtAttrOutAux(T, TL, AtS, VDS) = {T, none} [owise] .
 
-  op printArg : TermList OpDeclSet ~> QidList .
-  ceq printArg((T, TL), op QI : nil -> Tp [AtS] . VDS)
-    = qid(string(downQid(T)) + ":" + string(Tp)) printArg(TL, VDS)
-    if QI = downQid(T) .
+  op printArg : TermList VariableSet ~> QidList .
+  ceq printArg((T, TL), V ; VDS)
+    = qid(string(downQid(T)) + ":" + string(getType(V))) printArg(TL, VDS)
+    if getName(V) = downQid(T) .
   ceq printArg((T, TL), VDS)
     = downQid(T) printArg(TL, VDS)
     if downString(downQid(T)) : String .
@@ -11842,8 +11815,8 @@ fmod UNIT-BUBBLE-PARSING is
     /\ {T2, AtS2} := pullStmtAttrOut(T', VDS)
     /\ QIL1 := downQidList(T1)
     /\ QIL2 := downQidList(T2)
-    /\ Strat1? := metaParseCallStrategy(M, vars(VDS), QIL1)
-    /\ Strat2? := metaParseStrategy(M, vars(VDS), QIL2) .
+    /\ Strat1? := metaParseCallStrategy(M, VDS, QIL1)
+    /\ Strat2? := metaParseStrategy(M, VDS, QIL2) .
  ceq solveBubbles(csd 'sdlbubble[T] := 'rcbubble[T'] if 'rbubble[T''] = 'true.Bool [AtS] . SDfs,
        M, M', B, VDS, DB)
     = if Strat1? :: CallStrategy
@@ -11864,8 +11837,8 @@ fmod UNIT-BUBBLE-PARSING is
     /\ {T3, AtS2} := pullStmtAttrOut(T'', VDS)
     /\ QIL1 := downQidList(T1)
     /\ QIL2 := downQidList(T')
-    /\ Strat1? := metaParseStrategy(M, vars(VDS), QIL1)
-    /\ Strat2? := metaParseStrategy(M, vars(VDS), QIL2) .
+    /\ Strat1? := metaParseStrategy(M, VDS, QIL1)
+    /\ Strat2? := metaParseStrategy(M, VDS, QIL2) .
   eq solveBubbles((none).StratDefSet, M, M', B, VDS, DB) = none .
 
   op metaParseCallStrategy : Module QidSet QidList -> CallStrategy .
@@ -11936,11 +11909,11 @@ fmod VIEW-BUBBLE-PARSING is
   vars M M' : Module .
   var  U : Module .
   vars QIL QIL1 QIL2 : QidList .
-  vars VDS VDS' : OpDeclSet .
+  vars VDS VDS' : VariableSet .
   vars Strat1? Strat2? : [Strategy] .
 
-  op solveBubbles : OpMappingSet OpDeclSet OpDeclSet Module Module -> OpMappingSet .
-  op solveBubbles : StratMappingSet OpDeclSet OpDeclSet Module Module -> StratMappingSet .
+  op solveBubbles : OpMappingSet VariableSet VariableSet Module Module -> OpMappingSet .
+  op solveBubbles : StratMappingSet VariableSet VariableSet Module Module -> StratMappingSet .
 
   eq solveBubbles(OMS, VDS, VDS', U, unitError(QIL)) = none .
   eq solveBubbles(OMS, VDS, VDS', unitError(QIL), U) = none .
@@ -11964,8 +11937,8 @@ fmod VIEW-BUBBLE-PARSING is
       solveBubbles(TMS, VDS, VDS', M, M')
     if QIL1 := downQidList(T)
     /\ QIL2 := downQidList(T')
-    /\ Strat1? := metaParseStrategy(M, vars(VDS), QIL1)
-    /\ Strat2? := metaParseStrategy(M', vars(VDS'), QIL2) .
+    /\ Strat1? := metaParseStrategy(M, VDS, QIL1)
+    /\ Strat2? := metaParseStrategy(M', VDS', QIL2) .
   eq solveBubbles(TMS, VDS, VDS', M, M') = TMS [owise] .
 endfm
 
@@ -12832,7 +12805,8 @@ fmod FM-EVALUATION is
   var  SSDS : SubsortDeclSet .
   var  SCDS : SubclassDeclSet .
   var  OPD : OpDecl .
-  vars OPDS VDS : OpDeclSet .
+  var  OPDS : OpDeclSet .
+  var  VDS : VariableSet .
   var  MDS : MsgDeclSet .
   var  MAS : MembAxSet .
   var  EqS : EquationSet .
@@ -13149,7 +13123,7 @@ fmod FM-EVALUATION is
 
   *** op evalModule : Module Database -> Database .
   ***  moved to MOD-EXPR-EVAL to solve dependency
-  op evalModule1 : Module Module List<Module> OpDeclSet Database -> Database .
+  op evalModule1 : Module Module List<Module> VariableSet Database -> Database .
   op evalModule2 : Module Module Database -> Database .
 
   ceq evalModule(U, VDS, DB)
@@ -13212,10 +13186,9 @@ fmod FM-EVALUATION is
 *** containing calls to the \texttt{up} functions (see
 *** Section~\ref{structured-specifications}) in them.
 
-  op evalPreModule : Module Module OpDeclSet Database -> Database .
-  op evalPreModule1 :
-       Module Module List<Module> Module OpDeclSet Database -> Database .
-  op evalPreModule2 : Module Module Module OpDeclSet Database -> Database .
+  op evalPreModule : Module Module VariableSet Database -> Database .
+  op evalPreModule1 : Module Module List<Module> Module VariableSet Database -> Database .
+  op evalPreModule2 : Module Module Module VariableSet Database -> Database .
   op evalPreModule3 : Module Module Module Database -> Database .
 
   *** evalPreModule just calls evalPreModule1 with a set of the units in the
@@ -13461,7 +13434,7 @@ fmod FM-RENAMING-SET-APPL-ON-TERM is
 *** doing this task.
 
   op applyMapsToTerm2 : RenamingSet RenamingSet TermList Module -> TermList .
-  op applyMapsToVar : RenamingSet Variable -> Variable .
+  op applyMapsToVars : RenamingSet VariableSet -> VariableSet .
   op imageOfTerm : RenamingSet RenamingSet Term RenamingSet Module -> Term .
   op applyMapsToSubst : RenamingSet RenamingSet Substitution Module -> Substitution .
   op pseudoMatch : TermList TermList Module Substitution -> Substitution .
@@ -13477,7 +13450,7 @@ fmod FM-RENAMING-SET-APPL-ON-TERM is
     = imageOfTerm(SRS, ORS, Ct,
         getRightOpMaps(getName(Ct), nil, getType(Ct), ORS, M), M) .
   eq applyMapsToTerm2(SRS, ORS, V, M)
-    = applyMapsToVar(SRS, V) .
+    = applyMapsToVars(SRS, V) .
   eq applyMapsToTerm2(SRS, ORS, qidError(QIL), M) = qidError(QIL) .
   eq applyMapsToTerm2(SRS, ORS, F[TL], M)
     = imageOfTerm(SRS, ORS, F[TL],
@@ -14403,10 +14376,10 @@ fmod FM-RENAMING-SET-APPL-ON-UNIT is
   eq applyMapsToStrategies(SRS, ORS, TRS, empty, M) = empty .
 
   eq applyMapsToUPS(SRS, ORS, TRS, (V using Strat, UPS), M)
-    = applyMapsToVar(SRS, V) using applyMapsToStrategy(SRS, ORS, TRS, Strat, M),
+    = applyMapsToVars(SRS, V) using applyMapsToStrategy(SRS, ORS, TRS, Strat, M),
       applyMapsToUPS(SRS, ORS, TRS, UPS, M) .
   eq applyMapsToUPS(SRS, ORS, TRS, V using Strat, M)
-    = applyMapsToVar(SRS, V) using applyMapsToStrategy(SRS, ORS, TRS, Strat, M) .
+    = applyMapsToVars(SRS, V) using applyMapsToStrategy(SRS, ORS, TRS, Strat, M) .
 
   op applySubst : StrategyList Substitution -> StrategyList .
   eq applySubst(F[[TL]], Subst) = F[[applySubst(TL, Subst)]] .
@@ -14601,7 +14574,7 @@ fmod FM-INST-EXPR-EVALUATION is
   var  N : Nat .
   var  PV : PreView .
   var  VI : View .
-  var  VDS : OpDeclSet .
+  var  VDS : VariableSet .
   vars RS RS' RS'' SRS SRS' ORS ORS' : RenamingSet .
 
 *** In the input given by the user, the operator \verb~_(_)~ is used both for
@@ -14869,7 +14842,7 @@ fmod FM-INST-EXPR-EVALUATION is
                     applyMapsToModule(maps2rens(SMS'), maps2rens(OMS), Th, getFlatModule(ME, DB)),
                     pd(X :: ME)),
                   IL),
-                applyMapsToOps(maps2rens(SMS'), maps2rens(OMS), getVars(ME, DB), getFlatModule(ME, DB)),
+                applyMapsToVars(maps2rens(SMS'), maps2rens(OMS), getVars(ME, DB)),
                 DB')
          fi) ;
         mtViewExpression ; mtViewExpression ; none ; true ; nil >
@@ -14952,7 +14925,7 @@ fmod FM-INST-EXPR-EVALUATION is
                     applyMapsToModule(maps2rens(SMS'), maps2rens(OMS), getTopModule(pd(X :: ME), DB), getFlatModule(pd(X :: ME), DB)),
                     pd(Y :: ME)),
                   IL),
-                applyMapsToOps(maps2rens(SMS'), maps2rens(OMS), getVars(pd(X :: ME), DB), getFlatModule(pd(X :: ME), DB)),
+                applyMapsToVars(maps2rens(SMS'), maps2rens(OMS), getVars(pd(X :: ME), DB)),
                 DB')
          fi) ;
         X ; Y ; < X ; Y > ; true ; nil >)
@@ -15317,7 +15290,7 @@ fmod FM-INST-EXPR-EVALUATION is
   eq db(< SMS ; OMS ; TMS ; PDL ; IL ; VEPS ; DB >) = DB .
 ---)
 
-  op unitInstAux : Module Module OpDeclSet SortMappingSet OpMappingSet
+  op unitInstAux : Module Module VariableSet SortMappingSet OpMappingSet
         StratMappingSet ParameterDeclList ParameterDeclList ImportList
         ImportList ParameterList Set{Tuple{ViewExpression,ViewExpression}}
         ParameterDeclList Database -> Database .
@@ -15355,12 +15328,12 @@ fmod FM-INST-EXPR-EVALUATION is
     = evalModule(
         setImports(setPars(applyMapsToModuleAux(maps2rens(SMS'), maps2rens(OMS), maps2rens(TMS), U, M), PDL),
                    (prepImports(IL, VEPS) IL')),
-        applyMapsToOps(maps2rens(SMS'), maps2rens(OMS), VDS, M),
+        applyMapsToVars(maps2rens(SMS'), maps2rens(OMS), VDS),
         DB)
     if SMS' := (SMS
                 genMapsSorts((getSorts(U) ; getSortSetAux(getImports(U), DB)), VEPS)
                 genMapsClasses((getClassNames(getClasses(U)) ; getClassSetAux(getImports(U), DB)), VEPS)) .
-  eq unitInstAux(unitError(QIL), UK:[Module], SDV:[OpDeclSet], SMS, OMS, TMS, PDL, PDL', IL, IL', PL, VEPS, PDL'', DB)
+  eq unitInstAux(unitError(QIL), UK:[Module], SDV:[VariableSet], SMS, OMS, TMS, PDL, PDL', IL, IL', PL, VEPS, PDL'', DB)
     = warning(DB, QIL) .
   eq unitInstAux(noModule, unitError(QIL), VDS, SMS, OMS, TMS, PDL, PDL', IL, IL', VE, VEPS, PDL'', DB)
     = warning(DB, QIL) .
@@ -15509,7 +15482,7 @@ fmod FM-INST-EXPR-EVALUATION is
   op applyMapsToMaps : RenamingSet RenamingSet SortMappingSet -> SortMappingSet .
   op applyMapsToMaps : RenamingSet RenamingSet OpMappingSet -> OpMappingSet .
   op applyMapsToTerm : RenamingSet TermList -> TermList .
-  op applyMapsToVar : RenamingSet Variable -> Variable .
+  op applyMapsToVars : RenamingSet VariableSet -> VariableSet .
 
   eq applyMapsToMaps(SRS, SRS', sort S to S' . SMS)
     = (sort applyMapsToType(SRS, S) to applyMapsToType(SRS', S') .
@@ -15533,8 +15506,10 @@ fmod FM-INST-EXPR-EVALUATION is
        applyMapsToMaps(SRS, SRS', OMS)) .
   eq applyMapsToMaps(SRS, SRS', OMS) = OMS [owise] .
 
-  eq applyMapsToVar(SRS, V)
-    = qid(string(getName(V)) + ":" + string(applyMapsToType(SRS, getType(V)))) .
+  eq applyMapsToVars(SRS, V ; VDS)
+    = qid(string(getName(V)) + ":" + string(applyMapsToType(SRS, getType(V)))) ;
+      applyMapsToVars(SRS, VDS).
+  eq applyMapsToVars(SRS, none) = none .
 
   eq applyMapsToTerm(SRS, Ct)
     = qid(string(getName(Ct)) + "." + string(applyMapsToType(SRS, getType(Ct)))) .
@@ -15712,7 +15687,8 @@ fmod FM-RENAMING-EXPR-EVALUATION is
   var  DT : Default{Term} .
   var  TL : TermList .
   var  OPD : OpDeclSet .
-  vars OPDS VDS : OpDeclSet .
+  var  OPDS : OpDeclSet .
+  var  VDS : VariableSet .
   vars AtS AtS' : AttrSet .
   var  Rl : Rule .
   var  RlS : RuleSet .
@@ -15762,8 +15738,7 @@ fmod FM-RENAMING-EXPR-EVALUATION is
                applyMapsToModuleAux(SRS, ORS, TRS,
                  getTopModule(ME, DB), getFlatModule(ME, DB)),
                _*`(_`)(ME, RS')),
-             applyMapsToOps(SRS, ORS,
-               getVars(ME, DB), getFlatModule(ME, DB)),
+             applyMapsToVars(SRS, ORS, getVars(ME, DB)),
              DB)
       fi
     if RS' := canMaps(RS, getFlatModule(ME, DB))
@@ -15808,7 +15783,7 @@ fmod FM-RENAMING-EXPR-EVALUATION is
 *** with the domain given by sorts that are not in the submodules but which
 *** have other sorts in the submodules in the same connected components.
 
-  op applyMapsRec : RenamingSet ImportList ImportList Module OpDeclSet Database -> Database .
+  op applyMapsRec : RenamingSet ImportList ImportList Module VariableSet Database -> Database .
 
   eq applyMapsRec(RS, ((including ME .) IL), IL', U, VDS, DB)
    = applyMapsRec(
@@ -16486,7 +16461,7 @@ fmod UNION-EXPR is
   vars MIS MIS' : Set{ModuleInfo} .
   var  VIS : Set{ViewInfo} .
   vars QIL QIL' : QidList .
-  var  VDS VDS' : OpDeclSet .
+  var  VDS VDS' : VariableSet .
   var  B : Bool .
   var  MAPS : RenamingSet .
 
@@ -17050,7 +17025,7 @@ fmod UNIT-DECL-PARSING is
   var  AtS : AttrSet .
   vars TL TL' TL'' : TermList .
   var  Ct : Constant .
-  var  VDS : OpDeclSet .
+  var  VDS : VariableSet .
   vars Ty Tp : Type .
   var  N : Nat .
   var  DT : Default{Term} .
@@ -17060,7 +17035,7 @@ fmod UNIT-DECL-PARSING is
 
   op parsePreAttrs : Term Nat -> AttrSet .
   op parsePreHookList : Term -> HookList .
-  op parseVars : QidList [Type] -> OpDeclSet .
+  op parseVars : QidList [Type] -> VariableSet .
   op parseSubsortRel : Term -> TypeListSet .
   op parseAttrDeclList : Term -> AttrDeclSet .
 
@@ -17111,9 +17086,9 @@ fmod UNIT-DECL-PARSING is
   eq unfoldStratDecl(nil, TyL, Ty, AtS) = none .
 
   eq parseVars((QI QIL), Tp)
-    = ((op QI : nil -> Tp [none] .) parseVars(QIL, Tp)) .
+    = (qid(string(QI) + ":" + string(Tp)) ; parseVars(QIL, Tp)) .
   eq parseVars(nil, Tp) = none .
-  eq parseVars(QIL, qidError(QIL')) = opDeclError(QIL') .
+  eq parseVars(QIL, qidError(QIL')) = variableSetError(QIL') .
 
   eq parsePreAttrs('__[T, T'], N)
     = (parsePreAttrs(T, N) parsePreAttrs(T', N)) .
@@ -17192,25 +17167,25 @@ fmod UNIT-DECL-PARSING is
 *** parse the given term.
 
   sort ParseDeclResult .
-  op <_;_;_> : Module Module OpDeclSet -> ParseDeclResult .
+  op <_;_;_> : Module Module VariableSet -> ParseDeclResult .
   op preModule : ParseDeclResult -> Module .
   op unit : ParseDeclResult -> Module .
-  op vars : ParseDeclResult -> OpDeclSet .
+  op vars : ParseDeclResult -> VariableSet .
 
   eq preModule(< PU ; U ; VDS >) = PU .
-  eq preModule(< unitError(QIL) ; V:[Module] ; V:[OpDeclSet] >) = unitError(QIL) .
-  eq preModule(< V:[Module] ; unitError(QIL) ; V:[OpDeclSet] >) = unitError(QIL) .
-  eq preModule(< V:[Module] ; V':[Module] ; opDeclError(QIL) >) = unitError(QIL) .
+  eq preModule(< unitError(QIL) ; V:[Module] ; V:[VariableSet] >) = unitError(QIL) .
+  eq preModule(< V:[Module] ; unitError(QIL) ; V:[VariableSet] >) = unitError(QIL) .
+  eq preModule(< V:[Module] ; V':[Module] ; variableSetError(QIL) >) = unitError(QIL) .
   eq unit(< PU ; U ; VDS >) = U .
-  eq unit(< unitError(QIL) ; V':[Module] ; V:[OpDeclSet] >) = unitError(QIL) .
-  eq unit(< V:[Module] ; unitError(QIL) ; V:[OpDeclSet] >) = unitError(QIL) .
-  eq unit(< V:[Module] ; V':[Module] ; opDeclError(QIL) >) = unitError(QIL) .
+  eq unit(< unitError(QIL) ; V':[Module] ; V:[VariableSet] >) = unitError(QIL) .
+  eq unit(< V:[Module] ; unitError(QIL) ; V:[VariableSet] >) = unitError(QIL) .
+  eq unit(< V:[Module] ; V':[Module] ; variableSetError(QIL) >) = unitError(QIL) .
   eq vars(< PU ; U ; VDS >) = VDS .
-  eq vars(< unitError(QIL) ; V:[Module] ; V:[OpDeclSet] >) = opDeclError(QIL) .
-  eq vars(< V:[Module] ; unitError(QIL) ; V:[OpDeclSet] >) = opDeclError(QIL) .
-  eq vars(< V:[Module] ; V':[Module] ; opDeclError(QIL) >) = opDeclError(QIL) .
+  eq vars(< unitError(QIL) ; V:[Module] ; V:[VariableSet] >) = variableSetError(QIL) .
+  eq vars(< V:[Module] ; unitError(QIL) ; V:[VariableSet] >) = variableSetError(QIL) .
+  eq vars(< V:[Module] ; V':[Module] ; variableSetError(QIL) >) = variableSetError(QIL) .
 
-  op parseDecl : Term Module Module OpDeclSet -> ParseDeclResult .
+  op parseDecl : Term Module Module VariableSet -> ParseDeclResult .
 
 *** changed 03/27/02
 *** In the case of importation declarations, since internally only the
@@ -17401,7 +17376,7 @@ fmod UNIT-DECL-PARSING is
   eq parseDecl('var_:_.['neTokenList[T], T'], PU, U, VDS)
     = parseDecl('vars_:_.['neTokenList[T], T'], PU, U, VDS) .
   eq parseDecl('vars_:_.['neTokenList[T], T'], PU, U, VDS)
-    = < PU ; U ; VDS parseVars(downQidList(T), parseType(T')) > .
+    = < PU ; U ; (VDS ; parseVars(downQidList(T), parseType(T'))) > .
 
   eq parseDecl('mb_:_.['rbubble[T], 'rbubble[T']], PU, U, VDS)
     = < addMbs((mb T : getSort(breakMb(T', VDS)) [getAttrSet(breakMb(T', VDS))] .), PU) ; U ; VDS > .
@@ -17411,22 +17386,22 @@ fmod UNIT-DECL-PARSING is
              if term(pullStmtAttrOut(T'', VDS)) = 'true.Bool
              [attrSet(pullStmtAttrOut(T'', VDS))] .), PU) ; U ; VDS > .
 
-  op breakMb : Term OpDeclSet -> [Tuple{Sort,AttrSet}] .
-  op breakMbAux : TermList AttrSet OpDeclSet -> [Tuple{Sort,AttrSet}] .
+  op breakMb : Term VariableSet -> [Tuple{Sort,AttrSet}] .
+  op breakMbAux : TermList AttrSet VariableSet -> [Tuple{Sort,AttrSet}] .
 
   pr (2TUPLE * (op `(_`,_`) to <_`,_>, op p1_ to getSort, op p2_ to getAttrSet)) {Sort,AttrSet} .
 
   eq breakMb('__[TL, QI], VDS)
     = if QI == ''`].Qid
       then breakMbAux(TL, none, VDS)
-      else < parseType(getTerm(metaParse(GRAMMAR, downQidList('__[TL, QI]), '@Sort@))), none >
+      else < parseType(getTerm(metaParse(GRAMMAR, VDS, downQidList('__[TL, QI]), '@Sort@))), none >
       fi .
 ----  eq breakMb('sortToken[T], VDS) = < parseType('sortToken[T]), none > [owise] .
 ----  eq breakMb('_`{_`}[T, T'], VDS) = < parseType('_`{_`}[T, T']), none > [owise] .
   eq breakMb(QI, VDS) = < downQid(QI), none > [owise] .
 
   eq breakMbAux((TL, ''`[.Qid), AtS, VDS)
-    = < parseType(getTerm(metaParse(GRAMMAR, downQidList('__[TL]), '@Sort@))), AtS > .
+    = < parseType(getTerm(metaParse(GRAMMAR, VDS, downQidList('__[TL]), '@Sort@))), AtS > .
   eq breakMbAux((TL, QI, ''nonexec.Qid), AtS, VDS)
     = breakMbAux((TL, QI), AtS nonexec, VDS) .
   eq breakMbAux((TL, QI, ''variant.Qid), AtS, VDS)
@@ -17842,7 +17817,7 @@ fmod DECL-META-PRETTY-PRINT is
   op eMetaPrettyPrint : ClassDeclSet -> QidList .
   op eMetaPrettyPrint : SubclassDeclSet -> QidList .
   op eMetaPrettyPrint : Module OpDeclSet -> QidList .
-  op eMetaPrettyPrintVars : OpDeclSet -> QidList .
+  op eMetaPrettyPrintVars : VariableSet -> QidList .
   op eMetaPrettyPrint : MsgDeclSet -> QidList .
   op eMetaPrettyPrint : Module MembAxSet -> QidList .
   op eMetaPrettyPrint : Module EquationSet -> QidList .
@@ -17897,6 +17872,7 @@ fmod DECL-META-PRETTY-PRINT is
   var  TL : TermList .
   var  ME : ModuleExpression .
   var  IL : ImportList .
+  var  VDS : VariableSet .
 
   --- eq eMetaPrettyPrint(Ty) = Ty .
 
@@ -17938,10 +17914,10 @@ fmod DECL-META-PRETTY-PRINT is
     [owise] .
   eq eMetaPrettyPrint(M, (none).OpDeclSet)  = nil .
 
-  eq eMetaPrettyPrintVars((op F : nil -> Ty [none] .) OPDS)
-    = ('\s '\s '\b 'var '\o F '\b ': '\o eMetaPrettyPrint(Ty) '\b '. '\o '\n
-       eMetaPrettyPrintVars(OPDS)) .
-  eq eMetaPrettyPrintVars((none).OpDeclSet)  = nil .
+  eq eMetaPrettyPrintVars(V ; VDS)
+    = ('\s '\s '\b 'var '\o getName(V) '\b ': '\o eMetaPrettyPrint(getType(V)) '\b '. '\o '\n
+       eMetaPrettyPrintVars(VDS)) .
+  eq eMetaPrettyPrintVars((none).VariableSet)  = nil .
 
   eq eMetaPrettyPrint(M, (mb T : S [none] .) MAS)
     = ('\s '\s '\b 'mb '\o eMetaPrettyPrint(M, T) '\b ': '\o eMetaPrettyPrint(S) '\b '. '\o '\n
@@ -18744,7 +18720,7 @@ fmod UNIT-PROCESSING is
   var  ME' : ModuleExpression .
   var  VMAPS : RenamingSet .
   var  B : Bool .
-  var  VDS : OpDeclSet .
+  var  VDS : VariableSet .
   var  QIL : QidList .
   var  PDR : ParseDeclResult .
   var  DT : Default{Term} .
@@ -18795,8 +18771,8 @@ fmod UNIT-PROCESSING is
   op procModule2 : Term Database -> Database .
   op procModule3 : Term Term Term Module Database -> Database .
   op procModule3 : Term Term Module Database -> Database .
-  op procModule4 : Term Term Module Module OpDeclSet Database -> Database .
-  op procModule4 : Term Module Module OpDeclSet Database -> Database .
+  op procModule4 : Term Term Module Module VariableSet Database -> Database .
+  op procModule4 : Term Module Module VariableSet Database -> Database .
 
   *** When recompiling a module, it's called with a Qid, and it's
   *** not reentered into the database.
@@ -18900,11 +18876,11 @@ fmod UNIT-PROCESSING is
         insTermModule(getHeader(U), T, DB))
     if F =/= '__
        /\ PDR := parseDecl(F[TL], PU, U, VDS) .
-  eq procModule4(T, T', unitError(QIL), V:[Module], V:[OpDeclSet], DB)
+  eq procModule4(T, T', unitError(QIL), V:[Module], V:[VariableSet], DB)
     = warning(DB, QIL) .
-  eq procModule4(T, T', V:[Module], unitError(QIL), V:[OpDeclSet], DB)
+  eq procModule4(T, T', V:[Module], unitError(QIL), V:[VariableSet], DB)
     = warning(DB, QIL) .
-  eq procModule4(T, T', V:[Module], V':[Module], opDeclError(QIL), DB)
+  eq procModule4(T, T', V:[Module], V':[Module], variableSetError(QIL), DB)
     = warning(DB, QIL) .
   eq procModule4(T, F[TL], PU, U, VDS, DB)
     = warning(DB,'Error: 'no 'parse 'for F 'declaration '\n)
@@ -18919,7 +18895,7 @@ fmod UNIT-PROCESSING is
        /\ PDR := parseDecl(F[TL], PU, U, VDS) .
   eq procModule4(T, unitError(QIL), U, VDS, DB) = warning(DB, QIL) .
   eq procModule4(T, PU, unitError(QIL), VDS, DB) = warning(DB, QIL) .
-  eq procModule4(T, PU, U, opDeclError(QIL), DB) = warning(DB, QIL) .
+  eq procModule4(T, PU, U, variableSetError(QIL), DB) = warning(DB, QIL) .
   eq procModule4(F[TL], PU, U, VDS, DB)
     = warning(DB,'Error: 'no 'parse 'for F 'declaration '\n)
     [owise] .
@@ -18951,7 +18927,8 @@ fmod VIEW-PROCESSING is
   vars ME ME' : ModuleExpression .
   vars DB DB' : Database .
   var  DB? : [Database] .
-  vars OPDS VDS VDS' VDS'' : OpDeclSet .
+  vars OPDS : OpDeclSet .
+  var  VDS VDS' VDS''  : VariableSet .
   var  MDS : MsgDeclSet .
   var  StratDcls : StratDeclSet .
   var  TL : TermList .
@@ -19122,41 +19099,26 @@ fmod VIEW-PROCESSING is
     = insertView(
         view VE{PDL} from ME to ME' is
           SMS
-          solveBubbles(
-            OMS,
-            VDS, VDS',
-            addOps(VDS, M),
-            addOps(VDS', getFlatModule(ME', DB)))
-          solveBubbles(
-            TMS,
-            VDS, VDS',
-            M,
-            getFlatModule(ME', DB))
+          solveBubbles(OMS, VDS, VDS', M, getFlatModule(ME', DB))
+          solveBubbles(TMS, VDS, VDS', M, getFlatModule(ME', DB))
         endv,
         DB)
     if F =/= '__
-       /\ preview_from_to_is____endpv(VE{PDL}, ME, ME', VDS, SMS, OMS, TMS) := parseDecl(F[TL], PV, OPDS, MDS, StratDcls, M)
-       /\ VDS' := applyMapsToOps(maps2rens(SMS), none, VDS, M) .
+       /\ preview_from_to_is____endpv(VE{PDL}, ME, ME', VDS, SMS, OMS, TMS)
+            := parseDecl(F[TL], PV, OPDS, MDS, StratDcls, M)
+       /\ VDS' := applyMapsToVars(maps2rens(SMS), none, VDS) .
   ceq procViewAux(F[TL], PV, OPDS, MDS, StratDcls, M, DB)
     = insertView(
         view VE from ME to ME' is
           SMS
-          solveBubbles(
-            OMS,
-            VDS, VDS',
-            addOps(VDS, M),
-            addOps(VDS', getFlatModule(ME', DB)))
-          solveBubbles(
-            TMS,
-            VDS, VDS',
-            M,
-            getFlatModule(ME', DB))
+          solveBubbles(OMS, VDS, VDS', M, getFlatModule(ME', DB))
+          solveBubbles(TMS, VDS, VDS', M, getFlatModule(ME', DB))
         endv,
         DB)
     if F =/= '__
        /\ preview_from_to_is____endpv(VE, ME, ME', VDS, SMS, OMS, TMS)
             := parseDecl(F[TL], PV, OPDS, MDS, StratDcls, M)
-       /\ VDS' := applyMapsToOps(maps2rens(SMS), none, VDS, M) .
+       /\ VDS' := applyMapsToVars(maps2rens(SMS), none, VDS) .
   eq procViewAux(T, PV, OPDS, MDS, StratDcls, unitError(QIL), DB) = warning(DB, QIL) .
 endfm
 
@@ -19261,7 +19223,8 @@ fmod FM-COMMAND-PROCESSING is
   var  QIL : QidList .
   var  SS : SortSet .
   var  SSDS : SubsortDeclSet .
-  vars VS VDS VDS' OPDS : OpDeclSet .
+  vars VS VDS VDS' : VariableSet .
+  var  OPDS : OpDeclSet .
   var  OPDS? : [OpDeclSet] .
   var  MAS : MembAxSet .
   var  EqS : EquationSet .
@@ -19269,10 +19232,10 @@ fmod FM-COMMAND-PROCESSING is
   vars QI QI' F V O : Qid .
   var  Ct : Constant .
   var  IL : ImportList .
-  var  TM : [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  var  TMVB : [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
-  var  TMVBN : [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
-  var  TMSBOBD : [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] .
+  var  TM : [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  var  TMVB : [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] .
+  var  TMVBN : [Tuple{Term,Module,VariableSet,Bound,Nat}] .
+  var  TMSBOBD : [Tuple{Term,Module,Strategy,Bool,VariableSet,Bound,Database}] .
   var  T? : [Term] .
   var  RP : [ResultPair] .
   var  RT : [ResultTriple] .
@@ -19286,36 +19249,27 @@ fmod FM-COMMAND-PROCESSING is
   var  SrwOpt : SrewriteOption .
   var  RP? : [ResultPair] .
 
-----  sorts Tuple{Term,Module,Bool,OpDeclSet,Database}
-----        Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
-----        Tuple{Term,Module,OpDeclSet,Bound,Nat} .
-----  op `{_`,_`,_`,_`,_`} : Term Module Bool OpDeclSet Database
-----       -> Tuple{Term,Module,Bool,OpDeclSet,Database} .
-----  op `{_`,_`,_`,_`,_`,_`} : Term Module Bool OpDeclSet Bound Database
-----       -> Tuple{Term,Module,Bool,OpDeclSet,Bound,Database} .
-----  op `{_`,_`,_`,_`,_`} : Term Module OpDeclSet Bound Nat
-----       -> Tuple{Term,Module,OpDeclSet,Bound,Nat} .
-  op tupleTMBODerror : QidList -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op tupleTMBOBDerror : QidList -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
-  op tupleTMSBOBDerror : QidList -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] .
-  op tupleTMOBNerror : QidList -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
-  op getMsg : [Tuple{Term,Module,Bool,OpDeclSet,Database}] -> QidList .
-  op getMsg : [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] -> QidList .
-  op getMsg : [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}] -> QidList .
-  op getMsg : [Tuple{Term,Module,OpDeclSet,Bound,Nat}] -> QidList .
+  op tupleTMBODerror : QidList -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  op tupleTMBOBDerror : QidList -> [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] .
+  op tupleTMSBOBDerror : QidList -> [Tuple{Term,Module,Strategy,Bool,VariableSet,Bound,Database}] .
+  op tupleTMOBNerror : QidList -> [Tuple{Term,Module,VariableSet,Bound,Nat}] .
+  op getMsg : [Tuple{Term,Module,Bool,VariableSet,Database}] -> QidList .
+  op getMsg : [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] -> QidList .
+  op getMsg : [Tuple{Term,Module,Strategy,Bool,VariableSet,Bound,Database}] -> QidList .
+  op getMsg : [Tuple{Term,Module,VariableSet,Bound,Nat}] -> QidList .
   eq getMsg(tupleTMBODerror(QIL)) = QIL .
   eq getMsg(tupleTMBOBDerror(QIL)) = QIL .
   eq getMsg(tupleTMSBOBDerror(QIL)) = QIL .
   eq getMsg(tupleTMOBNerror(QIL)) = QIL .
 
-  pr 5TUPLE{Term,Module,Bool,OpDeclSet,Database}
+  pr 5TUPLE{Term,Module,Bool,VariableSet,Database}
        * (op ((_,_,_,_,_)) to `{_`,_`,_`,_`,_`},
           op p1_ to getTerm,
           op p2_ to getModule,
           op p3_ to getBool,
           op p4_ to getVars,
           op p5_ to getDatabase) .
-  pr 6TUPLE{Term,Module,Bool,OpDeclSet,Bound,Database}
+  pr 6TUPLE{Term,Module,Bool,VariableSet,Bound,Database}
        * (op ((_,_,_,_,_,_)) to `{_`,_`,_`,_`,_`,_`},
           op p1_ to getTerm,
           op p2_ to getModule,
@@ -19323,14 +19277,14 @@ fmod FM-COMMAND-PROCESSING is
           op p4_ to getVars,
           op p5_ to getBound,
           op p6_ to getDatabase) .
-  pr 5TUPLE{Term,Module,OpDeclSet,Bound,Nat}
+  pr 5TUPLE{Term,Module,VariableSet,Bound,Nat}
        * (op ((_,_,_,_,_)) to `{_`,_`,_`,_`,_`},
           op p1_ to getTerm,
           op p2_ to getModule,
           op p3_ to getVars,
           op p4_ to getBound,
           op p5_ to getNat) .
-  pr 7TUPLE{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}
+  pr 7TUPLE{Term,Module,Strategy,Bool,VariableSet,Bound,Database}
        * (op ((_,_,_,_,_,_,_)) to `{_`,_`,_`,_`,_`,_`,_`},
           op p1_ to getTerm,
           op p2_ to getModule,
@@ -19371,7 +19325,7 @@ fmod FM-COMMAND-PROCESSING is
   ---- procLoad
 
   op procLoad : Term ModuleExpression Database -> Tuple{Database,QidList} .
-  op procLoad : Term ModuleExpression Module OpDeclSet Database -> Tuple{Database,QidList} .
+  op procLoad : Term ModuleExpression Module VariableSet Database -> Tuple{Database,QidList} .
 
   eq procLoad(T, ME, DB)
    = if compiledModule(ME, DB)
@@ -19394,121 +19348,120 @@ fmod FM-COMMAND-PROCESSING is
   ---- procCommand
 
   op procCommand : Term ModuleExpression Database -> Tuple{Database,QidList} .
-  op procCommand : Term ModuleExpression Module OpDeclSet Database -> QidList .
+  op procCommand : Term ModuleExpression Module VariableSet Database -> QidList .
   op procDownCommand : Term ModuleExpression Database -> Tuple{Database,QidList} .
 
-  op procParse : ModuleExpression Module Term OpDeclSet Database -> QidList .
+  op procParse : ModuleExpression Module Term VariableSet Database -> QidList .
 
-  op procRed : ModuleExpression Module Term OpDeclSet Database -> QidList .
-  op solveBubblesRed : Term Module Bool OpDeclSet Database
-       -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op solveBubblesRed2 : Term Database -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op solveBubblesRed3 : Term Module ModuleExpression OpDeclSet Database
-       -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
+  op procRed : ModuleExpression Module Term VariableSet Database -> QidList .
+  op solveBubblesRed : Term Module Bool VariableSet Database
+       -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  op solveBubblesRed2 : Term Database -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  op solveBubblesRed3 : Term Module ModuleExpression VariableSet Database
+       -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
 
-  op procRew : ModuleExpression Module Term OpDeclSet Database -> QidList .
+  op procRew : ModuleExpression Module Term VariableSet Database -> QidList .
   op solveBubblesRew :
-       Term Module Bool Bound OpDeclSet Database -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
+       Term Module Bool Bound VariableSet Database -> [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] .
   op solveBubblesRew2 :
-       Term Module Bool OpDeclSet Database -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
+       Term Module Bool VariableSet Database -> [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] .
 
-  op procFrew : ModuleExpression Module Term Bound Nat OpDeclSet Database -> QidList .
-  op solveBubblesFrew : Term Module Bool Bound Nat OpDeclSet Database -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
-  op solveBubblesFrew2 : Term Module Bool Nat OpDeclSet Database -> [Tuple{Term,Module,OpDeclSet,Bound,Nat}] .
+  op procFrew : ModuleExpression Module Term Bound Nat VariableSet Database -> QidList .
+  op solveBubblesFrew : Term Module Bool Bound Nat VariableSet Database -> [Tuple{Term,Module,VariableSet,Bound,Nat}] .
+  op solveBubblesFrew2 : Term Module Bool Nat VariableSet Database -> [Tuple{Term,Module,VariableSet,Bound,Nat}] .
 
 ----  sort SrewriteOption .
 ----  ops breadthFirst depthFirst : -> SrewriteOption [ctor] .
 
-  op procSrew : ModuleExpression Module Term OpDeclSet Database SrewriteOption -> QidList .
-  op solveBubblesSrew : Term Module Bool Strategy Bound OpDeclSet Database
-       -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}]  .
-  op solveBubblesSrew2 : Term Module Bool Strategy Bound OpDeclSet Database
-       -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}]  .
-  op solveBubblesSrew3 : Term Module Bool Strategy Bound OpDeclSet Database
-       -> [Tuple{Term,Module,Strategy,Bool,OpDeclSet,Bound,Database}]  .
+  op procSrew : ModuleExpression Module Term VariableSet Database SrewriteOption -> QidList .
+  op solveBubblesSrew : Term Module Bool Strategy Bound VariableSet Database
+       -> [Tuple{Term,Module,Strategy,Bool,VariableSet,Bound,Database}]  .
+  op solveBubblesSrew2 : Term Module Bool Strategy Bound VariableSet Database
+       -> [Tuple{Term,Module,Strategy,Bool,VariableSet,Bound,Database}]  .
+  op solveBubblesSrew3 : Term Module Bool Strategy Bound VariableSet Database
+       -> [Tuple{Term,Module,Strategy,Bool,VariableSet,Bound,Database}]  .
   op procSrew2 : Module Term Strategy Bound SrewriteOption -> QidList .
   op procSrew3 : Module Term Strategy Bound Nat SrewriteOption -> QidList .
 
-  op procSearch : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
-  op solveBubblesSearchL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesSearchL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesSearchR : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesSearchR1 : Module Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesSearchR2 : Module Term Term Qid Bound Bound OpDeclSet -> QidList .
+  op procSearch : ModuleExpression Module Term Term Qid Bound Bound VariableSet Database -> QidList .
+  op solveBubblesSearchL : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesSearchL1 : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesSearchR : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesSearchR1 : Module Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesSearchR2 : Module Term Term Qid Bound Bound VariableSet -> QidList .
   op procSearch2 : Module Term Term Condition Qid Bound Bound -> QidList .
   op procSearch3 : Module Term Term Condition Qid Bound Nat Bound -> QidList .
 
-  op procVUNarrow : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
-  op solveBubblesVUNarrowL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesVUNarrowL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesVUNarrowR : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesVUNarrowR1 : Module Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesVUNarrowR2 : Module Term Term Qid Bound Bound OpDeclSet -> QidList .
+  op procVUNarrow : ModuleExpression Module Term Term Qid Bound Bound VariableSet Database -> QidList .
+  op solveBubblesVUNarrowL : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesVUNarrowL1 : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesVUNarrowR : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesVUNarrowR1 : Module Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesVUNarrowR2 : Module Term Term Qid Bound Bound VariableSet -> QidList .
   op procVUNarrow2 : Module Term Term Condition Qid Bound Bound -> QidList .
   op procVUNarrow3 : Module Nat TermList ResultTripleSet -> QidList .
 
-  op procFVUNarrow : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
-  op solveBubblesFVUNarrowL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesFVUNarrowL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesFVUNarrowR : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesFVUNarrowR1 : Module Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesFVUNarrowR2 : Module Term Term Qid Bound Bound OpDeclSet -> QidList .
+  op procFVUNarrow : ModuleExpression Module Term Term Qid Bound Bound VariableSet Database -> QidList .
+  op solveBubblesFVUNarrowL : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesFVUNarrowL1 : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesFVUNarrowR : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesFVUNarrowR1 : Module Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesFVUNarrowR2 : Module Term Term Qid Bound Bound VariableSet -> QidList .
   op procFVUNarrow2 : Module Term Term Condition Qid Bound Bound -> QidList .
   op procFVUNarrow3 : Module Nat TermList ResultTripleSet -> QidList .
 
-  op procNarrowSearch : ModuleExpression Module Term Term Qid Bound Bound OpDeclSet Database -> QidList .
-  op solveBubblesNarrowSearchL : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesNarrowSearchL1 : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesNarrowSearchR : Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesNarrowSearchR1 : Module Module Term Term Qid Bound Bound Bool OpDeclSet Database -> QidList .
-  op solveBubblesNarrowSearchR2 : Module Term Term Qid Bound Bound OpDeclSet -> QidList .
+  op procNarrowSearch : ModuleExpression Module Term Term Qid Bound Bound VariableSet Database -> QidList .
+  op solveBubblesNarrowSearchL : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesNarrowSearchL1 : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesNarrowSearchR : Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesNarrowSearchR1 : Module Module Term Term Qid Bound Bound Bool VariableSet Database -> QidList .
+  op solveBubblesNarrowSearchR2 : Module Term Term Qid Bound Bound VariableSet -> QidList .
   op procNarrowSearch2 : Module Term Term Condition Qid Bound Bound -> QidList .
   op procNarrowSearch3 : Module Nat TermList ResultTripleSet -> QidList .
 
-  op procMatch : ModuleExpression Module Term Term Qid Bound OpDeclSet Database -> QidList .
+  op procMatch : ModuleExpression Module Term Term Qid Bound VariableSet Database -> QidList .
   op procMatch2 : Module Term Term Condition Qid Bound -> QidList .
   op procMatch3 : Module Term Term Condition Qid Bound Nat -> QidList .
-  op solveBubblesMatch : Module Module Term Term Qid Bound Bool OpDeclSet Database ~> QidList .
-  op solveBubblesMatch2 : Module Term Term Qid Bound OpDeclSet ~> QidList .
+  op solveBubblesMatch : Module Module Term Term Qid Bound Bool VariableSet Database ~> QidList .
+  op solveBubblesMatch2 : Module Term Term Qid Bound VariableSet ~> QidList .
 
-  op procUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
-  op procUnify2 : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
+  op procUnify : ModuleExpression Module Term Bound VariableSet Database -> QidList .
+  op procUnify2 : ModuleExpression Module Term Bound VariableSet Database -> QidList .
   op addInfoUnify : Module -> [Module] .
-  op parseUnify : Term OpDeclSet -> UnificationProblem .
+  op parseUnify : Term VariableSet -> UnificationProblem .
   op procUnify2 : Module UnificationProblem Bound -> QidList .
   op eMetaPrettyPrint : Module UnificationProblem -> QidList .
   op procUnify3 : Module UnificationProblem Bound Nat -> QidList .
   op procUnify3Aux : Module UnificationPair Nat -> QidList .
   op unificationProblemError : QidList -> [UnificationProblem] .
 
-  op procIdUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
+  op procIdUnify : ModuleExpression Module Term Bound VariableSet Database -> QidList .
   op procIdUnify2 : Module UnificationProblem Bound -> QidList .
   op procIdUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
 
-  op procVariantUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
+  op procVariantUnify : ModuleExpression Module Term Bound VariableSet Database -> QidList .
   op procVariantUnify2 : Module UnificationProblem Bound -> QidList .
   op procVariantUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
 
-  op procAsymmetricVariantUnify : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
+  op procAsymmetricVariantUnify : ModuleExpression Module Term Bound VariableSet Database -> QidList .
   op procAsymmetricVariantUnify2 : Module UnificationProblem Bound -> QidList .
   op procAsymmetricVariantUnify3 : Module UnificationProblem Nat SubstitutionSet -> QidList .
 
-  op procGetVariants : ModuleExpression Module Term Bound OpDeclSet Database -> QidList .
-  op parseGetVariants : Term OpDeclSet -> Term .
+  op procGetVariants : ModuleExpression Module Term Bound VariableSet Database -> QidList .
   op procGetVariants2 : Module Term Bound -> QidList .
   op procGetVariants3 : Module Term Nat VariantFourSet -> QidList .
 
-  op solveBubblesUnify : Module Term OpDeclSet ~> UnificationProblem .
-  op solveBubblesRedUnify : Term Module Bool OpDeclSet Database
-       -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op solveBubblesRedUnify2 : Term Database -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op solveBubblesRedUnify3 : Term Module ModuleExpression OpDeclSet Database
-       -> [Tuple{Term,Module,Bool,OpDeclSet,Database}] .
-  op procRewUnify : ModuleExpression Module Term OpDeclSet Database -> QidList .
-  op solveBubblesRewUnify : Term Module Bool Bound OpDeclSet Database
-       -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
-  op solveBubblesRewUnify2 : Term Module Bool OpDeclSet Database
-       -> [Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}] .
+  op solveBubblesUnify : Module Term VariableSet ~> UnificationProblem .
+  op solveBubblesRedUnify : Term Module Bool VariableSet Database
+       -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  op solveBubblesRedUnify2 : Term Database -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  op solveBubblesRedUnify3 : Term Module ModuleExpression VariableSet Database
+       -> [Tuple{Term,Module,Bool,VariableSet,Database}] .
+  op procRewUnify : ModuleExpression Module Term VariableSet Database -> QidList .
+  op solveBubblesRewUnify : Term Module Bool Bound VariableSet Database
+       -> [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] .
+  op solveBubblesRewUnify2 : Term Module Bool VariableSet Database
+       -> [Tuple{Term,Module,Bool,VariableSet,Bound,Database}] .
 
   op eMetaPrettyPrint : Module Substitution -> QidList .
 
@@ -19520,11 +19473,11 @@ fmod FM-COMMAND-PROCESSING is
       fi .
   eq eMetaPrettyPrint(M, (none).Substitution) = nil .
 
-  op procCommandUp : ModuleExpression Module Term OpDeclSet Database -> Term .
-  op procRedUp : ModuleExpression Module Term OpDeclSet Database -> Term .
-  op procRewUp : ModuleExpression Module Term Bound OpDeclSet Database -> Term .
-  op procFrewUp : ModuleExpression Module Term Bound Nat OpDeclSet Database -> Term .
-  op procSrewUp : ModuleExpression Module Term Bound OpDeclSet Database SrewriteOption -> Term .
+  op procCommandUp : ModuleExpression Module Term VariableSet Database -> Term .
+  op procRedUp : ModuleExpression Module Term VariableSet Database -> Term .
+  op procRewUp : ModuleExpression Module Term Bound VariableSet Database -> Term .
+  op procFrewUp : ModuleExpression Module Term Bound Nat VariableSet Database -> Term .
+  op procSrewUp : ModuleExpression Module Term Bound VariableSet Database SrewriteOption -> Term .
 
 *** Processing of commands.
 
@@ -19665,7 +19618,8 @@ fmod FM-COMMAND-PROCESSING is
   ceq procRedUp(ME, M, T, VDS, DB)
     = if metaReduce(getModule(TM), getTerm(TM)) :: ResultPair
       then getTerm(metaReduce(getModule(TM), getTerm(TM)))
-      else qidError('\r 'Error: '\o 'Incorrect 'command. '\n)
+      else qidError('\r 'Error: '\o 'Incorrect 'command. '\n
+                    getMsg(TM))
       fi
     if TM := solveBubblesRed(T, M,
                included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
@@ -19728,7 +19682,7 @@ fmod FM-COMMAND-PROCESSING is
             eMetaPrettyPrint(getModule(TM),
               getTerm(metaReduce(getModule(TM), getTerm(TM))))
             '\n)
-      else ('\b 'Error: '\o 'Incorrect 'command)
+      else ('\b 'Error: '\o 'Incorrect 'command '\n getMsg(TM))
       fi
     if TM := solveBubblesRed(T, M,
                included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
@@ -19759,8 +19713,7 @@ fmod FM-COMMAND-PROCESSING is
                     printSyntaxError(
                       metaParse(GRAMMAR-RED, downQidList('__[TL, ''..Qid]),
                        '@RedInPart@), downQidList('__[TL, ''..Qid])) '\n
-                    '\r 'Error: '\o
-                    'no 'parse 'for downQidList('__[TL, ''..Qid]) '\n)
+                    '\r 'Error: '\o 'no 'parse 'for downQidList('__[TL, ''..Qid]) '\n)
            fi
       fi
     if T? := solveBubbles('bubble['__[TL]], M, B, VDS, DB) .
@@ -19826,8 +19779,7 @@ fmod FM-COMMAND-PROCESSING is
                 :: ResultPair
            then solveBubblesRew2(
                   getTerm(
-                    metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]),
-                      '@RewNuPart@)),
+                    metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)),
                   M, B, VDS, DB)
            else {getTerm(solveBubblesRed('bubble['__[TL]], M, B, VDS, DB)),
                  getModule(solveBubblesRed('bubble['__[TL]], M, B, VDS, DB)),
@@ -19841,15 +19793,14 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesRew2('`[_`]_.['token[T], T'], M, B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
          and-then solveBubblesRed(T', M, B, VDS, DB)
-                    :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+                    :: Tuple{Term,Module,Bool,VariableSet,Database}
       then {getTerm(solveBubblesRed(T', M, B, VDS, DB)),
             getModule(solveBubblesRed(T', M, B, VDS, DB)),
             getBool(solveBubblesRed(T', M, B, VDS, DB)),
             getVars(solveBubblesRed(T', M, B, VDS, DB)),
             downNat(downMetaNat(T)),
             getDatabase(solveBubblesRed(T', M, B, VDS, DB))}
-      else tupleTMBOBDerror(
-             '\r 'Error: '\o 'Incorrect 'command. '\n)
+      else tupleTMBOBDerror('\r 'Error: '\o 'Incorrect 'command. '\n)
       fi .
 
   op GRAMMAR-REW : -> FModule [memo] .
@@ -19903,11 +19854,11 @@ fmod FM-COMMAND-PROCESSING is
       fi .
 
   eq solveBubblesSrew3('_using_.['stbubble[T], 'ububble[T']], M, B, St, D, VDS, DB)
-    = if metaParseStrategy(M, vars(VDS), downQidList(T')) :: Strategy
-         and-then solveBubblesRed('bubble[T], M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+    = if metaParseStrategy(M, VDS, downQidList(T')) :: Strategy
+         and-then solveBubblesRed('bubble[T], M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then { getTerm(solveBubblesRed('bubble[T], M, B, VDS, DB)),
              getModule(solveBubblesRed('bubble[T], M, B, VDS, DB)),
-             metaParseStrategy(M, vars(VDS), downQidList(T')),
+             metaParseStrategy(M, VDS, downQidList(T')),
              B,
              VDS,
              D,
@@ -19922,52 +19873,6 @@ fmod FM-COMMAND-PROCESSING is
                '@EqLBubble@ ; '@RlLBubble@ ; '@SdLBubble@ ; '@RCBubble@ ; '@RBubble@,
         addOps((op '_using_. : '@StBubble@ '@UBubble@ -> '@SrewNuPart@ [none] .),
           BUBBLES)) .
-
----(
-  eq procSrew(ME, M, T, VDS, DB, SrwOpt)
-    = solveBubblesSrew(T, M,
-        included('META-MODULE, getImports(getTopModule(ME, DB)), DB),
-        idle, unbounded, VDS, DB, SrwOpt).
-  eq procSrew(ME, unitError(QIL), T, VDS, DB, SrwOpt) = qidError(QIL) .
-
-  eq solveBubblesSrew('ububble[T], M, B, St, D, VDS, DB, SrwOpt)
-    = solveBubblesSrew('bubble[T], M, B, St, D, VDS, DB, SrwOpt) .
-  eq solveBubblesSrew('bubble[QI], M, B, St, D, VDS, DB, SrwOpt)
-    = if solveBubbles('bubble[QI], M, B, VDS, DB) :: Term
-        then procSrew2(M, solveBubbles('bubble[QI], M, B, VDS, DB), St, D, SrwOpt)
-      else ('\r 'Error: '\o 'no 'parsing 'for downQidList(QI) '\n)
-      fi .
-  eq solveBubblesSrew('bubble['__[TL]], M, B, St, D, VDS, DB, SrwOpt)
-    = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
-      then procSrew2(M, solveBubbles('bubble['__[TL]], M, B, VDS, DB), St, D, SrwOpt)
-      else if metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@) :: ResultPair
-           then solveBubblesSrew2(
-                  getTerm(metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)),
-                  M, B, St, D, VDS, DB, SrwOpt)
-           else solveBubblesSrew3(
-                  getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@)),
-                  M, B, St, D, VDS, DB, SrwOpt)
-           fi
-      fi .
-
-  eq solveBubblesSrew2('`[_`]_.['token[T], 'ububble['__[TL]]], M, B, St, D, VDS, DB, SrwOpt)
-    = if downNat(downMetaNat(T)) :: Nat
-         and-then metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@) :: ResultPair
-      then solveBubblesSrew3(
-             getTerm(metaParse(GRAMMAR-SREW, downQidList('__[TL, ''..Qid]), '@SrewNuPart@)),
-             M, B, St, downNat(downMetaNat(T)), VDS, DB, SrwOpt)
-      else ('\r 'Error: '\o 'no 'parsing 'for downQidList('__[TL, ''..Qid]) '\n)
-      fi .
-
-  eq solveBubblesSrew3('_using_.['stbubble[T], 'ububble[T']], M, B, St, D, VDS, DB, SrwOpt)
-    = if metaParseStrategy(M, vars(VDS), downQidList(T')) :: Strategy
-         and-then solveBubblesRed('bubble[T], M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
-      then procSrew2(getModule(solveBubblesRed('bubble[T], M, B, VDS, DB)),
-                     getTerm(solveBubblesRed('bubble[T], M, B, VDS, DB)),
-                     metaParseStrategy(M, vars(VDS), downQidList(T')), D, SrwOpt)
-      else ('\r 'Error: '\o 'Incorrect 'command. '\n)
-      fi .
----)
 
   ceq procSrew2(M, T, St, D, SrwOpt)
     = (if SrwOpt == breadthFirst then 'srewrite else 'dsrewrite fi
@@ -20054,7 +19959,7 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesFrew2('`[_`]_.['token[T], T'], M, B, I, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
          and-then solveBubblesRed(T', M, B, VDS, DB)
-                    :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+                    :: Tuple{Term,Module,Bool,VariableSet,Database}
       then {getTerm(solveBubblesRed(T', M, B, VDS, DB)),
             getModule(solveBubblesRed(T', M, B, VDS, DB)),
             getVars(solveBubblesRed(T', M, B, VDS, DB)),
@@ -20068,7 +19973,7 @@ fmod FM-COMMAND-PROCESSING is
     = if downNat(downMetaNat(T)) :: Nat
          and-then downNat(downMetaNat(T')) :: Nat
          and-then solveBubblesRed(T'', M, B, VDS, DB)
-                    :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+                    :: Tuple{Term,Module,Bool,VariableSet,Database}
       then {getTerm(solveBubblesRed(T'', M, B, VDS, DB)),
             getModule(solveBubblesRed(T'', M, B, VDS, DB)),
             getVars(solveBubblesRed(T'', M, B, VDS, DB)),
@@ -20106,7 +20011,7 @@ fmod FM-COMMAND-PROCESSING is
   ceq procSearch(ME, M, T, T', QI, D, D', VDS, DB)
     *** D is a bound on the number of solutions, and D' is a bound on the depth of the search
     = if solveBubblesRl(T, T', M, B, VDS, DB) :: Term
-      then procSearch2(addOps(VDS, M),
+      then procSearch2(M,
              lhs(solveBubblesRl(T, T', M, B, VDS, DB)),
              rhs(solveBubblesRl(T, T', M, B, VDS, DB)), nil, QI, D, D')
       else solveBubblesSearchL(M, T, T', QI, D, D', B, VDS, DB)
@@ -20143,7 +20048,7 @@ fmod FM-COMMAND-PROCESSING is
 
   eq solveBubblesSearchL1(M, '`[`,_`]_.['token[T], T'], T'', QI, D, D', B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
-         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then solveBubblesSearchR(
              getModule(solveBubblesRed(T', M, B, VDS, DB)),
              getTerm(solveBubblesRed(T', M, B, VDS, DB)),
@@ -20157,7 +20062,7 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesSearchL1(M, '`[_`,_`]_.['token[T], 'token[T'], T''], T''', QI, D, D', B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
          and-then downNat(downMetaNat(T')) :: Nat
-         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then solveBubblesSearchR(
              getModule(solveBubblesRed(T'', M, B, VDS, DB)),
              getTerm(solveBubblesRed(T'', M, B, VDS, DB)),
@@ -20179,7 +20084,7 @@ fmod FM-COMMAND-PROCESSING is
           addSorts('PatternCondition,
             addInfoConds(M))),
         T, T', QI, D, D', B, VDS, DB) .
-  eq solveBubblesSearchR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[OpDeclSet], DB:[Database])
+  eq solveBubblesSearchR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[VariableSet], DB:[Database])
     = ('\r 'Error: '\o 'Incorrect 'use 'of 'the 'search 'command. '\n) .
 
   eq solveBubblesSearchR1(M, M', T, 'ububble[T'], QI', D, D', B, VDS, DB)
@@ -20193,12 +20098,10 @@ fmod FM-COMMAND-PROCESSING is
   ceq solveBubblesSearchR1(M, M', T, 'bubble['__[TL]], QI, D, D', B, VDS, DB)
     = if T?:[Term] :: Term
       then procSearch2(M, T, T?:[Term], nil, QI, D, D')
-      else if metaParse(M', downQidList('__[TL, ''..Qid]), 'PatternCondition)
-                :: ResultPair
+      else if metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition) :: ResultPair
            then solveBubblesSearchR2(M, T,
                   getTerm(
-                    metaParse(M', downQidList('__[TL, ''..Qid]),
-                      'PatternCondition)),
+                    metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition)),
                   QI, D, D', VDS)
            else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'search 'command. '\n
            fi
@@ -20206,16 +20109,16 @@ fmod FM-COMMAND-PROCESSING is
     if T?:[Term] := solveBubbles('bubble['__[TL]], M, B, VDS, DB) .
 
   eq solveBubblesSearchR2(M, T, QI, QI', D, D', VDS)
-    = procSearch2(M, T, constsToVars(QI, VDS), nil, QI', D, D') .
+    = procSearch2(M, T, QI, nil, QI', D, D') .
   eq solveBubblesSearchR2(M, T, F[T], QI, D, D', VDS)
-    = procSearch2(M, T, constsToVars(F[T], VDS), nil, QI, D, D') .
+    = procSearch2(M, T, F[T], nil, QI, D, D') .
   eq solveBubblesSearchR2(M, T, F[T', T''], QI, D, D', VDS)
     = if F == '_s.t._. or F == '_such`that_.
-      then procSearch2(M, T, T', parseCond(T'', VDS), QI, D, D')
-      else procSearch2(M, T, constsToVars(F[T', T''], VDS), nil, QI, D, D')
+      then procSearch2(M, T, T', parseCond(T''), QI, D, D')
+      else procSearch2(M, T, F[T', T''], nil, QI, D, D')
       fi .
   eq solveBubblesSearchR2(M, T, F[T', T'', TL], QI, D, D', VDS)
-    = procSearch2(M, T, constsToVars(F[T', T'', TL], VDS), nil, QI, D, D') .
+    = procSearch2(M, T, F[T', T'', TL], nil, QI, D, D') .
 
   ceq procSearch2(M, T, T', CD, QI, D, D')
     = if RT :: ResultTriple
@@ -20290,7 +20193,7 @@ fmod FM-COMMAND-PROCESSING is
   ceq procVUNarrow(ME, M, T, T', QI, D, D', VDS, DB)
     *** D is a bound on the number of solutions, and D' is a bound on the depth of the vu-narrow command
     = if solveBubblesRl(T, T', M, B, VDS, DB) :: Term
-      then procVUNarrow2(addOps(VDS, M),
+      then procVUNarrow2(M,
              lhs(solveBubblesRl(T, T', M, B, VDS, DB)),
              rhs(solveBubblesRl(T, T', M, B, VDS, DB)), nil, QI, D, D')
       else solveBubblesVUNarrowL(M, T, T', QI, D, D', B, VDS, DB)
@@ -20329,7 +20232,7 @@ fmod FM-COMMAND-PROCESSING is
 
   eq solveBubblesVUNarrowL1(M, '`[`,_`]_.['token[T], T'], T'', QI, D, D', B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
-         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then solveBubblesVUNarrowR(
              getModule(solveBubblesRed(T', M, B, VDS, DB)),
              getTerm(solveBubblesRed(T', M, B, VDS, DB)),
@@ -20343,7 +20246,7 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesVUNarrowL1(M, '`[_`,_`]_.['token[T], 'token[T'], T''], T''', QI, D, D', B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
          and-then downNat(downMetaNat(T')) :: Nat
-         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then solveBubblesVUNarrowR(
              getModule(solveBubblesRed(T'', M, B, VDS, DB)),
              getTerm(solveBubblesRed(T'', M, B, VDS, DB)),
@@ -20371,7 +20274,7 @@ fmod FM-COMMAND-PROCESSING is
         B,
         VDS,
         DB) .
-  eq solveBubblesVUNarrowR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[OpDeclSet], DB:[Database])
+  eq solveBubblesVUNarrowR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[VariableSet], DB:[Database])
     = qidError('\r 'Error: '\o 'Incorrect 'use 'of 'the 'vu-narrow 'command. '\n) .
 
   eq solveBubblesVUNarrowR1(M, M', T, 'ububble[T'], QI', D, D', B, VDS, DB)
@@ -20385,12 +20288,10 @@ fmod FM-COMMAND-PROCESSING is
   ceq solveBubblesVUNarrowR1(M, M', T, 'bubble['__[TL]], QI, D, D', B, VDS, DB)
     = if T?:[Term] :: Term
       then procVUNarrow2(M, T, T?:[Term], nil, QI, D, D')
-      else if metaParse(M', downQidList('__[TL, ''..Qid]), 'PatternCondition)
-                :: ResultPair
+      else if metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition) :: ResultPair
            then solveBubblesVUNarrowR2(M, T,
                   getTerm(
-                    metaParse(M', downQidList('__[TL, ''..Qid]),
-                      'PatternCondition)),
+                    metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition)),
                   QI, D, D', VDS)
            else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'vu-narrow 'command. '\n
            fi
@@ -20398,16 +20299,16 @@ fmod FM-COMMAND-PROCESSING is
     if T?:[Term] := solveBubbles('bubble['__[TL]], M, B, VDS, DB) .
 
   eq solveBubblesVUNarrowR2(M, T, QI, QI', D, I, VDS)
-    = procVUNarrow2(M, T, constsToVars(QI, VDS), nil, QI', D, I) .
+    = procVUNarrow2(M, T, QI, nil, QI', D, I) .
   eq solveBubblesVUNarrowR2(M, T, F[T], QI, D, I, VDS)
-    = procVUNarrow2(M, T, constsToVars(F[T], VDS), nil, QI, D, I) .
+    = procVUNarrow2(M, T, F[T], nil, QI, D, I) .
   eq solveBubblesVUNarrowR2(M, T, F[T', T''], QI, D, I, VDS)
     = if F == '_s.t._. or F == '_such`that_.
-      then procVUNarrow2(M, T, T', parseCond(T'', VDS), QI, D, I)
-      else procVUNarrow2(M, T, constsToVars(F[T', T''], VDS), nil, QI, D, I)
+      then procVUNarrow2(M, T, T', parseCond(T''), QI, D, I)
+      else procVUNarrow2(M, T, F[T', T''], nil, QI, D, I)
       fi .
   eq solveBubblesVUNarrowR2(M, T, F[T', T'', TL], QI, D, I, VDS)
-    = procVUNarrow2(M, T, constsToVars(F[T', T'', TL], VDS), nil, QI, D, I) .
+    = procVUNarrow2(M, T, F[T', T'', TL], nil, QI, D, I) .
 
 ----  op axCohComplete : SModule -> SModule .       ---- Defined later in module AX-COHERENCE-COMPLETION
 
@@ -20521,7 +20422,7 @@ fmod FM-COMMAND-PROCESSING is
   ceq procNarrowSearch(ME, M, T, T', QI, D, D', VDS, DB)
     *** D is a bound on the number of solutions, and D' is a bound on the depth of the search
     = if solveBubblesRl(T, T', M, B, VDS, DB) :: Term
-      then procNarrowSearch2(addOps(VDS, M),
+      then procNarrowSearch2(M,
              lhs(solveBubblesRl(T, T', M, B, VDS, DB)),
              rhs(solveBubblesRl(T, T', M, B, VDS, DB)), nil, QI, D, D')
       else solveBubblesNarrowSearchL(M, T, T', QI, D, D', B, VDS, DB)
@@ -20538,12 +20439,11 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesNarrowSearchL(M, 'bubble['__[TL]], T, QI, D, D', B, VDS, DB)
     = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
       then solveBubblesNarrowSearchR(M, solveBubbles('bubble['__[TL]], M, B, VDS, DB), T, QI, D, D', B, VDS, DB)
-      else if metaParse(GRAMMAR-SEARCH, downQidList('__[TL, ''..Qid]), '@SearchNuPart@) :: ResultPair
+      else if metaParse(GRAMMAR-SEARCH, VDS, downQidList('__[TL, ''..Qid]), '@SearchNuPart@) :: ResultPair
            then solveBubblesNarrowSearchL1(
                   M,
                   getTerm(
-                    metaParse(GRAMMAR-SEARCH, downQidList('__[TL, ''..Qid]),
-                      '@SearchNuPart@)),
+                    metaParse(GRAMMAR-SEARCH, downQidList('__[TL, ''..Qid]), '@SearchNuPart@)),
                   T, QI, D, D', B, VDS, DB)
            else solveBubblesNarrowSearchR(
                   getModule(solveBubblesRew('bubble['__[TL]], M, B, D, VDS, DB)),
@@ -20560,7 +20460,7 @@ fmod FM-COMMAND-PROCESSING is
 
   eq solveBubblesNarrowSearchL1(M, '`[`,_`]_.['token[T], T'], T'', QI, D, D', B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
-         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+         and-then solveBubblesRed(T', M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then solveBubblesNarrowSearchR(
              getModule(solveBubblesRed(T', M, B, VDS, DB)),
              getTerm(solveBubblesRed(T', M, B, VDS, DB)),
@@ -20574,7 +20474,7 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesNarrowSearchL1(M, '`[_`,_`]_.['token[T], 'token[T'], T''], T''', QI, D, D', B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
          and-then downNat(downMetaNat(T')) :: Nat
-         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+         and-then solveBubblesRed(T'', M, B, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Database}
       then solveBubblesNarrowSearchR(
              getModule(solveBubblesRed(T'', M, B, VDS, DB)),
              getTerm(solveBubblesRed(T'', M, B, VDS, DB)),
@@ -20602,7 +20502,7 @@ fmod FM-COMMAND-PROCESSING is
         B,
         VDS,
         DB) .
-  eq solveBubblesNarrowSearchR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[OpDeclSet], DB:[Database])
+  eq solveBubblesNarrowSearchR(M:[Module], T:[Term], T':[Term], QI:[Qid], D:[Bound], D':[Bound], B:[Bool], VDS:[VariableSet], DB:[Database])
     = qidError('\r 'Error: '\o 'Incorrect 'use 'of 'the 'search 'command. '\n) .
 
   eq solveBubblesNarrowSearchR1(M, M', T, 'ububble[T'], QI', D, D', B, VDS, DB)
@@ -20616,12 +20516,11 @@ fmod FM-COMMAND-PROCESSING is
   ceq solveBubblesNarrowSearchR1(M, M', T, 'bubble['__[TL]], QI, D, D', B, VDS, DB)
     = if T?:[Term] :: Term
       then procNarrowSearch2(M, T, T?:[Term], nil, QI, D, D')
-      else if metaParse(M', downQidList('__[TL, ''..Qid]), 'PatternCondition)
+      else if metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition)
                 :: ResultPair
            then solveBubblesNarrowSearchR2(M, T,
                   getTerm(
-                    metaParse(M', downQidList('__[TL, ''..Qid]),
-                      'PatternCondition)),
+                    metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition)),
                   QI, D, D', VDS)
            else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'search 'command. '\n
            fi
@@ -20629,16 +20528,16 @@ fmod FM-COMMAND-PROCESSING is
     if T?:[Term] := solveBubbles('bubble['__[TL]], M, B, VDS, DB) .
 
   eq solveBubblesNarrowSearchR2(M, T, QI, QI', D, I, VDS)
-    = procNarrowSearch2(M, T, constsToVars(QI, VDS), nil, QI', D, I) .
+    = procNarrowSearch2(M, T, QI, nil, QI', D, I) .
   eq solveBubblesNarrowSearchR2(M, T, F[T], QI, D, I, VDS)
-    = procNarrowSearch2(M, T, constsToVars(F[T], VDS), nil, QI, D, I) .
+    = procNarrowSearch2(M, T, F[T], nil, QI, D, I) .
   eq solveBubblesNarrowSearchR2(M, T, F[T', T''], QI, D, I, VDS)
     = if F == '_s.t._. or F == '_such`that_.
-      then procNarrowSearch2(M, T, T', parseCond(T'', VDS), QI, D, I)
-      else procNarrowSearch2(M, T, constsToVars(F[T', T''], VDS), nil, QI, D, I)
+      then procNarrowSearch2(M, T, T', parseCond(T''), QI, D, I)
+      else procNarrowSearch2(M, T, F[T', T''], nil, QI, D, I)
       fi .
   eq solveBubblesNarrowSearchR2(M, T, F[T', T'', TL], QI, D, I, VDS)
-    = procNarrowSearch2(M, T, constsToVars(F[T', T'', TL], VDS), nil, QI, D, I) .
+    = procNarrowSearch2(M, T, F[T', T'', TL], nil, QI, D, I) .
 
 ----  op axCohComplete : SModule -> SModule .       ---- Defined later in module AX-COHERENCE-COMPLETION
 
@@ -20794,11 +20693,11 @@ fmod FM-COMMAND-PROCESSING is
   ceq procMatch(ME, M, T, T', QI, I, VDS, DB)
     *** the number I the number of solutions
     = if solveBubblesRl(T, T', M, B, VDS, DB) :: Term
-      then procMatch2(addOps(VDS, M),
+      then procMatch2(M,
              lhs(solveBubblesRl(T, T', M, B, VDS, DB)),
              rhs(solveBubblesRl(T, T', M, B, VDS, DB)), nil, QI, I)
       else if solveBubblesRew(T, M, B, I, VDS, DB)
-                :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+                :: Tuple{Term,Module,Bool,VariableSet,Bound,Database}
            then solveBubblesMatch(
                   getModule(solveBubblesRew(T, M, B, I, VDS, DB)),
                   addOps(
@@ -20842,12 +20741,10 @@ fmod FM-COMMAND-PROCESSING is
   ceq solveBubblesMatch(M, M', T, 'bubble['__[TL]], QI, I, B, VDS, DB)
     = if T?:[Term] :: Term
       then procMatch2(M, T, T?:[Term], nil, QI, I)
-      else if metaParse(M', downQidList('__[TL, ''..Qid]), 'PatternCondition)
-                :: ResultPair
+      else if metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition) :: ResultPair
            then solveBubblesMatch2(M, T,
                   getTerm(
-                    metaParse(M', downQidList('__[TL, ''..Qid]),
-                      'PatternCondition)),
+                    metaParse(M', VDS, downQidList('__[TL, ''..Qid]), 'PatternCondition)),
                   QI, I, VDS)
            else '\r 'Error: '\o 'Incorrect 'use 'of 'the 'match 'command. '\n
            fi
@@ -20855,16 +20752,16 @@ fmod FM-COMMAND-PROCESSING is
     if T?:[Term] := solveBubbles('bubble['__[TL]], M, B, VDS, DB) .
 
   eq solveBubblesMatch2(M, T, QI, QI', I, VDS)
-    = procMatch2(M, T, constsToVars(QI, VDS), nil, QI', I) .
+    = procMatch2(M, T, QI, nil, QI', I) .
   eq solveBubblesMatch2(M, T, F[T], QI, I, VDS)
-    = procMatch2(M, T, constsToVars(F[T], VDS), nil, QI, I) .
+    = procMatch2(M, T, F[T], nil, QI, I) .
   eq solveBubblesMatch2(M, T, F[T', T''], QI, I, VDS)
     = if F == '_s.t._. or F == '_such`that_.
-      then procMatch2(M, T, T', parseCond(T'', VDS), QI, I)
-      else procMatch2(M, T, constsToVars(F[T', T''], VDS), nil, QI, I)
+      then procMatch2(M, T, T', parseCond(T''), QI, I)
+      else procMatch2(M, T, F[T', T''], nil, QI, I)
       fi .
   eq solveBubblesMatch2(M, T, F[T', T'', TL], QI, I, VDS)
-    = procMatch2(M, T, constsToVars(F[T', T'', TL], VDS), nil, QI, I) .
+    = procMatch2(M, T, F[T', T'', TL], nil, QI, I) .
 
   ceq procMatch2(M, T, T', CD, 'match, I)
     = if Sb? :: Substitution
@@ -20954,7 +20851,7 @@ fmod FM-COMMAND-PROCESSING is
   ceq procUnify(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
     = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)
-           :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+           :: Tuple{Term,Module,Bool,VariableSet,Bound,Database}
       then procUnify2(
              getModule(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
              parseUnify(
@@ -20973,7 +20870,7 @@ fmod FM-COMMAND-PROCESSING is
         addSorts('@UnificationProblem@, M)) .
 
   eq parseUnify('_/\_[T, T'], VDS) = parseUnify(T, VDS) /\ parseUnify(T', VDS) .
-  eq parseUnify('_=?_[T, T'], VDS) = constsToVars(T, VDS) =? constsToVars(T', VDS) .
+  eq parseUnify('_=?_[T, T'], VDS) = T =? T' .
 
   ceq procUnify2(M, UP, D)
     = if UP? :: UnificationPair?
@@ -21016,10 +20913,10 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesUnify(M, 'ububble[T], VDS)
     = solveBubblesUnify(M, 'bubble[T], VDS) .
   ceq solveBubblesUnify(M, 'bubble[T], VDS)
-    = if metaParse(M, QIL, '@UnificationProblem@) :: ResultPair
-      then parseUnify(getTerm(metaParse(M, QIL, '@UnificationProblem@)), VDS)
+    = if metaParse(M, VDS, QIL, '@UnificationProblem@) :: ResultPair
+      then parseUnify(getTerm(metaParse(M, VDS, QIL, '@UnificationProblem@)), VDS)
       else unificationProblemError('\r 'Warning: '\o
-             printSyntaxError(metaParse(M, QIL, '@UnificationProblem@), QIL) '\n)
+             printSyntaxError(metaParse(M, VDS, QIL, '@UnificationProblem@), QIL) '\n)
       fi
     if QIL := downQidList(T) .
 
@@ -21034,12 +20931,10 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesRewUnify('bubble['__[TL]], M, B, D, VDS, DB)
     = if solveBubbles('bubble['__[TL]], M, B, VDS, DB) :: Term
       then {solveBubbles('bubble['__[TL]], M, B, VDS, DB), M, B, VDS, unbounded, DB}
-      else if metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)
-                :: ResultPair
+      else if metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@) :: ResultPair
            then solveBubblesRewUnify2(
                   getTerm(
-                    metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]),
-                      '@RewNuPart@)),
+                    metaParse(GRAMMAR-REW, downQidList('__[TL, ''..Qid]), '@RewNuPart@)),
                   M, B, VDS, DB)
            else {getTerm(solveBubblesRedUnify('bubble['__[TL]], M, B, VDS, DB)),
                  getModule(solveBubblesRedUnify('bubble['__[TL]], M, B, VDS, DB)),
@@ -21053,7 +20948,7 @@ fmod FM-COMMAND-PROCESSING is
   eq solveBubblesRewUnify2('`[_`]_.['token[T], T'], M, B, VDS, DB)
     = if downNat(downMetaNat(T)) :: Nat
          and-then solveBubblesRedUnify(T', M, B, VDS, DB)
-                    :: Tuple{Term,Module,Bool,OpDeclSet,Database}
+                    :: Tuple{Term,Module,Bool,VariableSet,Database}
       then {getTerm(solveBubblesRedUnify(T', M, B, VDS, DB)),
             getModule(solveBubblesRedUnify(T', M, B, VDS, DB)),
             getBool(solveBubblesRedUnify(T', M, B, VDS, DB)),
@@ -21074,8 +20969,7 @@ fmod FM-COMMAND-PROCESSING is
   ceq solveBubblesRedUnify('bubble['__[TL]], M, B, VDS, DB)
     = if T? :: Term
       then {T?, M, B, VDS, DB}
-      else if metaParse(GRAMMAR-RED,
-                downQidList('__[TL, ''..Qid]), '@RedInPart@)
+      else if metaParse(GRAMMAR-RED, downQidList('__[TL, ''..Qid]), '@RedInPart@)
                 :: ResultPair
            then solveBubblesRedUnify2(
                   getTerm(
@@ -21107,7 +21001,7 @@ fmod FM-COMMAND-PROCESSING is
 
   ceq procIdUnify(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
-    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Bound,Database}
       then procIdUnify2(
              getModule(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
              parseUnify(
@@ -21147,7 +21041,7 @@ fmod FM-COMMAND-PROCESSING is
 
   ceq procVariantUnify(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
-    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Bound,Database}
       then procVariantUnify2(
              getModule(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
              parseUnify(
@@ -21196,7 +21090,7 @@ fmod FM-COMMAND-PROCESSING is
 
   ceq procAsymmetricVariantUnify(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
-    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+    = if solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Bound,Database}
       then procAsymmetricVariantUnify2(
              getModule(solveBubblesRewUnify(T, addInfoUnify(M), B, D, VDS, DB)),
              parseUnify(
@@ -21248,18 +21142,14 @@ fmod FM-COMMAND-PROCESSING is
 
   ceq procGetVariants(ME, M, T, D, VDS, DB)
     *** D is a bound on the number of solutions
-    = if solveBubblesRewUnify(T, M, B, D, VDS, DB) :: Tuple{Term,Module,Bool,OpDeclSet,Bound,Database}
+    = if solveBubblesRewUnify(T, M, B, D, VDS, DB) :: Tuple{Term,Module,Bool,VariableSet,Bound,Database}
       then procGetVariants2(
              getModule(solveBubblesRewUnify(T, M, B, D, VDS, DB)),
-             parseGetVariants(
-               getTerm(solveBubblesRewUnify(T, M, B, D, VDS, DB)),
-               getVars(solveBubblesRewUnify(T, M, B, D, VDS, DB))),
+             getTerm(solveBubblesRewUnify(T, M, B, D, VDS, DB)),
              getBound(solveBubblesRewUnify(T, M, B, D, VDS, DB)))
       else getMsg(solveBubblesRewUnify(T, M, B, D, VDS, DB))
       fi
     if B := included('META-MODULE, getImports(getTopModule(ME, DB)), DB) .
-
-  eq parseGetVariants(T, VDS) = constsToVars(T, VDS) .
 
   ceq procGetVariants2(M, T, D)
     = if X:[VariantFourSet] :: VariantFourSet

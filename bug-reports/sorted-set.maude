@@ -1,0 +1,30 @@
+fmod SORTED-LIST{X :: TOTAL-PREORDER} is
+  pr EXT-BOOL .
+
+  sorts NeList{X} List{X} .
+  subsort X$Elt < NeList{X} < List{X} .
+  op nil : -> List{X} [ctor] .
+  op __ : List{X} List{X} ~> List{X} [ctor assoc id: nil prec 25] .
+
+  vars E E' : X$Elt .
+  var  SL : SortedList{X} .
+
+  sorts SortedList{X} NeSortedList{X} .
+  subsort SortedList{X} < List{X}.
+  subsort X$Elt < NeSortedList{X} < SortedList{X} NeList{X} .
+  ----op nil : -> SortedList{X} .
+  mb nil : SortedList{X} .
+  cmb E E' SL : NeSortedList{X} if E <= E' /\ E' SL : SortedList{X} .
+
+  op _oin_ : X$Elt SortedList{X} -> Bool .
+  eq E oin nil = false .
+  eq E oin E' SL = E == E' or-else ((not E <= E') and-then E oin SL) .
+endfm
+
+view TPNat from TOTAL-PREORDER to NAT is
+  sort Elt to Nat .
+endv
+
+fmod FOO is pr SORTED-LIST{TPNat} . endfm
+
+red 3 oin 2 3 4 .

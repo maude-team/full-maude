@@ -4,7 +4,6 @@ set show timing off .
 set show loop timing off .
 load trace.maude
 
-----(
 load sample-files-2.7/rew-seq-extended-rent-a-car-store.fm
 load sample-files-2.7/rew-seq-rent-a-car-store.fm
 load sample-files-2.7/check-rrobin.fm
@@ -20,7 +19,6 @@ load sample-files-2.7/polynomial.fm
 load sample-files-2.7/power-ex.fm
 load sample-files-2.7/set-max.fm
 load sample-files-2.7/only-book/8-puzzle.fm
-----)
 load sample-files-2.7/only-book/df-abstract-bakery-check.fm
   set show loop stats off .
   set show loop timing off .
@@ -36,8 +34,10 @@ load sample-files-2.7/last-append.fm
 load sample-files-2.7/leftid-unification-example.fm
 load sample-files-2.7/rightid-unification-example.fm
 load sample-files-2.7/id-unification-example.fm
+----)
 
 load pruebas/basic-nat-list.fm
+eof
 load pruebas/triple-list.fm
 load pruebas/load-command.fm
 load pruebas/load-command-2.fm
