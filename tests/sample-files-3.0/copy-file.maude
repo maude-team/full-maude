@@ -1,0 +1,57 @@
+load file.maude
+
+fmod MAYBE{X :: TRIV} is
+  sort Maybe{X} .
+  subsort X$Elt < Maybe{X} .
+  op null : -> Maybe{X} .
+endfm
+
+view Oid from TRIV to CONFIGURATION is
+  sort Elt to Oid .
+endv
+
+mod COPY-FILE is
+  inc FILE .
+  pr MAYBE{Oid} .
+
+  op myClass : -> Cid .
+  op myObj : -> Oid .
+  ops in:_ out:_ : Maybe{Oid} -> Attribute .
+  ops inFile:_ outFile:_ : String -> Attribute .
+
+  op run : String String -> Configuration .
+  vars Text Original Copy : String .
+  vars FHIn FHOut : Oid .
+  var  Attrs : AttributeSet .
+
+  eq run(Original, Copy)
+   = <>
+     < myObj : myClass | in: null, inFile: Original, out: null, outFile: Copy >
+     openFile(fileManager, myObj, Original, "r") .
+  rl < myObj : myClass | in: null, outFile: Copy, Attrs >
+     openedFile(myObj, fileManager, FHIn)
+  => < myObj : myClass | in: FHIn, Attrs >
+     openFile(fileManager, myObj, Copy, "w") .
+  rl < myObj : myClass | in: FHIn, out: null, Attrs >
+     openedFile(myObj, fileManager, FHOut)
+  => < myObj : myClass | in: FHIn, out: FHOut, Attrs >
+     getLine(FHIn, myObj) .
+  rl < myObj : myClass | in: FHIn, out: FHOut, Attrs >
+     gotLine(myObj, FHIn, Text)
+  => < myObj : myClass | in: FHIn, out: FHOut, Attrs >
+     if Text == ""
+     then closeFile(FHIn, myObj)
+          closeFile(FHOut, myObj)
+     else write(FHOut, myObj, Text)
+     fi .
+  rl < myObj : myClass | in: FHIn, out: FHOut, Attrs >
+     wrote(myObj, FHOut)
+  => < myObj : myClass | in: FHIn, out: FHOut, Attrs >
+     getLine(FHIn, myObj) .
+  rl < myObj : myClass | in: FHIn, out: FHOut, Attrs >
+     closedFile(myObj, FHIn)
+     closedFile(myObj, FHOut)
+  => none .
+endm
+
+erew run("in.txt", "out.txt") .

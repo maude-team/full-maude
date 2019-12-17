@@ -1,0 +1,19 @@
+  fmod EXCLUSIVE-OR is 
+    sorts Nat NatSet .
+    op 0 : -> Nat [ctor] .
+    op s : Nat -> Nat [ctor] .
+    
+    subsort Nat < NatSet .
+    op mt : -> NatSet [ctor] .
+    op _*_ : NatSet NatSet -> NatSet [ctor assoc comm] .
+
+    vars X Y Z : [NatSet] .
+    eq [idem] :     X * X = mt    [variant] .
+    eq [idem-Coh] : X * X * Z = Z [variant] .
+    eq [id] :       X * mt = X    [variant] .
+  endfm
+
+get variants in EXCLUSIVE-OR : X * Y .
+get irredundant variants in EXCLUSIVE-OR : X * Y .
+
+get irredundant variants in EXCLUSIVE-OR : X * Y such that X * Y irreducible .

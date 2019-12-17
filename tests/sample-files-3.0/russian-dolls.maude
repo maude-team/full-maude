@@ -1,0 +1,59 @@
+load metaInterpreter.maude
+
+mod RUSSIAN-DOLLS is
+  extending META-INTERPRETER .
+
+  op me : -> Oid .
+  op User : -> Cid .
+  op depth:_ : Nat -> Attribute .
+  op computation:_ : Term -> Attribute .
+
+  vars X Y Z : Oid .
+  var AS : AttributeSet .
+  var N : Nat .
+  var T : Term .
+
+  op newMetaState : Nat Term -> Term .
+  eq newMetaState(0, T) = T .
+  eq newMetaState(s N, T)
+    = upTerm(
+        <>
+        < me : User | depth: N, computation: T >
+        createInterpreter(interpreterManager, me, none)) .
+
+  rl < X : User | AS >
+     createdInterpreter(X, Y, Z)
+  => < X : User | AS >
+     insertModule(Z, X, upModule('RUSSIAN-DOLLS, true)) .
+
+  rl < X : User | depth: N, computation: T, AS >
+     insertedModule(X, Y)
+  => < X : User | AS >
+     erewriteTerm(Y, X, unbounded, 1, 'RUSSIAN-DOLLS, newMetaState(N, T)) .
+endm
+
+erewrite
+  <>
+  < me : User | depth: 0, computation: ('_+_['s_^2['0.Zero], 's_^2['0.Zero]]) >
+  createInterpreter(interpreterManager, me, none) .
+---(
+result Configuration:
+  <>
+  < me : User | none >
+  erewroteTerm(me, interpreter(0), 1, 's_^4['0.Zero], 'NzNat)
+)
+
+erewrite
+  <>
+  < me : User | depth: 1, computation: ('_+_['s_^2['0.Zero],'s_^2['0.Zero]]) >
+  createInterpreter(interpreterManager, me, none) .
+---(
+result Configuration:
+  <>
+  < me : User | none >
+  erewroteTerm(me, interpreter(0), 5,
+    '__['<>.Portal,
+        '<_:_|_>['me.Oid,'User.Cid,'none.AttributeSet],
+        'erewroteTerm['me.Oid,'interpreter['0.Zero],'s_['0.Zero],
+          '_`[_`][''s_^4.Sort,''0.Zero.Constant],''NzNat.Sort]], 'Configuration)
+)

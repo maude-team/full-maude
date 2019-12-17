@@ -1,0 +1,31 @@
+load file
+
+mod HELLO is
+  including STD-STREAM .
+
+  op myClass : -> Cid .
+  op myObj : -> Oid .
+  op run : -> Configuration .
+
+  var O : Oid .
+  var A : AttributeSet .
+  var S : String .
+  var C : Char .
+
+  eq run
+   = <>
+     < myObj : myClass | none >
+     getLine(stdin, myObj, "What is your name? ") .
+  rl < myObj : myClass | A >
+     gotLine(myObj, O, S)
+  => < myObj : myClass | A >
+     if S =/= ""
+     then write(stdout, myObj, "Hello " + S)
+     else none
+     fi .
+endm
+
+erew run .
+----What is your name? Joe
+----Hello Joe
+----result Configuration: <> wrote(myObj, stdout) < myObj : myClass | none >

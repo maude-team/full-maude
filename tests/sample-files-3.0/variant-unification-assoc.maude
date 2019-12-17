@@ -1,0 +1,70 @@
+  fmod VARIANT-UNIFICATION-ASSOC is
+    protecting NAT .
+    sort NList .
+    subsort Nat < NList .
+
+    op _:_ : NList NList -> NList [assoc ctor] .
+    
+    var E : Nat . var L : NList .
+
+    ops tail prefix : NList ~> NList .
+    ops head last : NList ~> Nat .
+    eq head(E : L) = E [variant] .
+    eq tail(E : L) = L [variant] .
+    eq prefix(L : E) = L [variant] .
+    eq last(P : E) = E [variant] .
+    
+    op symmList : NList ~> Bool .
+    eq symmList(L : L) = true [variant] .    
+  endfm
+
+--- Begin Test FVP
+get variants head(L) .
+get variants tail(L) .
+get variants prefix(L) .
+get variants last(L) .
+get variants symmList(L) .
+--- End Test FVP
+
+get variants head(prefix(tail(L))) .
+get variants symmList(prefix(L) : tail(L)) . ---Incomplete set of variants
+
+variant unify head(L) =? last(L) /\ prefix(L) =? tail(L) .
+
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 0) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 1) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 2) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 3) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 4) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 5) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 6) .
+reduce in META-LEVEL : 
+     metaGetVariant(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'symmList['_:_['prefix['L:NList],'tail['L:NList]]],empty, 0, 7) .
+
+reduce in META-LEVEL : 
+     metaVariantUnify(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'head['L:NList] =? 'last['L:NList] /\ 'prefix['L:NList] =? 'tail['L:NList], 
+        empty, 0, 0) .
+reduce in META-LEVEL : 
+     metaVariantUnify(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'head['L:NList] =? 'last['L:NList] /\ 'prefix['L:NList] =? 'tail['L:NList], 
+        empty, 0, 1) .
+reduce in META-LEVEL : 
+     metaVariantUnify(upModule('VARIANT-UNIFICATION-ASSOC, true), 
+     'head['L:NList] =? 'last['L:NList] /\ 'prefix['L:NList] =? 'tail['L:NList], 
+        empty, 0, 2) .

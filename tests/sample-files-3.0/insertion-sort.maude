@@ -1,0 +1,65 @@
+***
+*** Insertion sort algorithm using strategies
+*** (from "Strategy modules" section in the manual)
+***
+
+mod SWAPPING{X :: DEFAULT} is
+  protecting ARRAY{Nat, X} .
+  vars I J : Nat .
+  vars V W : X$Elt .
+  var AR : Array{Nat, X} .
+  rl [swap] : J |-> V ; I |-> W => J |-> W ; I |-> V .
+
+  op maxIndex : Array{Nat, X} ~> Nat .
+  eq maxIndex(empty) = 0 .
+  eq maxIndex(I |-> V ; AR) = if maxIndex(AR) < I then I else maxIndex(AR) fi .
+endm
+
+view DEFAULT+ from DEFAULT to STRICT-TOTAL-ORDER + DEFAULT is
+endv
+
+smod INSERTION-SORT{X :: STRICT-TOTAL-ORDER + DEFAULT} is
+  protecting SWAPPING{DEFAULT+}{X} * (
+    sort Array{Nat, DEFAULT+}{X} to NatArray{X}
+  ) .
+
+  strat  swap : Nat Nat @ NatArray{X} .
+  strats insert insort : Nat @ NatArray{X} .
+
+  vars X Y J I : Nat .
+  vars V W : X$Elt .
+  var AR : NatArray{X} .
+
+  sd insort(Y) := try(match AR s.t. Y <= maxIndex(AR) ;
+                      insert(Y) ;
+                      insort(Y + 1)) .
+
+  sd insert(1) := idle [label base-case] .
+ csd insert(s(X)) := try(xmatch X |-> V ; s(X) |-> W s.t. W < V ;
+                         swap(X, s(X)) ;
+                         insert(X))
+                      if X > 0 [label recursive-case] .
+
+  sd swap(X, Y) := swap[J <- X, I <- Y] .
+endsm
+
+view Int<0 from STRICT-TOTAL-ORDER + DEFAULT to INT is
+  sort Elt to Int .
+endv
+
+smod INSERTION-SORT-INT is
+  protecting INSERTION-SORT{Int<0} .
+endsm
+
+***(
+Maude> srewrite 1 |-> 8 ; 2 |-> 3 ; 3 |-> 15 ; 4 |-> 5 ; 5 |-> 2 using insort(2) .
+srewrite in INSERTION-SORT-INT : 1 |-> 8 ; 2 |-> 3 ; 3 |-> 15 ; 4 |-> 5 ; 5
+    |-> 2 using insort(2) .
+
+Solution 1
+rewrites: 116 in 3ms cpu (0ms real) (35204 rewrites/second)
+result NatArray{Int<0}: 1 |-> 2 ; 2 |-> 3 ; 3 |-> 5 ; 4 |-> 8 ; 5 |-> 15
+
+No more solutions.
+rewrites: 116 in 3ms cpu (0ms real) (35204 rewrites/second)
+)

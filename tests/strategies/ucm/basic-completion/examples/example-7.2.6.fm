@@ -76,9 +76,9 @@ loop init .
 *** rewrites: 174957 in 302ms cpu (304ms real) (578016 rewrites/second)
 
 *** with S-Completion
-(srew < mtRlS, mtRlS, mtRlS, eqs > using S-COMP .)
+(srew < eqs, mtRlS > using S-COMP .)
 *** rewrites: 84362 in 56ms cpu (58ms real) (1492815 rewrites/second)
 
 *** con ANS-Completion
-(srew < mtRlS, mtRlS, mtRlS, mtRlS, mtRlS, eqs > using ANS-COMP .)
+(srew < eqs, mtRlS > using ANS-COMP .)
 *** rewrites: 36290 in 46ms cpu (46ms real) (779692 rewrites/second)

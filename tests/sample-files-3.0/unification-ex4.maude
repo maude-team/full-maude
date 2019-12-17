@@ -1,0 +1,73 @@
+  fmod UNIFICATION-EX4 is
+    protecting NAT .
+    sort NList .
+---    sort Nat .
+
+---    ops 1 2 3 4 5 6 7 8 9 : -> Nat .
+
+    subsort Nat < NList .
+
+    op _:_ : NList NList -> NList [assoc] .
+
+    *** element variables
+    vars E F G H I J K L M N : Nat .
+
+    *** unconstrained variables
+     vars P Q R S T U V W X Y Z : NList .
+endfm
+
+set verbose on .
+
+*** 5 unifiers
+  unify X : Y : Z =? P : Q .
+
+*** no unifiers
+unify X : X =? Y : 1 : Y .
+---unify X : X =? E : Y : 1 : 2 : Y : E .
+
+*** 1 unifier
+---unify X : X =? Y : Y .
+---unify X : X =? Y : 1 : Y : 1 .
+---unify X : X =? E : Y : F : E : Y : F .
+---unify X : X =? E : Y : 1 : 2 : Y : F .
+---unify X : X =? E : Y : F : 2 : Y : E .
+---unify X : X =? E : Y : 2 : 2 : Y : E .
+
+*** no unifiers
+---unify P : P =? Q : Q : R : R : H .
+---unify P : P : Q =? Q : R : H : R .
+unify 0 : Q =? Q : 1 .
+---unify P : P =? Q : Q : 5 : 6 .
+
+*** 1 unifier
+---unify P : Q : R : R =? H : H : Q : I : I .
+unify P : P =? 1 : Q : 2 .
+---unify P : Q : 1 : S =? 2 : Q : 3 : 4 : 5 .
+
+
+*** incomplete
+unify 0 : X =? X : 0 .
+---unify X : Y =? Y : X .
+---unify X : Y : X =? Z : Z .
+---unify X : X =? Y : 1 : 1 : Y .
+
+*** 1 unifier
+unify X : X =? Y : Y : Y .
+unify X : Y : X =? Y : X : Y .
+unify X : X : X =? Y : Y : Y : Y .
+unify X : Y : X =? Y : Y : Y : Y .
+
+*** incomplete
+unify X : Y : X =? Z : Z : Z : Z .
+unify X : Y : X =? Y : Y : Z : Y .
+unify X : Y : X =? Y : Z : Z : Y .
+unify X : X : X =? Y : Y : Z : Y .
+unify X : X : Z =? Y : Y : Z : Y .
+unify X : Y : Z =? Y : Y : Z : Y .
+
+reduce in META-LEVEL : 
+           metaUnify(upModule('UNIFICATION-EX4, true), 
+             '_:_['0.Nat,'X:NList] =? '_:_['X:NList,'0.Nat], 0, 0) .
+reduce in META-LEVEL : 
+           metaUnify(upModule('UNIFICATION-EX4, true), 
+             '_:_['0.Nat,'X:NList] =? '_:_['X:NList,'0.Nat], 0, 1) .

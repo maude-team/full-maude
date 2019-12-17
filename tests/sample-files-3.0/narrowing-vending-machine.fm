@@ -1,0 +1,42 @@
+  ---- from the book All About Maude
+  ---- from the Maude Manual
+  ---- by the Maude team + Santiago Escobar
+
+ (mod NARROWING-VENDING-MACHINE is
+    sorts Coin Item Marking Money State .
+    subsort Coin < Money .
+    op __ : Money Money -> Money [assoc comm] .
+    subsort Money Item < Marking .
+    op __ : Marking Marking -> Marking [assoc comm] .
+    op <_> : Marking -> State .
+    op $ : -> Coin [format (r! o)] .
+    op q : -> Coin [format (r! o)] .
+    op a : -> Item [format (b! o)] .
+    op c : -> Item [format (b! o)] .
+
+    var M : Marking .
+    rl [buy-c] : < $ > => < c > .
+    rl [buy-c] : < M $ > => < M c > .
+    rl [buy-a] : < $ > => < a q > .
+    rl [buy-a] : < M $ > => < M a q > .
+    rl [change]: < q q q q > => < $ > .
+    rl [change]: < M q q q q > => < M $ > .
+  endm)
+
+  (vu-narrow [1] in NARROWING-VENDING-MACHINE : < M:Money > =>* < a c > .)
+  (vu-narrow [,5] in NARROWING-VENDING-MACHINE : < M:Money > =>* < a c > .)
+  (vu-narrow [,5] in NARROWING-VENDING-MACHINE : < M:Money > =>! < a c > .)
+  (vu-narrow [,10] in NARROWING-VENDING-MACHINE : < C1:Coin C2:Coin C3:Coin C4:Coin > =>! <  M:Money a c > .)
+  (reduce in META-LEVEL :
+   metaNarrowingSearch(upModule('NARROWING-VENDING-MACHINE, false),
+                '<_>['M:Money],
+                '<_>['__['a.Item, 'c.Item]],
+                '*, unbounded, 'none, 0) .)
+  (reduce in META-LEVEL :
+   metaNarrowingSearchPath(upModule('NARROWING-VENDING-MACHINE, false),
+                '<_>['M:Money],
+                '<_>['__['a.Item, 'c.Item]],
+                '*, unbounded, 'none, 0) .)
+
+  (fvu-narrow [1] in NARROWING-VENDING-MACHINE : < M:Money > =>* < a c > .)
+  (fvu-narrow in NARROWING-VENDING-MACHINE : < M:Marking > =>* < a c > .)

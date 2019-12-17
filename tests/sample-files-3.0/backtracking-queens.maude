@@ -1,0 +1,138 @@
+***
+*** Backtracking scheme with parameterized strategies, instantiated by the 8-queens problem
+*** (from "Parameterization in strategy modules" section in the manual)
+***
+
+sth STRIV is
+   including TRIV .
+   strat st @ Elt .
+endsth
+
+fth BT-ELEMS is
+  protecting BOOL .
+  sort State .
+  op isSolution : State -> Bool .
+endfth
+
+sth BT-STRAT is
+  including BT-ELEMS .
+  strat expand @ State .
+endsth
+
+smod BACKTRACKING{X :: BT-STRAT} is
+  strat solve @ X$State .
+  var S : X$State .
+  sd solve := (match S s.t. isSolution(S)) ?
+                 idle : (expand ; solve) .
+endsm
+
+mod QUEENS is
+  protecting LIST{Nat} .
+  protecting SET{Nat} .
+
+  op isOk : List{Nat} -> Bool .
+  op ok : List{Nat} Nat Nat -> Bool .
+  op isSolution : List{Nat} -> Bool .
+
+  vars N M Diff : Nat .
+  var  L : List{Nat} .
+  var  S : Set{Nat} .
+
+  eq isOk(L N) = ok(L, N, 1) .
+  eq ok(nil, M, Diff) = true .
+  ceq ok(L N, M, Diff) = ok(L, M, Diff + 1)
+   if N =/= M /\ N =/= M + Diff /\ M =/= N + Diff .
+  eq isSolution(L) = size(L) == 8 .
+
+  crl [next] : L => L N if N, S := 1, 2, 3, 4, 5, 6, 7, 8 .
+endm
+
+smod QUEENS-STRAT is
+  protecting QUEENS .
+
+  strat expand @ List{Nat} .
+  var L : List{Nat} .
+  sd expand := top(next) ; match L s.t. isOk(L) .
+endsm
+
+view QueensBT from BT-STRAT to QUEENS-STRAT is
+  sort State to List{Nat} .
+  strat expand to expand .
+endv
+
+smod BT-QUEENS is
+  protecting BACKTRACKING{QueensBT} .
+endsm
+
+***(
+Maude> srew [2] nil using solve .
+srewrite [2] in BT-QUEENS : nil using solve .
+
+Solution 1
+rewrites: 285984 in 238ms cpu (238ms real) (1200211 rewrites/second)
+result NeList{Nat}: 1 5 8 6 3 7 2 4
+
+Solution 2
+rewrites: 285984 in 238ms cpu (238ms real) (1200211 rewrites/second)
+result NeList{Nat}: 1 6 8 3 7 4 2 5
+)
+
+view StrivIdle from STRIV to TRIV is
+  sort Elt to Elt .
+  strat st to expr idle .
+endv
+
+view STRIV from TRIV to STRIV is
+  sort Elt to Elt .
+endv
+
+view QueensBT2 from BT-STRAT to QUEENS is
+  sort State to List{Nat} .
+  var L : State .
+  strat expand to expr top(next) ; match L s.t. isOk(L) .
+endv
+
+***(
+Maude> srew [2] nil using solve .
+
+Solution 1
+rewrites: 285984 in 249ms cpu (248ms real) (1147935 rewrites/second)
+result NeList{Nat}: 1 5 8 6 3 7 2 4
+
+Solution 2
+rewrites: 285984 in 249ms cpu (249ms real) (1147935 rewrites/second)
+result NeList{Nat}: 1 6 8 3 7 4 2 5
+
+Maude> dsrew [2] nil using solve .
+dsrewrite [2] in BT-QUEENS : nil using solve .
+
+Solution 1
+rewrites: 15602 in 16ms cpu (17ms real) (942092 rewrites/second)
+result NeList{Nat}: 1 5 8 6 3 7 2 4
+
+Solution 2
+rewrites: 20339 in 19ms cpu (21ms real) (1022728 rewrites/second)
+result NeList{Nat}: 1 6 8 3 7 4 2 5
+)
+
+***(
+Maude> red in META-LEVEL : metaSrewrite(['QUEENS-STRAT], upTerm(1 3 5),
+    'expand[[empty]], breadthFirst, 0) .
+rewrites: 3 in 0ms cpu (0ms real) (~ rewrites/second)
+result ResultPair: {'__['s_['0.Zero],'s_^3['0.Zero],'s_^5['0.Zero],'s_^2[
+    '0.Zero]],'NeList`{Nat`}}
+Maude> red metaSrewrite(['QUEENS-STRAT], upTerm(1 3 5),
+    'expand[[empty]], breadthFirst, 1) .
+rewrites: 3 in 0ms cpu (0ms real) (~ rewrites/second)
+result ResultPair: {'__['s_['0.Zero],'s_^3['0.Zero],'s_^5['0.Zero],'s_^7[
+    '0.Zero]],'NeList`{Nat`}}
+Maude>  red metaSrewrite(['QUEENS-STRAT], upTerm(1 3 5),
+    'expand[[empty]], breadthFirst, 2) .
+rewrites: 3 in 0ms cpu (0ms real) (~ rewrites/second)
+result ResultPair: {'__['s_['0.Zero],'s_^3['0.Zero],'s_^5['0.Zero],'s_^8[
+    '0.Zero]],'NeList`{Nat`}}
+Maude> red metaSrewrite(['QUEENS-STRAT], upTerm(1 3 5),
+    'expand[[empty]], breadthFirst, 3) .
+rewrites: 3 in 0ms cpu (0ms real) (~ rewrites/second)
+result ResultPair?: (failure).ResultPair?
+)

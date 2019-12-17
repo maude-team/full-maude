@@ -1,0 +1,43 @@
+ mod LAST-APPEND is
+    sort Success .
+    op success : -> Success .
+    sort Nat .
+    op 0 : -> Nat .
+    op s : Nat -> Nat .
+    sort NatList .
+    op nil : -> NatList .
+    op _:_ : Nat NatList -> NatList .
+
+    vars XS YS : NatList .  
+    vars N M X Y : Nat .
+
+    op append : NatList NatList -> [NatList] .
+    rl append(nil, YS) => YS [narrowing] .
+    rl append(N : XS, YS) => N : append(XS, YS) [narrowing] .
+
+    op last : NatList -> [Nat] .
+    rl last(XS) => append(YS, N : nil) =:= XS >> N [nonexec narrowing] .
+
+    op _>>_ : [Success] [Nat] -> [Nat] [frozen (2) strat (1 0)] .
+    eq success >> X:[Nat] = X:[Nat] .
+
+    op _=:=_ : Nat Nat -> [Success] [comm] .
+    rl N =:= N => success [narrowing] .
+
+    op _=:=_ : NatList NatList -> [Success] [comm] .
+    rl XS =:= XS => success [narrowing] .
+  endm
+
+vu-narrow [1] in LAST-APPEND : last(0 : s(0) : nil) =>! Z:Nat .
+
+ mod MEMBERSHIP is
+    protecting LAST-APPEND .
+    vars XS YS ZS : NatList .
+    vars N M X Y : Nat .
+    op member : Nat NatList -> [Success] .
+    rl member(N, XS) => append(YS, N : ZS) =:= XS [nonexec narrowing] .
+  endm
+
+vu-narrow [1] in MEMBERSHIP : member(s(0), 0 : s(0) : nil) =>! success .
+
+vu-narrow [,5] in MEMBERSHIP : member(N:Nat, 0 : s(0) : nil) =>! success .

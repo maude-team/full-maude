@@ -1,0 +1,17 @@
+fmod NAT-VARIANT is
+  sort Nat .
+  op 0 : -> Nat [ctor] .
+  op s : Nat -> Nat [ctor] .
+  op _+_ : Nat Nat -> Nat .
+  vars X Y : Nat .
+
+  eq [base] : 0 + Y = Y [variant] .
+  eq [ind] : s(X) + Y = s(X + Y) [variant].
+endfm
+
+get variants in NAT-VARIANT : s(0) + X .
+get variants [10] in NAT-VARIANT : X + s(0) .
+---get irredundant variants [10] in NAT-VARIANT : X + s(0) . ---non-terminating
+
+variant unify in NAT-VARIANT : s(0) + X =? s(s(s(0)))  .
+variant unify [1] in NAT-VARIANT : X + s(0) =? s(s(s(0)))  .

@@ -1,0 +1,689 @@
+***
+*** Logic programming with cuts and negation as in Prolog
+***
+
+fmod LP-SYNTAX is
+  protecting NAT .
+  protecting QID .
+
+  sort Variable .
+  op x{_} : Nat -> Variable [ctor] .
+
+  sort Term NvTerm .
+  subsort Qid < NvTerm < Term .
+  subsort Variable < Term .
+  op _[_] : Qid NeTermList -> NvTerm [ctor prec 30 gather (e &)] .
+
+  sort NeTermList .
+  subsort Term < NeTermList .
+  op _,_ : NeTermList NeTermList -> NeTermList [ctor assoc] .
+
+  sort Predicate .
+  op _`(_`) : Qid NeTermList -> Predicate [ctor prec 30 gather (e &)] .
+
+  sorts PredicateList NePredicateList .
+  subsort Predicate < NePredicateList < PredicateList .
+
+  op nil : -> PredicateList [ctor] .
+
+  op _,_ : PredicateList PredicateList -> PredicateList [ctor assoc prec 50 id: nil] .
+  op _,_ : NePredicateList PredicateList -> NePredicateList [ditto] .
+  op _,_ : PredicateList NePredicateList -> NePredicateList [ditto] .
+
+  sort Clause .
+  op _:-_ : Predicate PredicateList -> Clause [ctor prec 60] .
+
+  sort Program .
+  subsort Clause < Program .
+  op nil : -> Program .
+  op _;_ : Program Program -> Program [ctor assoc prec 70 id: nil] .
+
+endfm
+
+fmod LP-SYNTAX+CUT is
+  extending LP-SYNTAX .
+
+  *** Predicate lists may contain cuts, but cut-free predicate lists do not
+  sorts CfPredicateList NeCfPredicateList .
+  subsorts Predicate < NeCfPredicateList < CfPredicateList NePredicateList < PredicateList .
+
+  *** The cut symbol
+  op ! : -> NePredicateList [ctor] .
+
+  mb nil : CfPredicateList .
+
+  op _,_ : NeCfPredicateList NeCfPredicateList -> NeCfPredicateList [ditto] .
+  op _,_ : CfPredicateList CfPredicateList -> CfPredicateList [ditto] .
+  op _,_ : NeCfPredicateList CfPredicateList -> NeCfPredicateList [ditto] .
+  op _,_ : CfPredicateList NeCfPredicateList -> NeCfPredicateList [ditto] .
+  op _,_ : PredicateList CfPredicateList -> PredicateList [ditto] .
+  op _,_ : CfPredicateList PredicateList -> PredicateList [ditto] .
+endfm
+
+fmod LP-UNIFICATION is
+  protecting LP-SYNTAX .
+
+  sort Binding .
+  op _->_ : Variable Term -> Binding [ctor prec 60] .
+
+  sort Substitution .
+  subsort Binding < Substitution .
+  op empty : -> Substitution [ctor] .
+  op _;_ : Substitution Substitution -> Substitution [assoc comm prec 70 id: empty] .
+
+  sort Substitution? .
+  subsort Substitution < Substitution? .
+  op fail : -> Substitution? [ctor] .
+
+  vars F C : Qid .
+  vars NeTL NeTL1 NeTL2 : NeTermList .
+  var S : Substitution .
+  vars P P1 P2 : Predicate .
+  var PL OPL : PredicateList .
+  var V : Variable .
+  vars T T1 T2 : Term .
+  vars NVT NVT1 NVT2 : NvTerm .
+  vars N N1 N2 : Nat .
+
+  op checkVar : Variable Substitution -> Bool .
+  eq checkVar(V,(V -> T) ; S) = true .
+  eq checkVar(V,S) = false [owise] .
+
+  op unify : Predicate Predicate Substitution -> Substitution? .
+  eq unify(F(NeTL1),F(NeTL2),S)
+   = unify(NeTL1,NeTL2,S) .
+  eq unify(P1,P2,S)
+   = fail [owise] .
+
+  op unify : NeTermList NeTermList Substitution -> Substitution? .
+  eq unify(C,C,S) = S .
+  eq unify(V,T1,(V -> T2) ; S) = unify(T1,T2,(V -> T2) ; S) .
+ ceq unify(T1,V,(V -> T2) ; S) = unify(T1,T2,(V -> T2) ; S) if not T1 :: Variable .
+ ceq unify(V,T,S) = (V -> T) ; S if not checkVar(V,S) .
+ ceq unify(NVT,V,S) = (V -> NVT) ; S if not checkVar(V,S) .
+  eq unify(F[NeTL1],F[NeTL2],S) = unify(NeTL1,NeTL2,S) .
+  eq unify((T1,NeTL1),(T2,NeTL2),S)
+   = if unify(T1,T2,S) =/= fail then unify(NeTL1,NeTL2,unify(T1,T2,S)) else fail fi .
+  eq unify(T1,T2,S)
+   = fail [owise] .
+
+  op rename : Clause Nat -> Clause .
+  eq rename(P :- PL,N) = rename(P,N) :- rename(PL,N) .
+
+  op rename : PredicateList Nat -> PredicateList .
+  eq rename((nil).PredicateList,N) = nil .
+  eq rename((F(NeTL),PL),N) = F(rename(NeTL,N)),rename(PL,N) .
+  eq rename((OPL,PL),N) = OPL,rename(PL,N) [owise] .
+
+  op rename : NeTermList Nat -> NeTermList .
+  eq rename(C,N) = C .
+  eq rename(x{N1},N2) = x{N1 + N2} .
+  eq rename(F[NeTL],N) = F[rename(NeTL,N)] .
+  eq rename((T,NeTL),N) = rename(T,N),rename(NeTL,N) .
+
+  op last : Clause -> Nat .
+  eq last(P :- PL) = max(last(P),last(PL)) .
+
+  op last : PredicateList -> Nat .
+  eq last((nil).PredicateList) = 0 .
+  eq last((F(NeTL),PL)) = max(last(NeTL),last(PL)) .
+  eq last((OPL,PL)) = last(PL) [owise] .
+
+  op last : NeTermList -> Nat .
+  eq last(C) = 0 .
+  eq last(x{N}) = N .
+  eq last(F[NeTL]) = last(NeTL) .
+  eq last((T,NeTL)) = max(last(T),last(NeTL)) .
+
+  op value : Variable Substitution ~> Term .
+  eq value(V, (V -> T) ; S) = T .
+endfm
+
+mod LP-SEMANTICS is
+  protecting LP-UNIFICATION .
+
+  sort Configuration .
+
+  vars N N1 N2 : Nat .
+  vars P1 P2 P3 : Predicate .
+  var PL1 PL2 PL3 : PredicateList .
+  var NePL : NePredicateList .
+  vars S1 S2 : Substitution .
+  vars Pr Pr1 Pr2 : Program .
+  var Q : Qid .
+  var V : Variable .
+  var NeTL : NeTermList .
+
+  op <_|_> : PredicateList Program -> Configuration [ctor] .
+  eq < PL1 | Pr >
+   = < last(PL1) | PL1 $ empty | Pr > .
+
+  op <_|_$_|_> : Nat PredicateList Substitution Program -> Configuration [ctor] .
+
+ crl [clause] : < N1 | P1, PL1 $ S1 | Pr1 ; P2 :- PL2 ; Pr2 >
+  => < N2 | PL3, PL1 $ S2 | Pr1 ; P2 :- PL2 ; Pr2 >
+  if P3 :- PL3 := rename(P2 :- PL2,N1)
+  /\ S2 := unify(P1,P3,S1)
+  /\ N2 := max(N1,last(P3 :- PL3)) .
+
+endm
+
+mod LP-SEMANTICS+CALL is
+  extending LP-SEMANTICS .
+
+  var N : Nat .
+  var Q : Qid .
+  var NeTL : NeTermList .
+  var PL : PredicateList .
+  var S : Substitution .
+  var Pr : Program .
+  var V : Variable .
+
+  *** The Prolog call/1 meta-predicate
+  *** The call argument term is transformed equationally into a predicate
+  *** in the head of the predicate list
+  eq [call] : < N | 'call(Q[NeTL]), PL $ S | Pr >
+   = < N | Q(NeTL), PL $ S | Pr > .
+
+ ceq [call] : < N | 'call(V), PL $ S | Pr >
+   = < N | Q(NeTL), PL $ S | Pr > if Q[NeTL] := value(V, S) .
+endm
+
+mod LP-EXTRA is
+  protecting LP-SEMANTICS .
+
+  op isSolution : Configuration -> Bool .
+
+  var N : Nat .
+  var S : Substitution .
+  var Pr : Program .
+  var Conf : Configuration .
+
+  eq isSolution(< N | nil $ S | Pr >) = true .
+  eq isSolution(Conf) = false [owise] .
+
+endm
+
+mod LP-EXTRA+NEG is
+  extending LP-EXTRA .
+
+  var N : Nat .
+  var Q : Qid .
+  var NeTL : NeTermList .
+  var PL : PredicateList .
+  var S : Substitution .
+  var Pr : Program .
+  var Conf : Configuration .
+
+  *** With this rule, negation as failure can be implemented using strategies
+  crl [negation] : < N | '\+(Q[NeTL]), PL $ S | Pr > => < N | PL $ S | Pr >
+    if < N | Q(NeTL) $ S | Pr > => Conf .
+
+endm
+
+mod LP-EXTRA+CUT is
+  extending LP-SYNTAX+CUT .
+  extending LP-SEMANTICS+CALL .
+  extending LP-EXTRA .
+
+  vars N1 N2 : Nat .
+  var CfPL : CfPredicateList .
+  var PL : PredicateList .
+  vars S1 S2 : Substitution .
+  var Pr : Program .
+
+  *** This rule is used to implement cuts using strategies
+  crl [cut] : < N1 | CfPL, !, PL $ S1 | Pr > => < N2 | PL $ S2 | Pr >
+    if < N1 | CfPL $ S1 | Pr > => < N2 | nil $ S2 | Pr > .
+
+endm
+
+smod PROLOG is
+  protecting LP-EXTRA .
+
+  *** A strategy that supports neither negation nor cuts
+  strat solve-simple @ Configuration .
+
+  var Conf : Configuration .
+
+  sd solve-simple := match Conf s.t. isSolution(Conf) ? idle : (
+    *** Uses a clause in the first objective.
+    clause ;
+    *** Continues recursively
+    solve-simple) .
+
+endsm
+
+smod PROLOG+NEG is
+  protecting LP-EXTRA+NEG .
+
+  *** A strategy able to deal with negation but not with cuts
+  strat solve-neg @ Configuration .
+
+  var Conf : Configuration .
+
+  sd solve-neg := match Conf s.t. isSolution(Conf) ? idle : (
+    *** Uses a clause in the first objective, or if is a negation, tries to
+    *** prove that the argument predicate does not hold for any substitution
+    (clause | negation{not(solve-neg)}) ;
+    *** Continues recursively
+    solve-neg) .
+endsm
+
+smod PROLOG+CUT is
+  protecting LP-EXTRA+CUT .
+
+  var N : Nat .
+  var S : Substitution .
+  var P : Predicate .
+  var PL1 PL : PredicateList .
+  var PL2 CfPL : CfPredicateList .
+  var Pr Pr2 : Program .
+  var Conf : Configuration .
+
+  *** A strategy able to deal with cuts
+  *** (negation can be implemented using a cut and the call meta-predicate)
+  ***
+  *** Two strategies are defined: 'solve' tries to find all solutions while
+  *** 'solveOne' stops when it arrives to the first one. This solution
+  *** coincides with the first Prolog would have found.
+  strats solve solveOne @ Configuration .
+
+  sd solve := match Conf s.t. isSolution(Conf) or-else (
+    *** If the objective list does not contain a cut,
+    *** it tries to unify the head with the program clauses as usual
+    matchrew Conf s.t. < N | CfPL $ S | Pr > := Conf by Conf using clauseWalk(Pr)
+    *** At the presence of a cut, it tries to find a single solution for the
+    *** objectives to its left and then it continues with the rest as usual
+    | matchrew Conf s.t. < N | CfPL, !, PL $ S | Pr > := Conf by Conf using (cut{solveOne} ; solve)
+  ) .
+
+  *** The same as the previous but calling 'clauseWalkOne' and 'solveOne' instead
+  sd solveOne := match Conf s.t. isSolution(Conf) or-else (
+    matchrew Conf s.t. < N | CfPL $ S | Pr > := Conf by Conf using clauseWalkOne(Pr)
+    | matchrew Conf s.t. < N | CfPL, !, PL $ S | Pr > := Conf by Conf using (cut{solveOne} ; solveOne)
+  ) .
+
+  *** These strategies visit all program clauses in order until they find
+  *** one whose head can be unified with the head of the objective list.
+  *** Then they continue with 'solve' recursively.
+  ***
+  *** Clauses with a cut are treated differently to ensure the inter-clauses
+  *** effect of the cut.
+  strats clauseWalk clauseWalkOne : Program @ Configuration .
+
+  sd clauseWalk(nil) := fail .
+  sd clauseWalk(P :- PL2 ; Pr) := (clause[Pr2 <- Pr] ; solve) | clauseWalk(Pr) .
+  sd clauseWalk(P :- CfPL, !, PL ; Pr) := (clause[Pr2 <- Pr] ; cut{solveOne}) ? solve : clauseWalk(Pr) .
+
+  *** The same as 'clauseWalk' but the next clause is only tried
+  *** if the previous does not succeeded (using or-else instead of |).
+  sd clauseWalkOne(nil) := fail .
+  sd clauseWalkOne(P :- CfPL ; Pr) := (clause[Pr2 <- Pr] ; solveOne) or-else clauseWalkOne(Pr) .
+  sd clauseWalkOne(P :- CfPL, !, PL ; Pr) := (clause[Pr2 <- Pr] ; cut{solveOne}) ? solveOne : clauseWalkOne(Pr) .
+
+endsm
+
+sth INTERPRETER is
+  protecting LP-SEMANTICS .
+
+  strat solve @ Configuration .
+endsth
+
+view Simple from INTERPRETER to PROLOG is
+  strat solve to solve-simple .
+endv
+
+view Negation from INTERPRETER to PROLOG+NEG is
+  strat solve to solve-neg .
+endv
+
+view Cut from INTERPRETER to PROLOG+CUT is
+  strat solve to solve .
+endv
+
+mod PL-SIMPLIFIER-BASE is
+  extending LP-SEMANTICS .
+
+  var N : Nat .
+  var S S1 S2 : Substitution .
+  var P : Predicate .
+  var PL : PredicateList .
+  var Pr : Program .
+  var V : Variable .
+  var VS VS' : VarSet .
+  var Q : Qid .
+  var NeTL : NeTermList .
+  var T : Term .
+
+  sort VarSet .
+  subsort Variable < VarSet .
+
+  op empty : -> VarSet [ctor] .
+  op _;_ : VarSet VarSet -> VarSet [ctor assoc comm id: empty] .
+
+  *** Variables that occur in a the head of the objective list
+  op occurs : Configuration -> VarSet .
+  op occurs : NeTermList -> VarSet .
+
+  eq occurs(< N | Q(NeTL), PL $ S | Pr >) = occurs(NeTL) .
+  eq occurs(< N | nil $ S | Pr >) = empty .
+
+  eq occurs(V) = V .
+  eq occurs(Q[NeTL]) = occurs(NeTL) .
+  eq occurs(T) = empty [owise] .
+  eq occurs(T, NeTL) = occurs(T) ; occurs(NeTL) .
+
+  *** Subset of variables
+  op subset : VarSet VarSet -> Bool .
+
+  eq subset(empty, VS) = true .
+  eq subset(V ; VS, V ; VS') = subset(VS, VS') .
+  eq subset(V ; VS, VS') = false [owise] .
+
+  *** Size of a substitution
+  op size : Substitution -> Nat .
+
+  eq size(empty) = 0 .
+  eq size(V -> T ; S) = s(size(S)) .
+
+  *** Apply a substitution to a term
+  op subst : Term Substitution -> Term .
+  op subst : NeTermList Substitution -> Term .
+
+  eq subst(V, V -> T ; S) = T .
+  eq subst(Q[NeTL], S) = Q[subst(NeTL, S)] .
+  eq subst(T, S) = T [owise] .
+
+  eq subst((T, NeTL), S) = subst(T, S), subst(NeTL, S) .
+
+  *** Simplifies a substitution
+  op simplify : Substitution VarSet -> Substitution .
+  op simplify : Substitution Substitution Nat VarSet -> Substitution .
+
+  eq simplify(S, VS) = simplify(restrict(S, VS), S, size(S), VS) .
+
+  ceq simplify(V -> T ; S1, S2, s(N), VS) = simplify(V -> subst(T, S2) ; S1, S2, N, VS)
+    if subst(T, S2) =/= T .
+  eq simplify(S1, S2, N, VS) = S1 [owise] .
+
+  *** Restrict a substitution to a set of variables
+  op restrict : Substitution VarSet -> Substitution .
+
+  eq restrict(empty, VS) = empty .
+  eq restrict(V -> T ; S, V ; VS) = V -> T ; restrict(S, V ; VS) .
+  eq restrict(V -> T ; S, VS) = restrict(S, VS) [owise] .
+
+  op solution : Substitution -> Configuration [ctor format (g! o)] .
+
+  rl [solution] : < N | nil $ S | Pr > => solution(simplify(S, VS)) [nonexec] .
+endm
+
+smod PL-SIMPLIFIER{X :: INTERPRETER} is
+  protecting PL-SIMPLIFIER-BASE .
+
+  strat wsolve @ Configuration .
+
+  var Conf : Configuration .
+  var VS : VarSet .
+
+  sd wsolve := matchrew Conf s.t. VS := occurs(Conf)
+      by Conf using (solve ; solution[VS <- VS]) .
+endsm
+
+mod EXAMPLES is
+  extending LP-EXTRA+NEG .
+  extending LP-EXTRA+CUT .
+
+  op negation-bycut : -> Program .
+
+  eq negation-bycut =
+    '\+(x{1}) :- 'call(x{1}), !, 'fail(x{1}) ;
+    '\+(x{1}) :- nil .
+
+  ops socrate socrate2 socrate3 sets family kinship : -> Program .
+
+  *** Socrate syllogism, to be used with the negation-aware strategy
+  eq socrate = 'human('socrate) :- nil ;
+    'mortal(x{1}) :- 'human(x{1}) ;
+    'inmortal(x{1}) :- '\+('mortal[x{1}]) .
+
+  *** An ad-hoc cut is used instead of negation
+  eq socrate2 = 'human('socrate) :- nil ;
+    'mortal(x{1}) :- 'human(x{1}) ;
+    'inmortal(x{1}) :- 'mortal(x{1}), !, 'fail(x{1}) ;
+    'inmortal(x{1}) :- nil .
+
+  *** Negation is defined by means of a cut using call
+  *** (fail is any predicate that fails)
+  eq socrate3 = 'human('socrate) :- nil ;
+    'mortal(x{1}) :- 'human(x{1}) ;
+    'inmortal(x{1}) :- '\+('mortal[x{1}]) ;
+     negation-bycut .
+
+  *** Set disjointness using negation
+  eq sets = 'member(x{1}, 'cons[x{1}, x{2}]) :- nil ;
+    'member(x{1}, 'cons[x{2}, x{3}]) :- 'member(x{1}, x{3}) ;
+    'intersect('cons[x{1}, x{2}], x{3}) :- 'member(x{1}, x{3}) ;
+    'intersect('cons[x{1}, x{2}], x{3}) :- 'intersect(x{2}, x{3}) ;
+    'disjoint(x{1}, x{2}) :- '\+('intersect[x{1}, x{2}]) .
+
+  *** Family example
+  eq family =
+    'mother('jane, 'mike) :- nil ;
+    'mother('sally, 'john) :- nil ;
+    'father('tom, 'sally) :- nil ;
+    'father('tom, 'erica) :- nil ;
+    'father('mike, 'john) :- nil ;
+    kinship .
+
+   eq kinship =
+     'sibling(x{1},x{2}) :- 'parent(x{3},x{1}), 'parent(x{3}, x{2}) ;
+     'parent(x{1}, x{2}) :- 'father(x{1}, x{2}) ;
+     'parent(x{1}, x{2}) :- 'mother(x{1}, x{2}) ;
+     'relative(x{1},x{2}) :- 'parent(x{1},x{3}),'parent(x{3},x{2}) ;
+     'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),'relative(x{3},x{2}) .
+endm
+
+smod PROLOG-MAIN is
+  including PL-SIMPLIFIER{Simple} * (strat wsolve to wsolve-simple) .
+  including PL-SIMPLIFIER{Negation} * (strat wsolve to wsolve-neg) .
+  including PL-SIMPLIFIER{Cut} .
+  including EXAMPLES .
+endsm
+
+***(
+Maude> search < 'relative('jane, 'john) | family > =>* < N:Nat | nil $ S:Substitution | Pr:Program > .
+search in EXAMPLES : < 'relative('jane,'john) | family > =>* < N:Nat | nil $
+    S:Substitution | Pr:Program > .
+
+Solution 1 (state 11)
+states: 12  rewrites: 1904 in 0ms cpu (2ms real) (~ rewrites/second)
+N:Nat --> 7
+S:Substitution --> x{1} -> 'jane ; x{2} -> 'john ; x{3} -> x{5} ; x{4} ->
+    'jane ; x{5} -> 'mike ; x{6} -> x{5} ; x{7} -> 'john
+Pr:Program --> 'mother('jane,'mike) :- nil ; 'mother('sally,'john) :- nil ;
+    'father('tom,'sally) :- nil ; 'father('tom,'erica) :- nil ; 'father(
+    'mike,'john) :- nil ; 'sibling(x{1},x{2}) :- 'parent(x{3},x{1}),'parent(
+    x{3},x{2}) ; 'parent(x{1},x{2}) :- 'father(x{1},x{2}) ; 'parent(x{1},x{
+    2}) :- 'mother(x{1},x{2}) ; 'relative(x{1},x{2}) :- 'parent(x{1},x{3}),
+    'parent(x{3},x{2}) ; 'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),
+    'relative(x{3},x{2})
+
+No more solutions.
+states: 12  rewrites: 2188 in 3ms cpu (3ms real) (662227 rewrites/second)
+
+Maude> search < 'parent('tom, x{1}) | family > =>* < N:Nat | nil $ S:Substitution | Pr:Program > .
+search in EXAMPLES : < 'parent('tom,x{1}) | family > =>* < N:Nat | nil $
+    S:Substitution | Pr:Program > .
+
+Solution 1 (state 3)
+states: 4  rewrites: 278 in 0ms cpu (0ms real) (~ rewrites/second)
+N:Nat --> 3
+S:Substitution --> x{1} -> x{3} ; x{2} -> 'tom ; x{3} -> 'sally
+Pr:Program --> 'mother('jane,'mike) :- nil ; 'mother('sally,'john) :- nil ;
+    'father('tom,'sally) :- nil ; 'father('tom,'erica) :- nil ; 'father(
+    'mike,'john) :- nil ; 'sibling(x{1},x{2}) :- 'parent(x{3},x{1}),'parent(
+    x{3},x{2}) ; 'parent(x{1},x{2}) :- 'father(x{1},x{2}) ; 'parent(x{1},x{
+    2}) :- 'mother(x{1},x{2}) ; 'relative(x{1},x{2}) :- 'parent(x{1},x{3}),
+    'parent(x{3},x{2}) ; 'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),
+    'relative(x{3},x{2})
+
+Solution 2 (state 4)
+states: 5  rewrites: 309 in 0ms cpu (1ms real) (~ rewrites/second)
+N:Nat --> 3
+S:Substitution --> x{1} -> x{3} ; x{2} -> 'tom ; x{3} -> 'erica
+Pr:Program --> 'mother('jane,'mike) :- nil ; 'mother('sally,'john) :- nil ;
+    'father('tom,'sally) :- nil ; 'father('tom,'erica) :- nil ; 'father(
+    'mike,'john) :- nil ; 'sibling(x{1},x{2}) :- 'parent(x{3},x{1}),'parent(
+    x{3},x{2}) ; 'parent(x{1},x{2}) :- 'father(x{1},x{2}) ; 'parent(x{1},x{
+    2}) :- 'mother(x{1},x{2}) ; 'relative(x{1},x{2}) :- 'parent(x{1},x{3}),
+    'parent(x{3},x{2}) ; 'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),
+    'relative(x{3},x{2})
+
+No more solutions.
+states: 5  rewrites: 600 in 0ms cpu (2ms real) (~ rewrites/second)
+
+Maude> rew < 'relative('jane, 'john) | family > .
+rewrite in EXAMPLES : < 'relative('jane,'john) | family > .
+rewrites: 475 in 0ms cpu (0ms real) (~ rewrites/second)
+result Configuration: < 5 | 'father(x{4},x{5}),'parent(x{3},x{2}) $ x{1} ->
+    'jane ; x{2} -> 'john ; x{3} -> x{5} ; x{4} -> 'jane | 'mother('jane,
+    'mike) :- nil ; 'mother('sally,'john) :- nil ; 'father('tom,'sally) :-
+    nil ; 'father('tom,'erica) :- nil ; 'father('mike,'john) :- nil ;
+    'sibling(x{1},x{2}) :- 'parent(x{3},x{1}),'parent(x{3},x{2}) ; 'parent(x{
+    1},x{2}) :- 'father(x{1},x{2}) ; 'parent(x{1},x{2}) :- 'mother(x{1},x{2})
+    ; 'relative(x{1},x{2}) :- 'parent(x{1},x{3}),'parent(x{3},x{2}) ;
+    'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),'relative(x{3},x{2}) >
+
+Maude> srew < 'parent('tom, x{1}) | family > using solve-simple .
+srewrite in PROLOG-MAIN : < 'parent('tom,x{1}) | family > using solve-simple .
+
+Solution 1
+rewrites: 605 in 0ms cpu (1ms real) (~ rewrites/second)
+result Configuration: < 3 | nil $ x{1} -> x{3} ; x{2} -> 'tom ; x{3} ->
+    'sally | 'mother('jane,'mike) :- nil ; 'mother('sally,'john) :- nil ;
+    'father('tom,'sally) :- nil ; 'father('tom,'erica) :- nil ; 'father(
+    'mike,'john) :- nil ; 'sibling(x{1},x{2}) :- 'parent(x{3},x{1}),'parent(
+    x{3},x{2}) ; 'parent(x{1},x{2}) :- 'father(x{1},x{2}) ; 'parent(x{1},x{
+    2}) :- 'mother(x{1},x{2}) ; 'relative(x{1},x{2}) :- 'parent(x{1},x{3}),
+    'parent(x{3},x{2}) ; 'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),
+    'relative(x{3},x{2}) >
+
+Solution 2
+rewrites: 605 in 3ms cpu (1ms real) (184058 rewrites/second)
+result Configuration: < 3 | nil $ x{1} -> x{3} ; x{2} -> 'tom ; x{3} ->
+    'erica | 'mother('jane,'mike) :- nil ; 'mother('sally,'john) :- nil ;
+    'father('tom,'sally) :- nil ; 'father('tom,'erica) :- nil ; 'father(
+    'mike,'john) :- nil ; 'sibling(x{1},x{2}) :- 'parent(x{3},x{1}),'parent(
+    x{3},x{2}) ; 'parent(x{1},x{2}) :- 'father(x{1},x{2}) ; 'parent(x{1},x{
+    2}) :- 'mother(x{1},x{2}) ; 'relative(x{1},x{2}) :- 'parent(x{1},x{3}),
+    'parent(x{3},x{2}) ; 'relative(x{1},x{2}) :- 'sibling(x{1},x{3}),
+    'relative(x{3},x{2}) >
+
+No more solutions.
+rewrites: 605 in 3ms cpu (2ms real) (184058 rewrites/second)
+
+Maude> dsrew < 'p(x{1}) | 'p(x{1}) :- 'q(x{1}) ; 'p('a) :- nil ; 'q('b) :- nil >
+          using wsolve-simple .
+dsrewrite in PROLOG-MAIN : < 'p(x{1}) | 'p(x{1}) :- 'q(x{1}) ; 'p('a) :- nil
+    ; 'q('b) :- nil > using wsolve-simple .
+
+Solution 1
+rewrites: 94 in 0ms cpu (0ms real) (~ rewrites/second)
+result Configuration: solution(x{1} -> 'b)
+
+Solution 2
+rewrites: 125 in 3ms cpu (0ms real) (37492 rewrites/second)
+result Configuration: solution(x{1} -> 'a)
+
+No more solutions.
+rewrites: 133 in 3ms cpu (1ms real) (39892 rewrites/second)
+
+Maude> srew < 'p(x{1}) | 'p(x{1}) :- 'q(x{1}) ; 'p('a) :- nil ; 'q('b) :- nil >
+          using wsolve-simple .
+srewrite in PROLOG-MAIN : < 'p(x{1}) | 'p(x{1}) :- 'q(x{1}) ; 'p('a) :- nil ;
+    'q('b) :- nil > using wsolve-simple .
+
+Solution 1
+rewrites: 118 in 0ms cpu (0ms real) (~ rewrites/second)
+result Configuration: solution(x{1} -> 'a)
+
+Solution 2
+rewrites: 133 in 0ms cpu (0ms real) (~ rewrites/second)
+result Configuration: solution(x{1} -> 'b)
+
+No more solutions.
+rewrites: 133 in 0ms cpu (0ms real) (~ rewrites/second)
+
+Maude> dsrew < 'p(x{1}) | 'p(x{1}) :- 'p(x{1}) ; 'p('a) :- nil >
+          using wsolve-simple .
+dsrewrite in PROLOG-MAIN : < 'p(x{1}) | 'p(x{1}) :- 'p(x{1}) ; 'p('a) :- nil
+    > using wsolve-simple .
+
+^CDebug(1)> abort .
+
+Maude> srew < 'p(x{1}) | 'p(x{1}) :- 'p(x{1}) ; 'p('a) :- nil >
+          using wsolve-simple .
+srewrite in PROLOG-MAIN : < 'p(x{1}) | 'p(x{1}) :- 'p(x{1}) ; 'p('a) :- nil >
+    using wsolve-simple .
+
+Solution 1
+rewrites: 119 in 16ms cpu (15ms real) (7280 rewrites/second)
+result Configuration: solution(x{1} -> 'a)
+^CDebug(1)> abort .
+
+Maude> srew < 'no-children('erica) | family ;
+    'no-children(x{1}) :- '\+('parent[x{1}, x{2}]) > using wsolve-neg .
+srewrite in PROLOG-MAIN : < 'no-children('erica) | family ; 'no-children(x{
+    1}) :- '\+('parent[x{1},x{2}]) > using wsolve-neg .
+
+Solution 1
+rewrites: 999 in 3ms cpu (2ms real) (299640 rewrites/second)
+result Configuration: solution(empty)
+
+No more solutions.
+rewrites: 999 in 3ms cpu (2ms real) (299640 rewrites/second)
+
+Maude> srew < 'no-children('mike) | family ;
+> 'no-children(x{1}) :- '\+('parent[x{1}, x{2}]) > using solve-neg .
+srewrite in PROLOG-MAIN : < 'no-children('mike) | family ; 'no-children(x{1})
+    :- '\+('parent[x{1},x{2}]) > using solve-neg .
+
+No solution.
+rewrites: 1005 in 0ms cpu (1ms real) (~ rewrites/second)
+
+Maude> srew < 'no-children('erica) | family ;
+               'no-children(x{1}) :- 'parent(x{1}, x{2}), !, 'fail(x{1}) ;
+               'no-children(x{1}) :- nil > using wsolve .
+srewrite in PROLOG-MAIN : < 'no-children('erica) | family ; 'no-children(x{
+    1}) :- 'parent(x{1},x{2}),!,'fail(x{1}) ; 'no-children(x{1}) :- nil >
+    using wsolve .
+
+Solution 1
+rewrites: 888 in 3ms cpu (4ms real) (266586 rewrites/second)
+result Configuration: solution(empty)
+
+No more solutions.
+rewrites: 888 in 3ms cpu (4ms real) (266586 rewrites/second)
+
+Maude> srew < 'no-children('erica) | family ; negation-bycut ;
+               'no-children(x{1}) :- '\+('parent[x{1}, x{2}]) > using wsolve .
+srewrite in PROLOG-MAIN : < 'no-children('erica) | family ; negation-bycut ;
+    'no-children(x{1}) :- '\+('parent[x{1},x{2}]) > using wsolve .
+
+Solution 1
+rewrites: 1162 in 6ms cpu (4ms real) (180071 rewrites/second)
+result Configuration: solution(empty)
+
+No more solutions.
+rewrites: 1162 in 6ms cpu (4ms real) (180071 rewrites/second)
+
+Maude> srew < 'no-children('mike) | family ; negation-bycut ;
+               'no-children(x{1}) :- '\+('parent[x{1}, x{2}]) > using wsolve .
+srewrite in PROLOG-MAIN : < 'no-children('mike) | family ; negation-bycut ;
+    'no-children(x{1}) :- '\+('parent[x{1},x{2}]) > using wsolve .
+
+No solution.
+rewrites: 836 in 3ms cpu (3ms real) (253103 rewrites/second)
+)

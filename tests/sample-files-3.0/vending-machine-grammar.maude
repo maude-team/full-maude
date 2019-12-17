@@ -1,0 +1,16 @@
+  ---- from the book All About Maude
+  ---- from the Maude Manual
+  ---- by the Maude team
+
+  load vending-machine-signature.maude
+
+fmod VENDING-MACHINE-GRAMMAR is
+  protecting VENDING-MACHINE-SIGNATURE .
+  protecting NAT .
+  sort Action .
+  op insert $ : -> Action .
+  op insert q : -> Action .
+  op show basket : -> Action .
+  op show credit : -> Action .
+  op buy__(s) : Nat Item -> Action .
+endfm

@@ -1,4 +1,4 @@
-(select UNIT .)
+(select FM-UNIT .)
 
 (load (omod 'SAVING-ACCOUNT is
        including 'BOOL .
@@ -13,8 +13,8 @@
        class 'SavingAccount | attr 'rate : 'Float .
        subclass 'SavingAccount < 'Account .
        none
-       msg 'credit : 'Oid 'Int -> 'Msg . 
-       msg 'debit : 'Oid 'Int -> 'Msg . 
+       msg 'credit : 'Oid 'Int -> 'Msg .
+       msg 'debit : 'Oid 'Int -> 'Msg .
        msg 'from_to_transfer_ : 'Oid 'Oid 'Int -> 'Msg .
        none
        none

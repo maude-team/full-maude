@@ -1,8 +1,7 @@
 set trace off .
 set trace select on .
-trace select procRed
-             solveBubblesRed
-             solveBubblesRed2
+trace select procViewAux
+             parseDecl
              .
 set print conceal on .
 print conceal fmod_is_sorts_.____endfm
@@ -10,3 +9,4 @@ print conceal fmod_is_sorts_.____endfm
               smod_is_sorts_._______endsm
               db
               .
+---- parseDecl('strat_to_.['token[''expand.Qid],

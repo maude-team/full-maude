@@ -1,0 +1,57 @@
+ mod VARIANT-VENDING-MACHINE is 
+   sorts Coin Item Marking Money State . 
+   subsort Coin < Money .
+   op empty : -> Money .
+   op __ : Money Money -> Money [assoc comm id: empty] . 
+   subsort Money Item < Marking . 
+   op __ : Marking Marking -> Marking [assoc comm id: empty] . 
+   op <_> : Marking -> State .
+   ops $ q : -> Coin . 
+   ops a c : -> Item . 
+   var M : Marking .
+   rl [buy-c] : < M $ > => < M c > . 
+   rl [buy-a] : < M $ > => < M a q > . 
+   eq [change] : q q q q M = $ M [variant] . 
+ endm
+
+get irredundant variants in VARIANT-VENDING-MACHINE : X:Marking Y:Marking .
+get irredundant variants in VARIANT-VENDING-MACHINE : < $ q q X:Marking > .
+get irredundant variants in VARIANT-VENDING-MACHINE : < $ q q X:Marking >
+such that q q X:Marking , q X:Marking , X:Marking irreducible .
+get irredundant variants in VARIANT-VENDING-MACHINE : < $ q q X:Marking Y:Marking > .
+
+reduce in META-LEVEL : 
+      metaGetVariant(upModule('VARIANT-VENDING-MACHINE, true), 
+      '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking,'Y:Marking]], empty, 0, 0) .
+reduce in META-LEVEL : 
+      metaGetVariant(upModule('VARIANT-VENDING-MACHINE, true), 
+      '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking,'Y:Marking]], empty, 0, 1) .
+reduce in META-LEVEL : 
+      metaGetVariant(upModule('VARIANT-VENDING-MACHINE, true), 
+      '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking,'Y:Marking]], empty, 0, 2) .
+reduce in META-LEVEL : 
+      metaGetVariant(upModule('VARIANT-VENDING-MACHINE, true), 
+      '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking,'Y:Marking]], empty, 0, 3) .
+reduce in META-LEVEL : 
+      metaGetVariant(upModule('VARIANT-VENDING-MACHINE, true), 
+      '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking,'Y:Marking]], empty, 0, 4) .
+reduce in META-LEVEL : 
+      metaGetVariant(upModule('VARIANT-VENDING-MACHINE, true), 
+      '<_>['__['$.Coin,'q.Coin,'q.Coin,'X:Marking,'Y:Marking]], empty, 0, 5) .
+
+variant unify in VARIANT-VENDING-MACHINE : 
+           < q q X:Marking > =? < $ Y:Marking >  .
+
+variant unify in VARIANT-VENDING-MACHINE : 
+           < q q X:Marking > =? < $ Y:Marking >  
+such that q q X:Marking , q X:Marking , X:Marking irreducible .
+
+variant unify in VARIANT-VENDING-MACHINE : 
+           < q q X:Marking > =? < $ Y:Marking > /\ 
+           < q q Z:Marking > =? < Y:Marking >  .
+
+reduce in META-LEVEL : 
+     metaVariantUnify(upModule('VARIANT-VENDING-MACHINE, true), 
+        '<_>['__['q.Coin,'q.Coin,'X:Marking]] =? 
+          '<_>['__['$.Coin,'Y:Marking]], 
+        empty, '@, 0) .

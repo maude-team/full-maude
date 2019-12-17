@@ -1,0 +1,45 @@
+load file
+
+mod CALCULATOR is
+  inc STD-STREAM .
+  pr LEXICAL .
+  pr META-LEVEL .
+
+  op myClass : -> Cid .
+  op myObj : -> Oid .
+  op run : -> Configuration .
+
+  vars O O2 : Oid .
+  var  A : AttributeSet .
+  vars S T : String .
+
+  op compute : String -> String .
+  eq compute(S) = compute2(metaParse(['CONVERSION], tokenize(S), anyType)) .
+
+  op compute2 : ResultPair? -> String .
+  eq compute2({T:Term, Q:Qid}) = compute3(metaReduce(['CONVERSION], T:Term)) .
+  eq compute2(noParse(N:Nat)) = printTokens('\r) + "syntax error" + printTokens('\o) .
+
+  op compute3 : ResultPair? -> String .
+  eq compute3({T:Term, Q:Qid}) = printTokens(metaPrettyPrint(['CONVERSION], T:Term)) .
+
+  eq run
+   = <>
+     < myObj : myClass | none >
+     write(stdout, myObj, "\nCalculator\n------------\n") .
+  rl < O : myClass | A >
+     wrote(O, O2)
+  => < O : myClass | A >
+     getLine(stdin, O, "Expression> ") .
+  rl < O : myClass | A >
+     gotLine(O, O2, T)
+  => < O : myClass | A >
+     if T == ""
+     then none
+     else write(stdout, O, "Answer: " + compute(T) + "\n")
+     fi .
+endm
+
+erew run .
+---- Expression> 3/6 + 12/32
+---- Answer: 7/8

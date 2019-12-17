@@ -1,0 +1,25 @@
+set include BOOL off .
+
+fmod M{X :: TRIV} is
+  sort Foo .
+  op f : Foo -> Foo .
+endfm
+
+fmod M2{Y :: TRIV} is
+  inc M{Y} .
+endfm
+
+fmod BAR is
+  sort Baz .
+  op f : Baz -> Baz .
+endfm
+
+view V from TRIV to BAR is
+  sort Elt to Baz .
+endv
+
+fmod BUG is
+  inc (M2 * (op f to g)){V} .
+endfm
+
+show all .

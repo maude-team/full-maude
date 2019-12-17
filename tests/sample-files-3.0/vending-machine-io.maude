@@ -1,0 +1,145 @@
+---- from the book All About Maude
+---- from the Maude Manual
+---- by the Maude team
+
+load vending-machine-grammar.maude
+load buying-strats.maude
+load file.maude
+
+mod VENDING-MACHINE-IO is
+  including STD-STREAM .
+  including VENDING-MACHINE-GRAMMAR .
+  protecting BUYING-STRATS .
+  protecting CONVERSION .
+  protecting LEXICAL .
+
+  sort VM .
+  subsort VM < Cid .
+  op VM : -> VM .
+  op action :_ : Action -> Attribute .
+  op marking :_ : Marking -> Attribute .
+  op idle : -> Action .
+  op vm : -> Oid .
+
+  vars O O' : Oid .
+  var  Str : String .
+  var  Atts : AttributeSet .
+  var  X : VM .
+
+  op VM-GRAMMAR : -> Module .
+  eq VM-GRAMMAR = upModule('VENDING-MACHINE-GRAMMAR, false) .
+
+  op vending machine : -> Configuration .
+  eq vending machine
+   = <>
+     < vm : VM | marking : null, action : idle >
+     write(stdout, vm, "\n\t Vending machine\n") .
+
+  rl < O : X | Atts >
+     wrote(O, O')
+  => < O : X | Atts >
+     getLine(stdin, O, "> ") .
+
+  rl < O : X | action : idle, Atts >
+     gotLine(O, O', Str)
+  => if Str == "quit"
+     then write(stdout, O, "goodbye\n")
+     else if metaParse(VM-GRAMMAR, tokenize(Str), 'Action) :: ResultPair
+          then < O : X |
+                 action : downTerm(
+                            getTerm(
+                              metaParse(VM-GRAMMAR, tokenize(Str), 'Action)),
+                            idle),
+                 Atts >
+          else < O : X | action : idle, Atts >
+               write(stdout, O, "Invalid input\n")
+          fi
+     fi .
+
+  var  A : Action .
+  var  I : Item .
+  var  C : Coin .
+  var  M : Marking .
+  vars QIL QIL' QIL'' : QidList .
+  var  N : Nat .
+
+  op showBasket : Marking -> QidList .
+  eq showBasket(I M)
+     = metaPrettyPrint(upModule('VENDING-MACHINE-SIGNATURE, false),
+         upTerm(I))
+       showBasket(M) .
+  eq showBasket(C M) = showBasket(M) .
+  eq showBasket(null) = nil .
+
+  op showCredit : Marking -> QidList .
+  eq showCredit(C M)
+     = metaPrettyPrint(upModule('VENDING-MACHINE-SIGNATURE, false),
+         upTerm(C))
+       showCredit(M) .
+  eq showCredit(I M) = showCredit(M) .
+  eq showCredit(null) = nil .
+
+  rl < O : X | action : show basket, marking : M, Atts >
+  => < O : X | action : idle, marking : M, Atts >
+     write(stdout, O, "basket: " + printTokens(showBasket(M)) + "\n") .
+
+  rl < O : X | action : show credit, marking : M, Atts >
+  => < O : X | action : idle, marking : M, Atts >
+     write(stdout, O, "credit: " + printTokens(showCredit(M)) + "\n") .
+
+  rl < O : X | action : insert q, marking : M, Atts >
+  => < O : X | action : idle,
+        marking : downTerm(insertCoin('add-q, upTerm(M)), null), Atts >
+     write(stdout, O, "one quarter introduced\n") .
+
+  rl < O : X | action : insert $, marking : M, Atts >
+  => < O : X | action : idle,
+       marking : downTerm(insertCoin('add-$, upTerm(M)), null), Atts >
+     write(stdout, O, "one dollar introduced\n") .
+
+  rl < O : X | action : (buy N c (s)), marking : M, Atts >
+  => < O : X | action : idle,
+        marking : downTerm(onlyNitems(upTerm(M), 'buy-c, N), null), Atts >
+     write(stdout, O, string(N, 10) + " cakes bought\n") .
+
+  rl < O : X | action : (buy N a (s)), marking : M, Atts >
+  => < O : X | action : idle,
+       marking : downTerm(onlyNitems(upTerm(M), 'buy-a, N), null),Atts >
+    write(stdout, O, string(N, 10) + " apples bought\n") .
+endm
+
+---- erew vending machine .
+
+***(
+erewrite in VENDING-MACHINE-IO : vending machine .
+
+	 Vending machine
+> insert $
+one dollar introduced
+> show credit
+credit: $
+> insert $
+one dollar introduced
+> insert q
+one quarter introduced
+> buy 1 apple(s)
+Invalid input
+> buy 1 a(s)
+1 apples bought
+> show basket
+basket: a
+> show credit
+credit: $ q q
+> insert $
+one dollar introduced
+> buy 3 a(s)
+3 apples bought
+> show basket
+basket: a a a a
+> show credit
+credit: q
+> quit
+goodbye
+rewrites: 428 in 13ms cpu (83975ms real) (32552 rewrites/second)
+result Portal: <>
+)

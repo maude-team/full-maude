@@ -4,102 +4,162 @@ set show timing off .
 set show loop timing off .
 load trace.maude
 
-load sample-files-2.7/rew-seq-extended-rent-a-car-store.fm
-load sample-files-2.7/rew-seq-rent-a-car-store.fm
-load sample-files-2.7/check-rrobin.fm
-load sample-files-2.7/saving-account.fm
-load sample-files-2.7/generic-set-list.fm
-load sample-files-2.7/nat-plus.fm
-load sample-files-2.7/oo-stack.fm
-load sample-files-2.7/oo-stack2.fm
-load sample-files-2.7/path.fm
-load sample-files-2.7/person-record.fm
-load sample-files-2.7/pfun.fm
-load sample-files-2.7/polynomial.fm
-load sample-files-2.7/power-ex.fm
-load sample-files-2.7/set-max.fm
-load sample-files-2.7/only-book/8-puzzle.fm
-load sample-files-2.7/only-book/df-abstract-bakery-check.fm
+load sample-files-3.0/rew-seq-extended-rent-a-car-store.fm
+load sample-files-3.0/rew-seq-rent-a-car-store.fm
+load sample-files-3.0/check-rrobin.fm
+load sample-files-3.0/saving-account.fm
+load sample-files-3.0/generic-set-list.fm
+load sample-files-3.0/nat-plus.fm
+load sample-files-3.0/oo-stack.fm
+load sample-files-3.0/oo-stack2.fm
+load sample-files-3.0/path.fm
+load sample-files-3.0/person-record.fm
+load sample-files-3.0/pfun.fm
+load sample-files-3.0/polynomial.fm
+load sample-files-3.0/power-ex.fm
+load sample-files-3.0/set-max.fm
+load sample-files-3.0/only-book/8-puzzle.fm
+load sample-files-3.0/only-book/df-abstract-bakery-check.fm
   set show loop stats off .
   set show loop timing off .
-load sample-files-2.7/only-book/leftist-trees.fm
-load sample-files-2.7/only-book/oo-blocks-world.fm
-load sample-files-2.7/only-book/spreadsheet.fm
-load sample-files-2.7/only-book/spreedsheet-asynch.fm
+load sample-files-3.0/only-book/leftist-trees.fm
+load sample-files-3.0/only-book/oo-blocks-world.fm
+load sample-files-3.0/only-book/spreadsheet.fm
+load sample-files-3.0/only-book/spreedsheet-asynch.fm
+----load sample-files-3.0/narrowing-vending-machine.fm ---- PROBLEM
 
-load sample-files-2.7/narrowing-vending-machine.fm
 select FULL-MAUDE .
 loop init .
-load sample-files-2.7/last-append.fm
-load sample-files-2.7/leftid-unification-example.fm
-load sample-files-2.7/rightid-unification-example.fm
-load sample-files-2.7/id-unification-example.fm
-----)
+load sample-files-3.0/last-append.fm
+load sample-files-3.0/leftid-unification-example.fm
+load sample-files-3.0/rightid-unification-example.fm
+load sample-files-3.0/id-unification-example.fm
 
+(red in STRING : "pruebas/basic-nat-list.fm" .)
 load pruebas/basic-nat-list.fm
-eof
+(red in STRING : "pruebas/triple-list.fm" .)
 load pruebas/triple-list.fm
+(red in STRING : "pruebas/load-command.fm" .)
 load pruebas/load-command.fm
+(red in STRING : "pruebas/load-command-2.fm" .)
 load pruebas/load-command-2.fm
+(red in STRING : "pruebas/machine-int-test.fm" .)
 load pruebas/machine-int-test.fm
+(red in STRING : "pruebas/machine-search.fm" .)
 load pruebas/machine-search.fm
+(red in STRING : "pruebas/mb-label.fm" .)
 load pruebas/mb-label.fm
+(red in STRING : "pruebas/print-attr-ambiguous.fm" .)
 load pruebas/print-attr-ambiguous.fm
+(red in STRING : "pruebas/print-attribute-ex.fm" .)
 load pruebas/print-attribute-ex.fm
+(red in STRING : "pruebas/print-attribute-ex.fm" .)
+load pruebas/print-attribute-ex.fm
+(red in STRING : "pruebas/print-attr-nonambiguous.fm" .)
 load pruebas/print-attr-nonambiguous.fm
+(red in STRING : "pruebas/renombramiento-ops-parciales.fm" .)
 load pruebas/renombramiento-ops-parciales.fm
+(red in STRING : "pruebas/search-commands.fm" .)
 load pruebas/search-commands.fm
+(red in STRING : "pruebas/unification.fm" .)
 load pruebas/unification.fm
+(red in STRING : "pruebas/builtin-renaming.maude" .)
 load pruebas/builtin-renaming.maude
+(red in STRING : "pruebas/db.maude" .)
 load pruebas/db.maude
+(red in STRING : "pruebas/mb-test.maude" .)
 load pruebas/mb-test.maude
+(red in STRING : "pruebas/ocl.maude" .)
 load pruebas/ocl.maude
+(red in STRING : "pruebas/pita.fm" .)
 load pruebas/pita.fm
+(red in STRING : "pruebas/summation-core-maude-modules.fm" .)
 load pruebas/summation-core-maude-modules.fm
+(red in STRING : "pruebas/getVariants-my-nat.fm" .)
 load pruebas/getVariants-my-nat.fm
+select FULL-MAUDE .
+loop init .
+(red in STRING : "pruebas/getVariants-my-nat-set.fm" .)
 load pruebas/getVariants-my-nat-set.fm
 select FULL-MAUDE .
 loop init .
+(red in STRING : "pruebas/a.fm" .)
 load pruebas/a.fm
 
+(red in STRING : "pruebas/serbanuta.fm" .)
 load pruebas/serbanuta.fm                       --- bug in mb/cmbs (March 9th, 2009)
 
 ----load pruebas/exa-search.maude
 ----load ../../FormalTools/CRC-samples/philosophers/dining-phils.fm
 
+(red in STRING : "pruebas/gen-tree.fm" .)
 load pruebas/gen-tree.fm
+(red in STRING : "pruebas/list-test.fm" .)
 load pruebas/list-test.fm
+(red in STRING : "pruebas/vistas-parametrizadas.fm" .)
 load pruebas/vistas-parametrizadas.fm
 
-load narrowing.fm
+(red in STRING : "narrowing.fm" .)
+load narrowing.fm ---- commented narrowing searchs, too long?
 load model-checker.maude
 select FULL-MAUDE .
 loop init .
+(red in STRING : "bug-reports/riesco/class-no-attributes.fm" .)
 load bug-reports/riesco/class-no-attributes.fm
+(red in STRING : "bug-reports/riesco/lider.fm" .)
 load bug-reports/riesco/lider.fm
+(red in STRING : "bug-reports/riesco/network.fm" .)
 load bug-reports/riesco/network.fm
+(red in STRING : "bug-reports/riesco/nspk.fm" .)
 load bug-reports/riesco/nspk.fm
+(red in STRING : "bug-reports/riesco/prueba.fm" .)
 load bug-reports/riesco/prueba.fm
+(red in STRING : "bug-reports/riesco/show-view.fm" .)
 load bug-reports/riesco/show-view.fm
 
+(red in STRING : "strategies/hanoi-solve.fm" .)
 load strategies/hanoi-solve.fm
+(red in STRING : "strategies/queens.fm" .)
 load strategies/queens.fm
+(red in STRING : "strategies/striv.fm" .)
 load strategies/striv.fm
+(red in STRING : "strategies/prolog.fm" .)
 load strategies/prolog.fm
+(red in STRING : "strategies/ucm/blackboard.fm" .)
 load strategies/ucm/blackboard.fm
+(red in STRING : "strategies/ucm/rivercrossing.fm" .)
 load strategies/ucm/rivercrossing.fm
+(red in STRING : "strategies/ucm/insertion-sort.fm" .)
 load strategies/ucm/insertion-sort.fm
+(red in STRING : "strategies/ucm/ccs2.fm" .)
 load strategies/ucm/ccs2.fm
+(red in STRING : "strategies/ucm/congruence.fm" .)
 load strategies/ucm/congruence.fm
+(red in STRING : "strategies/ucm/basic-completion/examples/example-0.fm" .)
 load strategies/ucm/basic-completion/examples/example-0.fm
+(red in STRING : "strategies/ucm/basic-completion/examples/example-6.2.7.fm" .)
 load strategies/ucm/basic-completion/examples/example-6.2.7.fm
+----(red in STRING : "strategies/ucm/basic-completion/examples/example-7.1.1.fm" .)
 ----load strategies/ucm/basic-completion/examples/example-7.1.1.fm
+(red in STRING : "strategies/ucm/basic-completion/examples/example-7.2.6.fm" .)
 load strategies/ucm/basic-completion/examples/example-7.2.6.fm
+(red in STRING : "strategies/ucm/basic-completion/examples/example-ex7.8.fm" .)
 load strategies/ucm/basic-completion/examples/example-ex7.8.fm
+----(red in STRING : "strategies/ucm/basic-completion/examples/example-groups.fm" .)
 ----load strategies/ucm/basic-completion/examples/example-groups.fm
+----(red in STRING : "strategies/ucm/basic-completion/examples/follow-deductions.fm" .)
 ---- load strategies/ucm/basic-completion/examples/follow-deductions.fm
 ---- what's with this example? is the strategy-aware model checker operative?
+(red in STRING : "strategies/ucm/ATMNetwork.fm" .)
 load strategies/ucm/ATMNetwork.fm
+(red in STRING : "strategies/ucm/hanoi.fm" .)
 load strategies/ucm/hanoi.fm
+(red in STRING : "strategies/ucm/15puzzle.fm" .)
 load strategies/ucm/15puzzle.fm
+(red in STRING : "strategies/ucm/prolog.fm" .)
 load strategies/ucm/prolog.fm
+
+red in STRING : "sample-files-3.0/vending-machine-io.maude" .
+load sample-files-3.0/vending-machine-io.maude
+red in STRING : "sample-files-3.0/mini-maude-metainterpreter.maude" .
+load sample-files-3.0/mini-maude-metainterpreter.maude

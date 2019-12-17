@@ -1,0 +1,62 @@
+  ---- from the book All About Maude
+  ---- from the Maude Manual
+  ---- by the Maude team
+
+  fmod MINI-MAUDE-SYNTAX is
+    protecting QID-LIST .
+    sorts Token Bubble NeTokenList .
+    op token : Qid -> Token
+         [special
+            (id-hook Bubble        (1 1)
+             op-hook qidSymbol     (<Qids> : ~> Qid))] .
+
+    op bubble : QidList -> Bubble
+         [special
+            (id-hook Bubble        (1 -1)
+             op-hook qidListSymbol (__ : QidList QidList ~> QidList)
+             op-hook qidSymbol     (<Qids> : ~> Qid)
+             id-hook Exclude       (.))] .
+
+    op neTokenList : QidList -> NeTokenList
+         [special
+            (id-hook Bubble        (1 -1)
+             op-hook qidListSymbol (__ : QidList QidList ~> QidList)
+             op-hook qidSymbol     (<Qids> : ~> Qid)
+             id-hook Exclude       (->))] .
+
+    sorts Decl DeclList PreModule Input Command .
+    subsort Decl < DeclList .
+    subsorts PreModule Command < Input .
+
+    --- including declaration
+    op including_. : Token -> Decl .
+
+    --- sort declaration
+    op sort_. : Token -> Decl .
+
+    --- operator declaration
+    op op_: ->_. : Token Token -> Decl .
+    op op_:_->_. : Token NeTokenList Token -> Decl .
+
+    --- equation declaration
+    op eq_=_. : Bubble Bubble -> Decl .
+
+    --- functional premodule
+    op fmod_is_endfm : Token DeclList -> PreModule .
+    op __ : DeclList DeclList -> DeclList [assoc gather(e E)] .
+
+    --- reduce command
+    op reduce_. : Bubble -> Command .
+  endfm
+
+***(
+Maude> red in META-LEVEL :
+           metaParse(upModule('MINI-MAUDE-SYNTAX, false),
+             'fmod 'NAT3 'is
+                'sort 'Nat3 '.
+                'op 's_ ': 'Nat3 '-> 'Nat3 '.
+                'op '0 ': '-> 'Nat3 '.
+                'eq 's 's 's '0 '= '0 '.
+             'endfm,
+             'PreModule) .
+)

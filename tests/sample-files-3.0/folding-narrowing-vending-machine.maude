@@ -1,0 +1,18 @@
+mod FOLDING-NARROWING-VENDING-MACHINE is
+   sorts Coin Item Marking Money State .
+   subsort Coin < Money .
+   op empty : -> Money .
+   op __ : Money Money -> Money [assoc comm id: empty] .
+   subsort Money Item < Marking .
+   op __ : Marking Marking -> Marking [assoc comm id: empty] .
+   op <_> : Marking -> State .
+   ops $ q : -> Coin .
+   ops a c : -> Item .
+   var M : Marking .
+   rl [buy-c] : < M $ c > => < M > [narrowing] .
+   rl [buy-a] : < M $ a > => < M q > [narrowing] .
+   eq [change] : q q q q M = $ M [variant] .
+endm
+
+---vu-narrow in FOLDING-NARROWING-VENDING-MACHINE : < M:Marking a c > =>* < empty > .
+fvu-narrow in FOLDING-NARROWING-VENDING-MACHINE : < M:Marking a c > =>* < empty > .

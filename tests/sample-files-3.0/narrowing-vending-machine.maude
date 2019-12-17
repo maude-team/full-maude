@@ -1,0 +1,34 @@
+mod NARROWING-VENDING-MACHINE is
+   sorts Coin Item Marking Money State .
+   subsort Coin < Money .
+   op empty : -> Money .
+   op __ : Money Money -> Money [assoc comm id: empty] .
+   subsort Money Item < Marking .
+   op __ : Marking Marking -> Marking [assoc comm id: empty] .
+   op <_> : Marking -> State .
+   ops $ q : -> Coin .
+   ops a c : -> Item .
+   var M : Marking .
+   rl [buy-c] : < M $ > => < M c > [narrowing] .
+   rl [buy-a] : < M $ > => < M a q > [narrowing] .
+   eq [change] : q q q q M = $ M [variant] .
+endm
+
+vu-narrow [1] in NARROWING-VENDING-MACHINE : < M:Money > =>* < a c > .
+vu-narrow [,5] in NARROWING-VENDING-MACHINE : < M:Money > =>* < a c > .
+vu-narrow [,5] in NARROWING-VENDING-MACHINE : < M:Money > =>! < a c > .
+vu-narrow [,10] in NARROWING-VENDING-MACHINE : < C1:Coin C2:Coin C3:Coin C4:Coin > =>! < M:Money a c > .
+
+reduce in META-LEVEL :
+ metaNarrowingSearch(upModule('NARROWING-VENDING-MACHINE, false),
+              '<_>['M:Money],
+              '<_>['__['a.Item, 'c.Item]],
+              '*, unbounded, 'none, 0) .
+reduce in META-LEVEL :
+ metaNarrowingSearchPath(upModule('NARROWING-VENDING-MACHINE, false),
+              '<_>['M:Money],
+              '<_>['__['a.Item, 'c.Item]],
+              '*, unbounded, 'none, 0) .
+
+fvu-narrow [1] in NARROWING-VENDING-MACHINE : < M:Money > =>* < a c > .
+fvu-narrow in NARROWING-VENDING-MACHINE : < M:Marking > =>* < a c > .

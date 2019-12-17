@@ -1,0 +1,214 @@
+---- Meta-interpreter+I/O-based execution environment for MiniMaude.
+---- Inputs do not require parentheses.
+---- Modules must be written inside mod_is_endfm, and only sort and op decls and eq
+---- One command available: reduce_.
+---- See examples at the end of this file.
+---- Notice the eof, copy and paste the text to pass it to Maude.
+
+load maybe.maude
+load mini-maude.maude
+load mini-maude-syntax.maude
+load file.maude
+load metaInterpreter.maude
+
+view Oid from TRIV to CONFIGURATION is
+  sort Elt to Oid .
+endv
+
+view Module from TRIV to META-MODULE is
+  sort Elt to Module .
+endv
+
+mod MINI-MAUDE-META-INTERPRETER is
+  pr MINI-MAUDE .
+  inc STD-STREAM .
+  inc LEXICAL .
+  inc MAYBE{Oid} * (op maybe to null) .
+  inc MAYBE{Qid} * (op maybe to null) .
+  inc MAYBE{Module} * (op maybe to null) .
+  inc META-INTERPRETER .
+
+  vars O O' MI Y : Oid .
+  var  Atts : AttributeSet .
+  var  QIL : QidList .
+  var  Str : String .
+  vars T T' : Term .
+  vars Ty Ty' : Type .
+  var  N : Nat .
+  var  RP? : [ResultPair] .
+  var  M : Module .
+  var  M? : Maybe{Module} .
+  vars QI? : Maybe{Qid} .
+  vars QI MN : Qid .
+  var  EqS : EquationSet .
+
+  ---- class MiniMaude | mi: Maybe{Oid}, m: Maybe{Qid}, in: QidList, st: Nat .
+  sort MiniMaude .
+  subsort MiniMaude < Cid .
+  op MiniMaude : -> MiniMaude .
+  op mi:_ : Maybe{Oid} -> Attribute [prec 20 gather (&)] .    ---- meta-interpreter
+  op mn:_ : Maybe{Qid} -> Attribute [prec 20 gather (&)] .    ---- defeault module name
+  op in:_ : QidList -> Attribute [prec 20 gather (&)] .       ---- accumulated input
+  op st:_ : Nat -> Attribute [prec 20 gather (&)] .           ---- state
+
+  op processInput : Oid Term -> Msg .
+  op pendingBubbles : Oid Term -> Msg .
+  op parsedEquations : Oid EquationSet -> Msg .
+  op processReduce : Oid [ResultPair] -> Msg .
+
+  op o : -> Oid .
+  op minimaude : -> Configuration .
+
+  eq minimaude
+   = <>
+     < o : MiniMaude | mi: null, mn: null, in: nil, st: 0 >
+     write(stdout, o, "'\n\t MiniMaude Execution Environment\n")
+     createInterpreter(interpreterManager, o, none) .
+
+  rl < O : MiniMaude | mi: null, st: 0, Atts >
+     wrote(O, O')
+     createdInterpreter(O, Y, MI) ---- what is the second argument?
+  => < O : MiniMaude | mi: MI, st: 1, Atts >
+     insertModule(MI, O, upModule('MINI-MAUDE-SYNTAX, true)) .
+
+  rl < O : MiniMaude | mi: MI, st: 1, Atts >
+     insertedModule(O, O')
+  => < O : MiniMaude | mi: MI, st: 2, Atts >
+     getLine(stdin, O, "minimaude> ") .
+
+  rl < O : MiniMaude | mi: MI, in: QIL, st: 2, Atts >
+     gotLine(O, O', Str)
+  => if tokenize(Str) == 'quit or tokenize(Str) == 'q
+     then < O : MiniMaude | mi: MI, in: nil, st: 3, Atts >
+          write(stdout, o, "goodbye\n")
+          quit(MI, O)
+     else < O : MiniMaude | mi: MI, in: QIL tokenize(Str), st: 4, Atts >
+          parseTerm(MI, O, 'MINI-MAUDE-SYNTAX, none, QIL tokenize(Str), 'Input)
+     fi .
+
+  rl < O : MiniMaude | mi: MI, st: 3, Atts >
+     wrote(O, O')
+     bye(O, MI)
+  => none .
+
+  rl < O : MiniMaude | mi: MI, in: QIL, st: 4, Atts >
+     parsedTerm(O, MI, {T, Ty})
+  => < O : MiniMaude | mi: MI, in: nil, st: 6, Atts >
+     processInput(O, T) .
+
+  rl < O : MiniMaude | mi: MI, in: QIL, st: 4, Atts >
+     parsedTerm(O, MI, noParse(N))
+  => if N == size(QIL)
+     then < O : MiniMaude | mi: MI, in: QIL, st: 2, Atts >
+          getLine(stdin, O, "> ")
+     else < O : MiniMaude | mi: MI, in: nil, st: 5, Atts >
+          write(stdout, o, "Parse error\n")
+     fi .
+
+  rl < O : MiniMaude | mi: MI, in: QIL, st: 4, Atts >
+     parsedTerm(O, MI, ambiguity({T, Ty}, {T', Ty'}))
+  => < O : MiniMaude | mi: MI, in: nil, st: 5, Atts >
+     write(stdout, o, "Ambiguous input\n") .
+
+  rl < O : MiniMaude | mi: MI, mn: QI?, st: 6, Atts >
+     processInput(O, 'fmod_is_endfm['token[T], T'])
+  => if extractSignature('fmod_is_endfm['token[T], T']) :: Module
+     then < O : MiniMaude | mi: MI, mn: downTerm(T, 'default-name), st: 7, Atts >
+          insertModule(MI, O, extractSignature('fmod_is_endfm['token[T], T']))
+          pendingBubbles(O, T')
+     else < O : MiniMaude | mi: MI, mn: QI?, st: 5, Atts >
+          write(stdout, o, "Parse error\n")
+     fi .
+
+  rl < O : MiniMaude | mi: MI, mn: QI, st: 7, Atts >
+     insertedModule(O, MI)
+  => < O : MiniMaude | mi: MI, mn: QI, st: 8, Atts >
+     showModule(MI, O, QI, true) .
+
+  rl < O : MiniMaude | mi: MI, mn: QI, st: 8, Atts >
+     showingModule(O, MI, M)
+     pendingBubbles(O, T)
+  => if solveBubblesAux(T, M) :: EquationSet
+     then < O : MiniMaude | mi: MI, mn: QI, st: 9, Atts >
+          parsedEquations(O, solveBubblesAux(T, M))
+          showModule(MI, O, QI, false)
+     else < O : MiniMaude | mi: MI, mn: QI, st: 5, Atts >
+          write(stdout, o, "Parse error\n")
+     fi .
+
+  rl < O : MiniMaude | mi: MI, mn: QI, st: 9, Atts >
+     showingModule(O, MI, M)
+     parsedEquations(O, EqS)
+  => < O : MiniMaude | mi: MI, mn: QI, st: 10, Atts >
+     insertModule(MI, O, addEquations(M, EqS)) .
+
+  rl < O : MiniMaude | mi: MI, st: 10, Atts >
+     insertedModule(O, MI)
+  => < O : MiniMaude | mi: MI, st: 5, Atts >
+     write(stdout, O, "Module loaded successfully\n") .
+
+  rl < O : MiniMaude | mi: MI, st: 5, Atts >
+     wrote(O, O')
+  => < O : MiniMaude | mi: MI, st: 2, Atts >
+     getLine(stdin, O, "minimaude> ") .
+
+  rl < O : MiniMaude | mn: null, st: 6, Atts >
+     processInput(O, 'reduce_.[T])
+  => < O : MiniMaude | mn: null, st: 5, Atts >
+     write(stdout, o, "No module in the system\n") .
+
+  rl < O : MiniMaude | mi: MI, mn: MN, st: 6, Atts >
+     processInput(O, 'reduce_.['bubble[T]])
+  => < O : MiniMaude | mi: MI, mn: MN, st: 11, Atts >
+     parseTerm(MI, O, MN, none, downTerm(T, nil), anyType) .
+
+  rl < O : MiniMaude | mi: MI, mn: MN, st: 11, Atts >
+     parsedTerm(O, MI, {T, Ty})
+  => < O : MiniMaude | mi: MI, mn: MN, st: 12, Atts >
+     reduceTerm(MI, O, MN, T) .
+
+  rl < O : MiniMaude | mi: MI, mn: MN, st: 11, Atts >
+     parsedTerm(O, MI, noParse(N))
+  => < O : MiniMaude | mi: MI, st: 5, Atts >
+     write(stdout, o, "Parse error\n") .
+
+  rl < O : MiniMaude | mi: MI, mn: MN, st: 12, Atts >
+     reducedTerm(O, MI, N, T, Ty)
+  => < O : MiniMaude | mi: MI, mn: MN, st: 13, Atts >
+     reducedTerm(O, MI, N, T, Ty)
+     printTerm(MI, O, MN, none, T, mixfix flat format number rat) .
+
+  rl < O : MiniMaude | mi: MI, st: 13, Atts >
+     reducedTerm(O, MI, N, T, Ty)
+     printedTerm(O, MI, QIL)
+  => < O : MiniMaude | mi: MI, st: 5, Atts >
+     write(stdout, o, "result " + string(Ty) + ": " + printTokens(QIL) + "\n") .
+endm
+
+eof
+
+set trace on .
+set print conceal on .
+print conceal fmod_is____endfm .
+
+erew minimaude .
+
+fmod NAT3 is
+   sort Nat3 .
+   op s_ : Nat3 -> Nat3 .
+   op 0 : -> Nat3 .
+   eq s s s 0 = 0 .
+endfm
+
+reduce s s s s 0 .
+
+fmod NAT3+ is
+   including NAT3 .
+   op _+_ : Nat3 Nat3 -> Nat3 .
+   eq 0 + N:Nat3 = N:Nat3 .
+   eq s N:Nat3 + M:Nat3 = s (N:Nat3 + M:Nat3) .
+endfm
+
+reduce s s 0 + s 0 .
+
+reduce foo .

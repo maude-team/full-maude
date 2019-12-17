@@ -1,0 +1,20 @@
+  fmod ABELIAN-GROUP is
+    sorts Element .
+    op _+_ : Element Element -> Element [comm assoc prec 30] .
+    op -_ : Element -> Element [prec 20] .
+    op 0 : ->  Element .
+    vars X Y Z : Element  .
+    eq X + 0 = X [variant] .
+    eq X + - X = 0 [variant] .
+    eq X + - X + Y = Y [variant] .
+    eq - - X = X [variant] .
+    eq - 0 = 0 [variant] .
+    eq - X + - Y = -(X + Y) [variant] .
+    eq -(X + Y) + Y = - X [variant] .
+    eq -(- X + Y) = X + - Y [variant] .
+    eq - X + - Y + Z  = -(X + Y) + Z [variant] .
+    eq -(X + Y) + Y + Z = - X + Z [variant] .
+  endfm
+
+get irredundant variants in ABELIAN-GROUP : X + Y .
+get irredundant variants in ABELIAN-GROUP : - X .

@@ -1,0 +1,63 @@
+***
+*** Strategy module importation and its modes
+*** (from the subsection "Module importation" of the "Strategy modules" section of the manual)
+*** 
+
+smod STRATS is
+  protecting INT .
+
+  strat repeat : Nat @ Nat .
+  strat repeat : Int @ Nat .
+endsm
+
+***(
+Warning: "hanoi.maude", line 518 (smod STRATS): strategy declaration strat
+    repeat : Int @ Nat . conflicts with strat repeat : Nat @ Nat . from
+    "hanoi.maude", line 517 (smod STRATS).
+)
+
+mod SMOD-IMPORT-EXAMPLE0 is
+  protecting QID .
+  rl [ab] : 'a => 'b .
+  rl [bc] : 'b => 'c .
+  rl [zz] : Q:Qid => 'z .
+endm
+
+smod SMOD-IMPORT-EXAMPLE is
+  protecting SMOD-IMPORT-EXAMPLE0 .
+  strats st1 st2 @ Qid .
+  sd st2 := st1 ? bc : zz .
+endsm
+
+smod SMOD-IMPORT-EXAMPLE' is
+  extending SMOD-IMPORT-EXAMPLE .
+  sd st2 := ab .
+endsm
+
+smod SMOD-IMPORT-EXAMPLE'' is
+  including SMOD-IMPORT-EXAMPLE .
+  sd st1 := ab .
+endsm
+
+***(
+Maude> srew in SMOD-IMPORT-EXAMPLE : 'a using st2 .
+srewrite in SMOD-IMPORT-EXAMPLE : 'a using st2 .
+Advisory: strat st1 @ Qid . undefined strategy.
+
+Solution 1
+rewrites: 1 in 0ms cpu (0ms real) (~ rewrites/second)
+result Qid: 'z
+
+No more solutions.
+rewrites: 1 in 0ms cpu (0ms real) (~ rewrites/second)
+
+Maude> srew in SMOD-IMPORT-EXAMPLE'' : 'a using st2 .
+srewrite in SMOD-IMPORT-EXAMPLE'' : 'a using st2 .
+
+Solution 1
+rewrites: 2 in 0ms cpu (0ms real) (~ rewrites/second)
+result Qid: 'c
+
+No more solutions.
+rewrites: 2 in 0ms cpu (0ms real) (~ rewrites/second)
+)
