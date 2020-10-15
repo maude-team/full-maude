@@ -1,0 +1,4 @@
+rewrites: 11 in 0ms cpu (6ms real) (12235 rewrites/second)
+result Configuration: <> signaledProcess(me, process(57783)) < me : User |
+    state: 6,process: process(57783),result: "104" > exited(me, process(57783),
+    terminatedBySignal("SIGTERM"))

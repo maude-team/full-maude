@@ -1,0 +1,48 @@
+---- NOT WORKING
+---- I DON'T KNOW WHY YET
+---(
+IT TRIES TO REPRODUCE THE FOLLOWING INTERACTION:
+
+duran@pdi-131-112 samples % python3 -i string_extract.py
+>>> select_text(".........@104@..........")
+'104'
+>>> quit()
+duran@pdi-131-112 samples %
+---)
+
+load process-dc
+
+mod MAUDE-PROCESS is
+  inc PROCESS .
+  inc MAYBE{Oid} * ( op maybe to null ).
+  op me : -> Oid .
+  op User : -> Cid .
+  op state:_ : Nat -> Attribute .
+  ops process:_ io:_ err:_ : Maybe{Oid} -> Attribute .
+  op result:_ : String -> Attribute .
+  op init : -> Configuration .
+
+  vars X MP MERR MIO PP PERR PIO : Oid .
+  vars Result Str : String .
+  var  Atts : AttributeSet .
+
+  rl init
+  => < me : User | state: 1, process: null, io: null, err: null, result: "" >
+     createProcess(processManager, me, "python3", "-iu" "string_extract_2_strings.py", none) .
+  rl < X : User | state: 1, process: null, io: null, err: null, Atts >
+     createdProcess(me, processManager, PP, PIO, PERR)
+  => < X : User | state: 2, process: PP, io: PIO, err: PERR, Atts >
+     send(PIO, me, "select_text(\".........\\\"104\\\"..........\")\n") .
+  rl < X : User | state: 2, process: PP, io: PIO, err: PERR, Atts >
+     sent(me, PIO)
+  => < X : User | state: 3, process: PP, io: PIO, err: PERR, Atts >
+     receive(PIO, me)
+     receive(PERR, me) .
+  rl < X : User | state: 3, process: PP, io: PIO, result: Str, Atts >
+     received(me, PIO, Result)
+  => < X : User | state: 4, process: PP, io: PIO, result: substr(Result, 1, sd(length(Result), 3)), Atts >
+     send(PIO, me, "quit()\n") .
+endm
+
+set trace on .
+erew <> init .

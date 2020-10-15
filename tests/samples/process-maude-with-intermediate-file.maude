@@ -1,0 +1,118 @@
+---- This program executes the computation in PROCESS-DC and shows its result.
+---- The program shows how we can execute external processes and orchestrate their execution.
+
+---- The program runs an external Maude process in which loads the process-dc.maude file.
+---- On this process, the program uses the dc to do a calculation.
+---- The output of the process is saved on a file named "file.txt"
+---- Then, a Python interpreter process is created, on which the file "string_extract_3_file.py"
+---- is loaded. The function select_text("file.txt") is executed, which results in the
+---- processing of the file to gather the result of the dc operation saved on the file.
+---- As result, the string "104" is stored in the presult attribute of the User object.
+
+load process-dc
+load file
+
+mod MAUDE-PROCESS is
+  ---- Maude's path, empty string if in the system path or in the same directory
+  op PATH : -> String .
+  eq PATH = "" . ---- E.g., "/Users/duran/Maude/alpha129/"
+
+  inc PROCESS .
+  inc FILE .
+  inc MAYBE{Oid} * ( op maybe to null ).
+  op me : -> Oid .
+  op User : -> Cid .
+  op state:_ : Nat -> Attribute .
+  ops mprocess:_ mio:_ merr:_ : Maybe{Oid} -> Attribute .  ---- maude process and channels
+  ops pprocess:_ pio:_ perr:_ : Maybe{Oid} -> Attribute .  ---- python process and channels
+  ops mresult:_ presult:_ : String -> Attribute .          ---- results
+  ops mermsg:_ permsg:_ : String -> Attribute .            ---- error messages
+  op init : -> Configuration .
+
+  vars X MP MERR MIO PP PERR PIO FHOut : Oid .
+  vars Result Str : String .
+  var  Atts : AttributeSet .
+  var  N : Nat .
+
+  rl init
+  => < me : User | state: 1,
+                   mprocess: null, mio: null, merr: null, mresult: "", mermsg: "",
+                   pprocess: null, pio: null, perr: null, presult: "", permsg: "" >
+     createProcess(processManager, me, PATH + "maude.darwin64", "-trust", none) .
+  rl < X : User | state: 1, mprocess: null, mio: null, merr: null, Atts >
+     createdProcess(me, processManager, MP, MIO, MERR)
+  => < X : User | state: 2, mprocess: MP, mio: MIO, merr: MERR, Atts >
+     send(MIO, me, "load process-dc.maude\n")
+     waitForExit(MP, me) .
+  rl < X : User | state: 2, mio: MIO, Atts >
+     sent(me, MIO)
+  => < X : User | state: 3, mio: MIO, Atts >
+     receive(MIO, me) .
+  rl < X : User | state: 3, mio: MIO, Atts >
+     received(me, MIO, Result)                            ---- Maude's header and prompt
+  => < X : User | state: 4, mio: MIO, Atts >
+     send(MIO, me,
+          "erew <> " +
+                "< me : User | state: 1, process: null, result: \"\" > " +
+                "createProcess(processManager, me, \"dc\", nil, none) .\n") .
+  rl < X : User | state: 4, mio: MIO, merr: MERR, Atts >
+     sent(me, MIO)
+  => < X : User | state: 5, mio: MIO, merr: MERR, Atts >
+     receive(MIO, me) .
+  rl < X : User | state: 5, mio: MIO, merr: MERR, Atts >  ---- command being executed
+     received(me, MIO, Result)
+  => < X : User | state: 6, mio: MIO, merr: MERR, Atts >
+     receive(MIO, me)
+     receive(MERR, me) .
+  rl < X : User | state: 6, mio: MIO, mresult: "", Atts > ---- result
+     received(me, MIO, Result)
+  => < X : User | state: 7, mio: MIO, mresult: Result, Atts >
+     send(MIO, me, "q\n")
+     openFile(fileManager, me, "file.txt", "w") .
+  rl < X : User | state: 7, mprocess: MP, mresult: Result, Atts >
+     sent(me, MIO)
+     openedFile(me, fileManager, FHOut)
+  => < X : User | state: 8, mprocess: MP, mresult: "", Atts >
+     write(FHOut, me, Result) .
+  rl < X : User | state: 8, mprocess: MP, Atts >
+     wrote(me, FHOut)
+  => < X : User | state: 9, mprocess: MP, Atts >
+     closeFile(FHOut, me) .
+  rl < X : User | state: 9, pprocess: null, mresult: Result, Atts >
+     closedFile(me, FHOut)
+  => < X : User | state: 10, pprocess: null, mresult: Result, Atts >
+     createProcess(processManager, me, "python3", "-iu" "string_extract_3_file.py", none) .
+  rl < X : User | state: 10, pprocess: null, pio: null, perr: null, Atts >
+     createdProcess(me, processManager, PP, PIO, PERR)
+  => < X : User | state: 11, pprocess: PP, pio: PIO, perr: PERR, Atts >
+     send(PIO, me, "select_text(\"file.txt\")\n")
+     waitForExit(PP, me) .
+  rl < X : User | state: 11, pio: PIO, perr: PERR, Atts >
+     sent(me, PIO)
+  => < X : User | state: 12, pio: PIO, perr: PERR, Atts >
+     receive(PIO, me)
+     receive(PERR, me) .
+  rl < X : User | state: 12, pio: PIO, presult: Str, Atts >
+     received(me, PIO, Result)
+  => < X : User | state: 13, pio: PIO, presult: substr(Result, 1, sd(length(Result), 3)), Atts >
+     send(PIO, me, "quit()\n") .
+  rl < X : User | state: 13, pio: PIO, Atts >
+     sent(me, PIO)
+  => < X : User | state: 14, pio: PIO, Atts > .
+  rl < X : User | state: 14, mprocess: MP, pprocess: PP, Atts >
+     exited(me, MP, normalExit(0))
+     exited(me, PP, normalExit(0))
+  => < X : User | state: 15, mprocess: MP, pprocess: PP, Atts > .
+
+  ---- messages received through err channels are saved in the ermsg attributes
+  rl < X : User | merr: MERR, mermsg: Str, Atts >             ---- error
+     received(me, MERR, Result)
+  => < X : User | merr: MERR, mermsg: (Str + Result), Atts > .
+  rl < X : User | perr: PERR, permsg: Str, Atts >             ---- error
+     received(me, PERR, Result)
+  => < X : User | perr: PERR, permsg: (Str + Result), Atts > .
+endm
+
+set trace off .
+erew <>
+     init .

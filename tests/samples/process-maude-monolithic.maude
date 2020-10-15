@@ -1,0 +1,141 @@
+---- This program executes the computation in PROCESS-DC and shows its result.
+---- The program shows how we can execute external processes and orchestrate their execution.
+
+---- The program runs an external Maude process in which loads the process-dc.maude file.
+---- On this process, the program uses the dc to do a calculation.
+---- The output is processed in a Python interpreter process using the function select_text.
+---- As result, the string "104" is stored in the presult attribute of the User object.
+
+load process-dc
+load file
+
+fmod STRING+ is
+  pr STRING .
+
+  vars Text Text' Pattern New : String .
+  vars PSize TSize : Nat .
+
+  ---- replace(Text, Pattern, New) replaces each occurrences of Pattern in Text with New
+  op replace : String String String -> String .
+  op replace : String String String String Nat Nat -> String .
+  eq replace(Text, Pattern, New)
+    = replace("", Text, Pattern, New, length(Text), length(Pattern)) .
+  eq replace(Text, Text', Pattern, New, TSize, PSize)
+    = if find(Text', Pattern, 0) == notFound
+      then Text + Text'
+      else replace(
+             Text + substr(Text', 0, find(Text', Pattern, 0)) + New,
+             substr(Text', find(Text', Pattern, 0) + PSize, TSize),
+             Pattern, New, TSize, PSize)
+      fi .
+endfm
+
+----red replace("0123456789\"104\"0123456789", "\"", "\\\"") .
+
+mod MAUDE-PROCESS is
+  ---- Maude's path, empty string if in the system path or in the same directory
+  op PATH : -> String .
+  eq PATH = "/Users/duran/Maude/alpha129/" . ---- E.g., "/Users/duran/Maude/alpha129/"
+
+  inc PROCESS .
+  inc FILE .
+  inc MAYBE{Oid} * ( op maybe to null ).
+  pr STRING+ .
+
+  op me : -> Oid .
+  op User : -> Cid .
+  op state:_ : Nat -> Attribute .
+  ops mprocess:_ mio:_ merr:_ : Maybe{Oid} -> Attribute .  ---- maude process and channels
+  ops pprocess:_ pio:_ perr:_ : Maybe{Oid} -> Attribute .  ---- python process and channels
+  ops mresult:_ presult:_ : String -> Attribute .          ---- results
+  ops mermsg:_ permsg:_ : String -> Attribute .            ---- error messages
+  op init : -> Configuration .
+
+  vars X MP MERR MIO PP PERR PIO FHOut : Oid .
+  vars Result Str : String .
+  var  Atts : AttributeSet .
+  var  N : Nat .
+
+  rl init
+  => < me : User | state: 1,
+                   mprocess: null, mio: null, merr: null, mresult: "", mermsg: "",
+                   pprocess: null, pio: null, perr: null, presult: "", permsg: "" >
+     createProcess(processManager, me, PATH + "maude.darwin64", "-trust" "process-dc.maude", none) .
+  rl < X : User | state: 1, mprocess: null, mio: null, merr: null, Atts >
+     createdProcess(X, processManager, MP, MIO, MERR)
+  => < X : User | state: 2, mprocess: MP, mio: MIO, merr: MERR, Atts >
+     receive(MIO, X)
+     waitForExit(MP, X) .
+  rl < X : User | state: 2, mio: MIO, Atts >
+     received(X, MIO, Result)                              ---- Maude's header
+  => < X : User | state: 3, mio: MIO, Atts >
+     send(MIO, X,
+          "erew <> " +
+                "< me : User | state: 1, process: null, io: null, err: null, result: \"\" > " +
+                "createProcess(processManager, me, \"dc\", nil, none) .\n") .
+  rl < X : User | state: 3, mio: MIO, Atts >
+     sent(X, MIO)
+  => < X : User | state: 4, mio: MIO, Atts >
+     receive(MIO, X) .
+  rl < X : User | state: 4, mio: MIO, merr: MERR, Atts >
+     received(X, MIO, Result)                              ---- command being executed
+  => < X : User | state: 5, mio: MIO, merr: MERR, Atts >
+     receive(MIO, X)       ---- request output
+     receive(MERR, X) .    ---- and potential error message
+  rl < X : User | state: 5, mio: MIO, mresult: "", Atts >  ---- result from ok execution
+     received(X, MIO, Result)
+  => < X : User | state: 6, mio: MIO, mresult: Result, Atts >
+     send(MIO, X, "q\n")
+     createProcess(processManager, X, "python3", "-iu" "string_extract_2_strings.py", none) .
+  rl < X : User | state: 6, mresult: Result, pprocess: null, pio: null, perr: null, Atts >
+     sent(X, MIO)
+     createdProcess(X, processManager, PP, PIO, PERR)
+  => < X : User | state: 7, mresult: Result, pprocess: PP, pio: PIO, perr: PERR, Atts >
+     ---- Quotes inside strings must be double quoted, i.e., a string like "\"hi\"" must be
+     ---- sent as argument of the function as "select_text(\"\\\"hi\\\"\")".
+     ---- Notice that, since to put " inside a string you use \", and to put \ inside a string
+     ---- you use \\, then, to put \" inside a string you use \\\".
+     send(PIO, X, "select_text(\"" + replace(replace(Result, "\"", "\\\""), "\n", "") + "\")\n")
+     waitForExit(PP, X) .
+  rl < X : User | state: 7, pio: PIO, perr: PERR, Atts >
+     sent(X, PIO)
+  => < X : User | state: 8, pio: PIO, perr: PERR, Atts >
+     receive(PIO, X)
+     receive(PERR, X) .
+  rl < X : User | state: 8, pio: PIO, presult: Str, Atts >
+     received(X, PIO, Result)                              ---- Result --> "'104'\n"
+  => < X : User | state: 9, pio: PIO, presult: substr(Result, 1, sd(length(Result), 3)), Atts >
+     send(PIO, X, "quit()\n") .
+  rl < X : User | state: 9, pio: PIO, Atts >
+     sent(X, PIO)
+  => < X : User | state: 10, pio: PIO, Atts > .
+  rl < X : User | state: 10, mprocess: MP, pprocess: PP, Atts >
+     exited(X, MP, normalExit(0))
+     exited(X, PP, normalExit(0))
+  => < X : User | state: 11, mprocess: MP, pprocess: PP, Atts > .
+
+  ---- messages received through err channels are saved in the ermsg attributes
+  rl < X : User | merr: MERR, mermsg: Str, Atts >             ---- error
+     received(X, MERR, Result)
+  => < X : User | merr: MERR, mermsg: (Str + Result), Atts > .
+  rl < X : User | perr: PERR, permsg: Str, Atts >             ---- error
+     received(X, PERR, Result)
+  => < X : User | perr: PERR, permsg: (Str + Result), Atts > .
+endm
+
+set trace off .
+set trace eqs off .
+erew <>
+     init .
+---(
+rewrites: 85 in 3ms cpu (75ms real) (26381 rewrites/second)
+result Configuration:
+  <>
+  < me : User |
+      state: 11,
+      mprocess: process(67021), mio: socket(4), merr: socket(6),
+      pprocess: process(67023), pio: socket(5), perr: socket(9),
+      mresult: "rewrites: 12 in 0ms cpu (2ms real) (14218 rewrites/second)\nresult Configuration: <> < me : User | state: 7,process: process(67022),io:\n    socket(4),err: socket(8),result: \"104\" >\n",
+      presult: "104",
+      mermsg: "",permsg: ">>> >>> " >
+)

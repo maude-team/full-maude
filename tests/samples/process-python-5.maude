@@ -1,0 +1,56 @@
+---- NOT WORKING
+---- I DON'T KNOW WHY YET
+
+load process-dc
+
+mod MAUDE-PROCESS is
+  inc PROCESS .
+  inc MAYBE{Oid} * ( op maybe to null ).
+  op me : -> Oid .
+  op User : -> Cid .
+  op state:_ : Nat -> Attribute .
+  ops maude-process:_ python-process:_ : Maybe{Oid} -> Attribute .
+  ops maude-result:_ result:_ : String -> Attribute .
+  op init : -> Configuration .
+
+  vars X MP MERR MIO PP PERR PIO : Oid .
+  vars Result Str : String .
+  var  Atts : AttributeSet .
+
+  rl init
+  => < me : User | state: 1,
+                   maude-process: null, python-process: null,
+                   maude-result: "", result: "" >
+     createProcess(processManager, me, "python3", "-i", none) . ----  "string-extract.py"
+  rl < X : User | state: 1, python-process: null, maude-result: Result, Atts >
+     createdProcess(me, processManager, PP, PIO, PERR)
+  => < X : User | state: 2, python-process: PP, Atts >
+     ----send(PIO, me, "select_text(\"" + Result + "\")\n")
+     ----send(PIO, me, "select_text(\"rewrites: 11 in 0ms cpu (2ms real) (12775 rewrites/second)\nresult Configuration: <> signaledProcess(me, process(34122)) < me : User |\n    state: 6,process: process(34122),result: 104 > exited(me, process(34122),\n    terminatedBySignal(SIGTERM))\n\")\n")
+     ----send(PIO, me, "2 + 3\n")
+     send(PIO, me, "import \"string_extract\"")
+     waitForExit(PP, me) .
+  rl < X : User | state: 2, python-process: PP, Atts >
+     sent(me, PIO)
+  => < X : User | state: 3, python-process: PP, Atts >
+     receive(PIO, me) .
+  rl < X : User | state: 3, python-process: PP, result: Str, Atts >
+     received(me, PIO, Result)
+  => < X : User | state: 4, python-process: PP, Atts >
+     send(PIO, me, "string_extract.select_text(\".........@104@..........\")")
+     [print "### result: " Result] .
+  rl < X : User | state: 4, python-process: PP, Atts >
+     sent(me, PIO)
+  => < X : User | state: 5, python-process: PP, Atts >
+     receive(PIO, me) .
+  rl < X : User | state: 5, python-process: PP, result: Str, Atts >
+     received(me, PIO, Result)
+  => < X : User | state: 6, python-process: PP, result: substr(Result, 1, sd(length(Result), 3)), Atts >
+     send(PIO, me, "quit()\n")
+     [print "### result: " Result] .
+endm
+
+set trace on .
+set print attribute on .
+erew <>
+     init .

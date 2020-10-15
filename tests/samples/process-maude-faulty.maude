@@ -1,0 +1,176 @@
+---- This program executes the computation in PROCESS-DC and shows its result.
+---- The program shows how we can execute external processes and orchestrate their execution.
+
+---- The program runs an external Maude process in which loads the process-dc.maude file.
+---- On this process, the program uses the dc to do a calculation.
+---- The output is processed in a Python interpreter process using the function select_text.
+---- As result, the string "104" is given.
+
+load process-dc-faulty
+
+fmod STRING+ is
+  pr STRING .
+
+  vars Text Text' Pattern New : String .
+  vars PSize TSize : Nat .
+
+  ---- replace(Text, Pattern, New) replaces each occurrences of Pattern in Text with New
+  op replace : String String String -> String .
+  op replace : String String String String Nat Nat -> String .
+  eq replace(Text, Pattern, New)
+    = replace("", Text, Pattern, New, length(Text), length(Pattern)) .
+  eq replace(Text, Text', Pattern, New, TSize, PSize)
+    = if find(Text', Pattern, 0) == notFound
+      then Text + Text'
+      else replace(
+             Text + substr(Text', 0, find(Text', Pattern, 0)) + New,
+             substr(Text', find(Text', Pattern, 0) + PSize, TSize),
+             Pattern, New, TSize, PSize)
+      fi .
+endfm
+
+----red replace("0123456789\"104\"0123456789", "\"", "\\\"") .
+
+---- Generic class that works as proxy of an external process
+mod PROCESS-PROXY is
+  inc PROCESS .
+  inc MAYBE{Oid} * ( op maybe to null ) .
+
+  ---- class Proxy | state: Nat, process: Maybe{Oid}, io: Maybe{Oid}, err: Maybe{Oid} .
+  sort Proxy .
+  subsort Proxy < Cid .
+  op Proxy : -> Proxy .
+  op state:_ : Nat -> Attribute .
+  ops process:_ io:_ err:_ : Maybe{Oid} -> Attribute .     ---- process and channels
+endm
+
+---- This module provides a function string-extract that extracts a substring
+---- from a given string that matches the given pattern. Specifically, given
+---- a string-extract(X, Y, Str, Pat) message, it returns either
+---- string-extracted(Y, X, Result), with the matched substring, or
+---- string-extract-error(Y, X, Result), if any error happens.
+mod PROCESS-PYTHON is
+  inc PROCESS-PROXY .
+  pr STRING+ .
+
+  ---- class Python | string: String, pattern: String, requester: Maybe{Oid} .
+  ---- subclass Python < Proxy .
+  ops string:_ pattern:_ : String -> Attribute [ctor] .
+  op requester:_ : Maybe{Oid} -> Attribute [ctor] .
+  sort Python .
+  subsort Python < Proxy .
+  op Python : -> Python .
+
+  op string-extract : Oid Oid String String -> Msg .
+  ops string-extracted string-extract-error : Oid Oid String -> Msg .
+
+  vars X Y P ERR IO : Oid .
+  vars Result Str Pat : String .
+  var  Atts : AttributeSet .
+
+  rl string-extract(X, Y, Str, Pat)
+  => < X : Python | state: 1, process: null, io: null, err: null,
+                    requester: Y, string: Str, pattern: Pat >
+     createProcess(processManager, X, "python3", "-iu" "string_extract.py", none) .
+  rl < X : Python | state: 1, process: null, io: null, err: null,
+                    string: Str, pattern: Pat, Atts >
+     createdProcess(X, processManager, P, IO, ERR)
+  => < X : Python | state: 2, process: P, io: IO, err: ERR, Atts >
+     send(IO, X, "select_text(\"" + replace(replace(Str, "\"", "\\\""), "\n", "") + "\", "
+                           + "\"" + replace(Pat, "\"", "\\\"") + "\")\n")
+     waitForExit(P, X) .
+  rl < X : Python | state: 2, io: IO, err: ERR, Atts >
+     sent(X, IO)
+  => < X : Python | state: 3, io: IO, err: ERR, Atts >
+     receive(IO, X)
+     receive(ERR, X) .
+  rl < X : Python | state: 3, io: IO, requester: Y, Atts > ---- output received
+     received(X, IO, Result)                               ---- Result --> "'104'\n"
+  => < X : Python | state: 4, io: IO, requester: Y, Atts >
+     string-extracted(Y, X, substr(Result, 1, sd(length(Result), 3)))
+     send(IO, X, "quit()\n") .
+  rl < X : Python | state: 4, io: IO, Atts >               ---- quit sent
+     sent(X, IO)
+  => < X : Python | state: 5, io: IO, Atts > .
+  rl < X : Python | err: ERR, requester: Y, Atts >         ---- error
+     received(X, ERR, Result)
+  => < X : Python | err: ERR, requester: Y, Atts >         ---- error msg might be empty
+     if Result == ">>> >>> " then none else string-extract-error(Y, X, Result) fi .
+  rl < X : Python | state: 5, process: P, Atts >           ---- process terminated
+     exited(X, P, normalExit(0))
+  => none .
+endm
+
+---- This program uses the above string-extract function to extract the result
+---- from the execution of the process-dc.maude program
+mod PROCESS-MAUDE is
+  ---- Maude's path, empty string if in the system path or in the same directory
+  op PATH : -> String .
+  eq PATH = "/Users/duran/Maude/maude-3.1-beta/" . ---- E.g., "/Users/duran/Maude/alpha130/"
+
+  inc PROCESS-PYTHON .
+
+  ops result error : String -> Msg .
+
+  op init : -> Configuration .
+  ops me python : -> Oid .
+
+  vars X Y P ERR IO : Oid .
+  vars Result Str Pat : String .
+  var  Atts : AttributeSet .
+
+  rl init
+  => < me : Proxy | state: 1, process: null, io: null, err: null >
+     createProcess(processManager, me, PATH + "maude.darwin64", "-trust" "process-dc-faulty.maude", none) .
+  rl < X : Proxy | state: 1, process: null, io: null, err: null, Atts >
+     createdProcess(X, processManager, P, IO, ERR)
+  => < X : Proxy | state: 2, process: P, io: IO, err: ERR, Atts >
+     receive(IO, X)
+     waitForExit(P, X) .
+  rl < X : Proxy | state: 2, io: IO, Atts >
+     received(X, IO, Result)                              ---- Maude's header
+  => < X : Proxy | state: 3, io: IO, Atts >
+     send(IO, X,
+          "erew <> " +
+                "< me : User | state: 1, process: null, io: null, err: null, result: \"\" > " +
+                "createProcess(processManager, me, \"dc\", nil, none) .\n") .
+  rl < X : Proxy | state: 3, io: IO, Atts >
+     sent(X, IO)
+  => < X : Proxy | state: 4, io: IO, Atts >
+     receive(IO, X) .
+  rl < X : Proxy | state: 4, io: IO, err: ERR, Atts >
+     received(X, IO, Result)                              ---- command being executed
+  => < X : Proxy | state: 5, io: IO, err: ERR, Atts >
+     receive(IO, X)       ---- request output
+     receive(ERR, X) .    ---- and potential error message
+  rl < X : Proxy | state: 5, io: IO, Atts >  ---- result from ok execution
+     received(X, IO, Result)
+  => < X : Proxy | state: 6, io: IO, Atts >
+     send(IO, X, "q\n")
+     string-extract(python, X, Result, "result: \"([^\"]*)\"") .
+  rl < X : Proxy | state: 6, io: IO, Atts >  ---- result from ok execution
+     string-extracted(X, Y, Result)
+  => < X : Proxy | state: 7, io: IO, Atts >  ---- result from ok execution
+     result(Result) .
+  rl < X : Proxy | Atts >                    ---- error execution
+     string-extract-error(X, Y, Result)
+  => < X : Proxy | Atts >
+     error(Result) .
+  rl < X : Proxy | err: ERR, Atts >          ---- error
+     received(X, ERR, Result)
+  => < X : Proxy | Atts >
+     if Result == "" then none else error(Result) fi . ---- no error message
+  rl < X : Proxy | state: 7, io: IO, process: P, Atts >
+     sent(X, IO)
+     exited(X, P, normalExit(0))
+  => none .
+endm
+
+set trace off .
+set trace eqs off .
+erew <>
+     init .
+---(
+rewrites: 128 in 1ms cpu (73ms real) (77248 rewrites/second)
+result Configuration: <> result("104")
+)

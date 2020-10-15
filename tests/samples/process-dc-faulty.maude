@@ -1,0 +1,51 @@
+load process
+load maybe
+view Oid from TRIV to CONFIGURATION is sort Elt to Oid . endv
+
+mod PROCESS-DC is
+  inc PROCESS .
+  inc MAYBE{Oid} * ( op maybe to null ).
+  op me : -> Oid .
+  op User : -> Cid .
+  op state:_ : Nat -> Attribute .
+  ops process:_ io:_ err:_ : Maybe{Oid} -> Attribute .
+  op result:_ : String -> Attribute .
+
+  vars X P ERR IO : Oid .
+  vars Result Str : String .
+  var  Atts : AttributeSet .
+
+  rl < X : User | state: 1, process: null, io: null, err: null, Atts >
+     createdProcess(X, processManager, P, IO, ERR)
+  => < X : User | state: 2, process: P, io: IO, err: ERR, Atts >
+     send(IO, X, "10 16 + p\n")
+     waitForExit(P, X) .
+  rl < X : User | state: 2, io: IO, Atts >
+     sent(X, IO)
+  => < X : User | state: 3, io: IO, Atts >
+     receive(IO, X) .
+  rl < X : User | state: 3, io: IO, result: "", Atts >
+     received(X, IO, Result)                            ---- Result --> "26\n"
+  => < X : User | state: 4, io: IO, result: substr(Result, 0, sd(length(Result), 1)), Atts >
+     send(IO, X, "4 * p") . ---- Intentionally incomplete, missing "\n"
+  rl < X : User | state: 4, io: IO, Atts >
+     sent(X, IO)
+  => < X : User | state: 5, io: IO, Atts >
+     receive(IO, X) .
+  rl < X : User | state: 5, process: P, io: IO, result: Str, Atts >
+     received(X, IO, Result)                            ---- Result --> "104\n"
+  => < X : User | state: 6, process: P, io: IO, result: substr(Result, 0, sd(length(Result), 1)), Atts >
+     signalProcess(P, X, "SIGTERM") .
+  rl < X : User | state: 6, process: P, Atts >
+     signaledProcess(X, P)
+     exited(X, P, terminatedBySignal("SIGTERM"))
+  => < X : User | state: 7, process: P, Atts > .
+endm
+---(
+set trace on .
+erew <>
+     < me : User | state: 1, process: null, io: null, err: null, result: "" >
+     createProcess(processManager, me, "dc", nil, none) .
+rewrites: 12 in 0ms cpu (3ms real) (14268 rewrites/second)
+result Configuration: <> < me : User | state: 7,process: process(66941),io: socket(3),err: socket(5),result: "104" >
+)

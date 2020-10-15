@@ -1,0 +1,15 @@
+smod M3 is
+endsm
+
+load full-maude
+(select META-LEVEL .)
+*** El módulo M1 se carga correctamente
+(load mod 'M1 is nil sorts none . none none none none none endm .)
+
+eof
+
+*** El módulo M2 no se carga y Full Maude deja de responder
+(load smod 'M2 is nil sorts none . none none none none none none none endsm .)
+*** Igualmente el módulo M3 no se carga y Full Maude tampoco responde
+(load upModule('M3, true) .)
+

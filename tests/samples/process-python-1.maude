@@ -1,0 +1,50 @@
+---- Creates a Python3 interpreter to calculate 2+3
+---(
+IT REPRODUCES THE FOLLOWING INTERACTION:
+
+duran@pdi-131-112 samples % python3 -i
+Python 3.7.2 (default, Feb 12 2019, 08:15:36)
+[Clang 10.0.0 (clang-1000.11.45.5)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> 2 + 3
+5
+>>> quit()
+duran@pdi-131-112 samples %
+---)
+
+load process-dc
+
+mod MAUDE-PROCESS is
+  inc PROCESS .
+  inc MAYBE{Oid} * ( op maybe to null ).
+  op me : -> Oid .
+  op User : -> Cid .
+  op state:_ : Nat -> Attribute .
+  op process:_ : Maybe{Oid} -> Attribute .
+  op result:_ : String -> Attribute .
+  op init : -> Configuration .
+
+  vars X MP MERR MIO PP PERR PIO : Oid .
+  vars Result Str : String .
+  var  Atts : AttributeSet .
+
+  rl init
+  => < me : User | state: 1, process: null, result: "" >
+     createProcess(processManager, me, "python3", "-i", none) .
+  rl < X : User | state: 1, process: null, Atts >
+     createdProcess(me, processManager, PP, PIO, PERR)
+  => < X : User | state: 2, process: PP, Atts >
+     send(PIO, me, "2 + 3\n")
+     waitForExit(PP, me) .
+  rl < X : User | state: 2, process: PP, Atts >
+     sent(me, PIO)
+  => < X : User | state: 3, process: PP, Atts >
+     receive(PIO, me) .
+  rl < X : User | state: 3, process: PP, result: Str, Atts >
+     received(me, PIO, Result)
+  => < X : User | state: 4, process: PP, result: substr(Result, 0, sd(length(Result), 1)), Atts >
+     send(PIO, me, "quit()\n") .
+endm
+
+set trace on .
+erew <> init .
