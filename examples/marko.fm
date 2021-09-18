@@ -1,0 +1,31 @@
+mod TEST1 is
+   inc CONFIGURATION .
+   protecting NAT .
+   sort Slot .
+   ops one two three : -> Slot [ctor] .
+   ---- class Pool | one : Nat, two : Nat, three : Nat .
+   sort Pool .
+   subsort Pool < Cid .
+   op Pool : -> Pool .
+   op _:_ : Slot Nat -> Attribute [ctor prec 15 gather (e &)] .
+   ---- class Item | kind : Slot .
+   sort Item .
+   subsort Item < Cid .
+   op Item : -> Item .
+   op kind`:_ : Slot -> Attribute [ctor gather (&)] .
+   ---- msg add : Oid Oid -> Msg . *** Item Pool
+   op add : Oid Oid -> Msg .
+   vars I P : Oid .
+   var N : Nat .
+   var S : Slot .
+   rl [doAdd] :
+       < I : Item | kind : S >
+       < P : Pool | S : N >
+       add(I, P)
+     => < P : Pool | S : N + 1 > .
+endm
+
+rew < I:Oid : Item | kind : one > < P:Oid : Pool | one : 5 > add(I:Oid, P:Oid) .
+---- rewrite in TEST1 : (add(I, P) < P : Pool | one : 5 >) < I : Item | kind : one > .
+---- rewrites: 2 in 0ms cpu (1ms real) (13157 rewrites/second)
+---- result Object: < P : Pool | one : 6 >

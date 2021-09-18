@@ -1,3 +1,6 @@
+---- from the Maude Manual
+---- by the Maude team
+
 ---- This program executes the computation in PROCESS-DC and shows its result.
 ---- The program shows how we can execute external processes and orchestrate their execution.
 

@@ -1,4 +1,8 @@
-#  We look for outputs of the form 'result: "104"'
+# from the Maude Manual
+# by the Maude team
+# the select_text function takes two arguments, a text and a regular expression
+# to search occurrences of the given pattern in the text given as first argument
+
 
 import re
 

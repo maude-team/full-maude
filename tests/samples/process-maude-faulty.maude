@@ -1,10 +1,11 @@
----- This program executes the computation in PROCESS-DC and shows its result.
----- The program shows how we can execute external processes and orchestrate their execution.
+---- from the Maude Manual
+---- by the Maude team
 
----- The program runs an external Maude process in which loads the process-dc.maude file.
----- On this process, the program uses the dc to do a calculation.
----- The output is processed in a Python interpreter process using the function select_text.
----- As result, the string "104" is given.
+---- This is a variant of the process-naude.maude file.
+---- Instead of using process-dc.maude, it loads process-dc-faulty.maude, what
+---- makes the execution to suspend on an external process.
+---- It is used in the manual to illustrate the operation of control-c on
+---- suspended external events. 
 
 load process-dc-faulty
 
@@ -106,7 +107,7 @@ endm
 mod PROCESS-MAUDE is
   ---- Maude's path, empty string if in the system path or in the same directory
   op PATH : -> String .
-  eq PATH = "/Users/duran/Maude/maude-3.1-beta/" . ---- E.g., "/Users/duran/Maude/alpha130/"
+  eq PATH = "" . ---- E.g., "/Users/duran/Maude/maude-3.1/"
 
   inc PROCESS-PYTHON .
 

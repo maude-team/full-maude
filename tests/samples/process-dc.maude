@@ -1,5 +1,11 @@
+---- from the Maude Manual
+---- by the Maude team
+
+---- The program invokes the dc as an external process to make simple calculations.
+
 load process
 load maybe
+
 view Oid from TRIV to CONFIGURATION is sort Elt to Oid . endv
 
 mod PROCESS-DC is

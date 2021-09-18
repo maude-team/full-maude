@@ -1,5 +1,15 @@
+---- from the Maude Manual
+---- by the Maude team
+
+---- This is a variant of the process-dc.maude file.
+---- It misses a \n at the end of one of the computations, what makes Maude to
+---- suspend on an external process.
+---- It is used in the manual to illustrate the operation of control-c on
+---- suspended external events.
+
 load process
 load maybe
+
 view Oid from TRIV to CONFIGURATION is sort Elt to Oid . endv
 
 mod PROCESS-DC is

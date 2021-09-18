@@ -1,0 +1,23 @@
+load /Users/duran/workspaces/workspaceMaude/full-maude/full-maude31.maude
+
+(omod TRADE-ORDER is
+    protecting STRING .
+    protecting NAT .
+    sorts Order Symbol CustomerId .
+    subsort Order < Msg .
+    subsorts String < Symbol CustomerId .
+    msg buy_of_for_ : Nat Symbol CustomerId -> Order .
+    msg sell_of_for_ : Nat Symbol CustomerId -> Order .
+endom)
+
+(red in TRADE-ORDER : buy 5 of "T" for "C" .)
+
+(omod LIMIT-ORDER is
+    protecting TRADE-ORDER .
+    pr FLOAT .
+    sort Limit-Order .
+    subsort Limit-Order < Order .
+    msg _at_ : Order Float -> Limit-Order .
+endom)
+
+(red in LIMIT-ORDER : buy 5 of "T" for "C" at 1.2 .)
