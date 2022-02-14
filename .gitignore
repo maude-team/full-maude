@@ -8,3 +8,7 @@ theory-views/theory-views-4.png
 itp/eq-transformations.png
 itp/id-remove-lists.png
 itp/id-remove-sort.png
+theory-views/rel.maude
+theory-views/rel1.maude
+theory-views/rel2.maude
+theory-views/rel3.maude

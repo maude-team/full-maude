@@ -1,0 +1,144 @@
+
+fth EQ is protecting BOOL-OPS .
+  sort Elt .
+  op _~_ : Elt Elt -> Bool .  *** equality predicate
+
+  vars x y : Elt .
+
+  eq x ~ x = true .
+  ceq x = y if (x ~ y) = true [nonexec] .
+endfth
+
+fmod SET-ALGEBRA{X :: EQ} is
+  protecting BOOL .  protecting NAT .
+  sorts NeSet{X} Set{X} .
+  subsorts X$Elt < NeSet{X} < Set{X} .
+
+  op mt : -> Set{X} [ctor] .                                    *** empty set
+  op _,_ : Set{X} Set{X} -> Set{X} [ctor assoc comm id: mt] .   *** set union
+  op _,_ : NeSet{X} NeSet{X} -> NeSet{X} [ctor assoc comm id: mt] . *** set union
+
+  vars x y z : X$Elt .  vars U V W : Set{X} .  vars P Q R : NeSet{X} .
+
+  eq Q,Q = Q .    *** set idempotency
+
+  op _in_ : X$Elt Set{X} -> Bool .            *** set membership
+
+  eq x in mt = false .
+  eq x in (y,U) = if (x ~ y) then true else (x in U) fi .
+
+  op _\_  : Set{X} Set{X} -> Set{X} .           *** set difference
+
+  eq U \ mt = U .
+  eq mt \ V = mt .
+  eq (y,U) \ x = if (y ~ x) then (U \ x) else y,(U \ x) fi .
+  eq U \ (x,V) = (U \ x) \ V .
+
+  op _C=_ : Set{X} Set{X} -> Bool .           *** set containment
+
+  eq U C= (U,V) = true .
+  eq (x,U) C= V = if (x in V) then (U \ x) C= (V \ x) else false fi .
+
+  op _.=._  : Set{X} Set{X} -> Bool [comm] .    *** equality predicate on sets
+
+   eq x .=. y = x ~ y .
+   eq mt .=. mt = true .
+   eq (x , U) .=. V = if (x in V) then (U \ x) ~ (V \ x) else false fi .
+
+  op _/\_ : Set{X} Set{X} -> Set{X} .           *** set intersection
+
+  eq mt /\ U = mt .
+  eq (x,U) /\ V = if (x in V) then x,((U \ x)/\(V \ x)) else mt fi .
+
+  op |_| : Set{X} -> Nat .                  *** cardinality function
+
+  eq | mt | = 0 .
+  eq | x,U | = s(| U \ x |) .
+endfm
+
+fmod PAIR{X :: EQ, Y :: EQ} is protecting BOOL-OPS .
+  sort Pair{X,Y} .
+  op [_,_] : X$Elt Y$Elt -> Pair{X,Y} [ctor] .
+  op _*=*_ : Pair{X,Y} Pair{X,Y} -> Bool .
+
+  vars x z : X$Elt .  vars y w : Y$Elt .
+
+  eq [x,y] *=* [z,w] = (x ~ z) and (y ~ w) .
+endfm
+
+view Pair{X :: EQ, Y :: EQ} from EQ to PAIR{X,Y} is
+     sort Elt to Pair{X,Y} .
+     op _~_ to _*=*_ .
+endv
+
+fmod RELATION{X :: EQ, Y :: EQ} is
+  protecting BOOL .
+  protecting SET-ALGEBRA{X} . 
+  protecting SET-ALGEBRA{Y} . 
+  protecting SET-ALGEBRA{Pair{X,Y}} * (sort Set{Pair{X,Y}} to Relat{X,Y},
+                                       sort NeSet{Pair{X,Y}} to NeRelat{X,Y}) .
+
+  op _[_] : Relat{X,Y} X$Elt -> Set{Y} .               *** relation application
+  op dom : Relat{X,Y} -> Set{X} .                      *** domain of relation
+  op cod : Relat{X,Y} -> Set{Y} .                      *** codomain of relation
+  op pfun : Relat{X,Y} -> Bool .                       *** is R a partial function?
+  op rem[_,_] : X$Elt Relat{X,Y} -> Relat{X,Y} .       *** remove x inputs
+  op _[_:=_] : Relat{X,Y} X$Elt Y$Elt  -> Relat{X,Y} . *** for R, x, y, replaces all
+                                                       *** previous [x,z] pairs in R by [x,y]
+						       *** this is most useful for pfuns
+                                                  
+
+    vars x z : X$Elt .  vars y w : Y$Elt .
+    vars R G R1 R2 : Relat{X,Y} . var R'G' : NeRelat{X,Y} .
+
+  eq ([x,y],R)[x] = y,R[x] .   
+  ceq R[x] = mt if not(x in dom(R)) .
+
+  eq dom(mt) = mt . 
+  eq dom([x,y],R) = x,dom(R) .
+
+  eq cod(mt) = mt . 
+  eq cod([x,y],R) = y,cod(R) .
+
+  eq pfun(mt) = true .
+  eq pfun([x,y],R) = not(x in dom(R)) and pfun(R) .
+
+  eq rem[x,([x,y],R)] = rem[x,R] .
+  ceq rem[x,R] = R if not(x in dom(R)) .
+
+  eq R[x := y] = [x,y], rem[x,R] .
+endfm
+
+fmod REL{X :: EQ} is
+  protecting RELATION{X,X}  *(sort Relat{X,X} to Rel{X},
+                              sort NeRelat{X,X} to NeRel{X}) .
+
+  op _;_ : Rel{X} Rel{X} -> Rel{X} .              *** relation composition
+  op [_]+ : Rel{X} -> Rel{X} .                    *** transitive closure
+  op [_|_|_]+ : Rel{X} Rel{X} Rel{X} -> Rel{X} .  *** auxiliary function for [_]+
+
+  vars x z y w : X$Elt .
+  vars R G R1 R2 : Rel{X} . var R' G' : NeRel{X} .
+
+  eq (R',[x,y]) ; G' = (R' ; G') , ([x,y] ; G') .
+  eq [x,y] ; ([y,z],R) = [x,z], ([x,y] ; R) .
+  eq mt ; R = mt .
+  eq R ; mt = mt .
+  ceq R' ; G' = mt if cod(R') /\ dom(G') = mt .
+
+  eq [R]+ = [R | mt | R ; R]+ .
+  eq [R | G | mt]+ = R,G .
+  eq [R | G | R']+ = [R | G,R' | (R' \ (R,G)); R]+ .
+endfm
+
+view Nat from EQ to NAT is
+  sort Elt to Nat .
+  op _~_ to _==_ .
+endv
+
+
+fmod NAT-REL is
+  protecting REL{Nat} .
+endfm
+
+
