@@ -116,11 +116,15 @@ Maude> (srew (0)[nil] (1)[nil] (2)[3 2 1] using match (0)[nil] (2)[3 2 1] .)
 srewrite in HANOI-COUNT :(0)[nil](1)[nil](2)[3 2 1] using match(0)[nil](2)[3 2 1].
 
 No solution.
-)
-(srew in HANOI : (0)[nil] (1)[nil] (2)[3 2 1] using amatch 3 L1:NatList 1 .)
-***(
+
 Maude> (srew in HANOI : (0)[nil] (1)[nil] (2)[3 2 1] using amatch 3 L1 1 .)
-Error: Incorrect input
+srewrite in HANOI :(0)[nil](1)[nil](2)[3 2 1] using amatch 3 L1:NatList 1 .
+
+Solution 1
+result Hanoi :
+  (0)[nil](1)[nil](2)[3 2 1]
+
+No more solutions.
 Maude> (srew (0)[3 2 1] (1)[nil] (2)[nil] using move ; move .)
 srewrite in HANOI-COUNT :(0)[3 2 1](1)[nil](2)[nil] using move ; move .
 
@@ -146,7 +150,7 @@ result Hanoi :
 
 No more solutions.
 )
-(srew (0)[3 2] (1)[1] (2)[nil] using move[S <- 0] | move[T <- 0] .)
+(srew in HANOI : (0)[3 2] (1)[1] (2)[nil] using move[S <- 0] | move[T <- 0] .)
 ***(
 Maude> (srew (0)[3 2] (1)[1] (2)[nil] using move[S <- 0] | move[T <- 0] .)
 Error: Incorrect input
