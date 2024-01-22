@@ -1,0 +1,75 @@
+view QidList from TRIV to QID-LIST is
+  sort Elt to QidList .
+endv
+
+view TermList from TRIV to META-MODULE is
+  sort Elt to TermList .
+endv
+
+view RuleSet from TRIV to META-MODULE is
+  sort Elt to RuleSet .
+endv
+
+view EquationSet from TRIV to META-MODULE is
+  sort Elt to EquationSet .
+endv
+
+view VariableSet from TRIV to META-LEVEL is
+  sort Elt to VariableSet .
+endv
+
+view ImportList from TRIV to META-MODULE is
+  sort Elt to ImportList .
+endv
+
+view Condition from TRIV to META-MODULE is
+  sort Elt to Condition .
+endv
+
+view QidSet from TRIV to META-MODULE is
+  sort Elt to QidSet .
+endv
+
+view Module from TRIV to META-MODULE is
+  sort Elt to Module .
+endv
+
+view ParameterDeclList from TRIV to META-MODULE is
+  sort Elt to ParameterDeclList .
+endv
+
+view Bound from TRIV to META-LEVEL is
+  sort Elt to Bound .
+endv
+
+view Oid from TRIV to CONFIGURATION+ is
+  sort Elt to Oid .
+endv
+
+view Sort from TRIV to META-LEVEL is
+  sort Elt to Sort .
+endv
+
+view SortMappingSet from TRIV to META-LEVEL is
+  sort Elt to SortMappingSet .
+endv
+
+view OpMappingSet from TRIV to META-LEVEL is
+  sort Elt to OpMappingSet .
+endv
+
+view StratMappingSet from TRIV to META-LEVEL is
+  sort Elt to StratMappingSet .
+endv
+
+view Tuple{X1 :: TRIV, X2 :: TRIV} from TRIV to 2TUPLE{X1, X2} is
+  sort Elt to Tuple{X1, X2} .
+endv
+
+view ViewExpression from TRIV to META-LEVEL is
+  sort Elt to ViewExpression .
+endv
+
+view Set{X :: TRIV} from TRIV to SET{X} is
+  sort Elt to Set{X} .
+endv

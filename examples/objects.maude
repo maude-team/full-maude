@@ -1,0 +1,163 @@
+---- OPTION 0: WHAT IS CURRENTLY DONE BY FULL MAUDE
+
+mod NODE{X :: TRIV} is
+  inc CONFIGURATION .
+  ---- class Node{X} | value: X$El .
+  sort Node{X} .
+  subsort Node{X} < Cid .
+  op Node : -> Node{X} . ---- LEADS TO A NON-UNIQUE-LEAST-SORT PROBLEM 
+  op value:_ : X$Elt -> Attribute [gather(&)] .
+endm
+
+mod FOO is 
+  pr NODE{Nat} .
+  pr NODE{String} .
+endm
+
+---- Warning: sort declarations for constant Node do not have an unique least sort.
+
+rew < O1:Oid : Node | value: 4 >
+    < O2:Oid : Node | value: "4" > .
+
+red "-------------------------------------" .
+
+---- OPTION 1 AS PROPOSED BY STEVEN
+
+mod NODE{X :: TRIV} is
+  inc CONFIGURATION .
+  ---- class Node{X} 
+  sort Node{X} .
+  subsort Node{X} < Cid .
+  op Node{X} : -> Node{X} . ---- PARAMETERIZED CONSTANTS ARE NOT CURRENTLY SUPPORTED
+  op value:_ : X$Elt -> Attribute [gather(&)] .
+endm
+
+mod FOO is 
+  pr NODE{Nat} .
+  pr NODE{String} .
+endm
+
+rew < O1:Oid : Node{Nat} | value: 4 >
+    < O2:Oid : Node{String} | value: "4" > .
+
+red "-------------------------------------" .
+
+---- OPTION 2
+
+mod NODE{X :: TRIV} is
+  inc CONFIGURATION .
+  ---- class Node{X} 
+  sort Node{X} .
+  subsort Node{X} < Cid .
+  ---- op Node : -> Node{X} . ---- NO CONSTANT OF CLASS SORT
+  op value:_ : X$Elt -> Attribute [gather(&)] .
+  vars O O' : Oid .
+  var  Node : Node{X} . ---- A VARIABLE OF THE CLASS SORT IS USED 
+  var  Atts : AttributeSet .
+  var  V : X$Elt .
+  op to_from_getValue() : Oid Oid -> Msg .
+  op to_from_returnValue(_) : Oid Oid X$Elt -> Msg .
+  rl < O : Node | value: V, Atts >
+     to O from O' getValue() 
+  => < O : Node | value: V, Atts >
+     to O' from O returnValue(V) .
+endm
+
+mod FOO is 
+  pr NODE{Nat} .
+  pr NODE{String} .
+endm
+
+rew < O1:Oid : C1:Node{Nat} | value: 4 >
+    < O2:Oid : C2:Node{String} | value: "4" > .
+
+mod SNODE{X :: TRIV} is 
+  inc NODE{X} .
+  ---- class SNode{X} .
+  ---- subclass SNode{X} < Node{X} .
+  sort SNode{X} .
+  subsort SNode{X} < Node{X} .
+  ---- op SNode : -> SNode{X} . ---- NO CONSTANT OF CLASS SORT
+  op value2:_ : X$Elt -> Attribute [gather(&)] .
+endm
+
+mod SFOO is 
+  pr SNODE{Nat} .
+  pr SNODE{String} .
+endm
+
+rew < O1:Oid : C1:SNode{Nat} | value: 4, value2: 5 >
+    < O2:Oid : C2:Node{String} | value: "4" > 
+    to O1:Oid from O3:Oid getValue()
+    to O2:Oid from O3:Oid getValue()
+    .
+
+red "-------------------------------------" .
+
+mod NODE{X :: TRIV} is
+  inc CONFIGURATION .
+  ---- class Node{X} 
+  sorts Node{X} ObjectNode{X} .
+  subsort Node{X} < Cid .
+  subsort ObjectNode{X} < Object .
+  ---- op Node : -> Node{X} . ---- NO CONSTANT OF CLASS SORT
+  op value:_ : X$Elt -> Attribute [gather(&)] .
+  vars O O' : Oid .
+  var  Node : Node{X} . ---- A VARIABLE OF THE CLASS SORT IS USED 
+  var  Atts : AttributeSet .
+  var  V : X$Elt .
+  mb (< O : Node | value: V, Atts >) : ObjectNode{X} . ---- OBJECT SORTS FILLED UP WITH MBS
+  op to_from_getValue() : Oid Oid -> Msg .
+  op to_from_returnValue(_) : Oid Oid X$Elt -> Msg .
+  rl < O : Node | value: V, Atts >
+     to O from O' getValue() 
+  => < O : Node | value: V, Atts >
+     to O' from O returnValue(V) .
+endm
+
+mod FOO is 
+  pr NODE{Nat} .
+  pr NODE{String} .
+endm
+
+rew < O1:Oid : C1:Node{Nat} | value: 4 >
+    < O2:Oid : C2:Node{String} | value: "4" > .
+
+mod SNODE{X :: TRIV} is 
+  inc NODE{X} .
+  ---- class SNode{X} .
+  ---- subclass SNode{X} < Node{X} .
+  sorts SNode{X} ObjectSNode{X} .
+  subsort SNode{X} < Node{X} .
+  subsort ObjectSNode{X} < ObjectNode{X} .
+  ---- op SNode : -> SNode{X} . ---- NO CONSTANT OF CLASS SORT
+  op value2:_ : X$Elt -> Attribute [gather(&)] .
+  vars O O' : Oid .
+  var  SNode : SNode{X} . ---- VARIABLE OF THE CLASS SORT 
+  var  Atts : AttributeSet .
+  vars V V2 : X$Elt .
+  mb (< O : SNode | value: V, value2: V2, Atts >) : ObjectSNode{X} . 
+endm
+
+mod SFOO is 
+  pr SNODE{Nat} .
+  pr SNODE{String} .
+endm
+
+rew < O1:Oid : C1:SNode{Nat} | value: 4, value2: 5 >
+    < O2:Oid : C2:Node{String} | value: "4" > 
+    to O1:Oid from O3:Oid getValue()
+    to O2:Oid from O3:Oid getValue()
+    .
+
+red "-------------------------------------" .
+
+view List{X :: TRIV} from TRIV to LIST{X} is 
+  sort Elt to List{X} .
+endv 
+
+fmod FOO is
+  pr (LIST * (op nil to nil2, op __ to _`,_)){List{Nat}} .
+endfm
+
+red 2 3, 3, 4 .

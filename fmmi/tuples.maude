@@ -1,0 +1,160 @@
+fmod 2TUPLE{X :: TRIV, Y :: TRIV} is
+  sorts Tuple{X, Y} .
+  op ((_,_)) : X$Elt Y$Elt -> Tuple{X, Y} .
+  op p1_ : Tuple{X, Y} -> X$Elt .
+  op p2_ : Tuple{X, Y} -> Y$Elt .
+  eq p1(V1:[X$Elt],V2:[Y$Elt]) = V1:[X$Elt] .
+  eq p2(V1:[X$Elt],V2:[Y$Elt]) = V2:[Y$Elt] .
+endfm
+
+fmod 3TUPLE{X :: TRIV, Y :: TRIV, Z :: TRIV} is
+  sort Tuple{X, Y, Z} .
+  op ((_,_,_)) : X$Elt Y$Elt Z$Elt -> Tuple{X, Y, Z} .
+  op p1_ : Tuple{X, Y, Z} -> X$Elt .
+  op p2_ : Tuple{X, Y, Z} -> Y$Elt .
+  op p3_ : Tuple{X, Y, Z} -> Z$Elt .
+  eq p1((A:[X$Elt], B:[Y$Elt], C:[Z$Elt])) = A:[X$Elt] .
+  eq p2((A:[X$Elt], B:[Y$Elt], C:[Z$Elt])) = B:[Y$Elt] .
+  eq p3((A:[X$Elt], B:[Y$Elt], C:[Z$Elt])) = C:[Z$Elt] .
+endfm
+
+fmod 4TUPLE{W :: TRIV, X :: TRIV, Y :: TRIV, Z :: TRIV} is
+  sort Tuple{W, X, Y, Z} .
+  op ((_,_,_,_)) : W$Elt X$Elt Y$Elt Z$Elt -> Tuple{W, X, Y, Z} .
+  op p1_ : Tuple{W, X, Y, Z} -> W$Elt .
+  op p2_ : Tuple{W, X, Y, Z} -> X$Elt .
+  op p3_ : Tuple{W, X, Y, Z} -> Y$Elt .
+  op p4_ : Tuple{W, X, Y, Z} -> Z$Elt .
+  eq p1((A:[W$Elt], B:[X$Elt], C:[Y$Elt], D:[Z$Elt])) = A:[W$Elt] .
+  eq p2((A:[W$Elt], B:[X$Elt], C:[Y$Elt], D:[Z$Elt])) = B:[X$Elt] .
+  eq p3((A:[W$Elt], B:[X$Elt], C:[Y$Elt], D:[Z$Elt])) = C:[Y$Elt] .
+  eq p4((A:[W$Elt], B:[X$Elt], C:[Y$Elt], D:[Z$Elt])) = D:[Z$Elt] .
+endfm
+
+fmod 5TUPLE{V :: TRIV, W :: TRIV, X :: TRIV, Y :: TRIV, Z :: TRIV} is
+  sort Tuple{V, W, X, Y, Z} .
+  op ((_,_,_,_,_)) : V$Elt W$Elt X$Elt Y$Elt Z$Elt -> Tuple{V, W, X, Y, Z} .
+  op p1_ : Tuple{V, W, X, Y, Z} -> V$Elt .
+  op p2_ : Tuple{V, W, X, Y, Z} -> W$Elt .
+  op p3_ : Tuple{V, W, X, Y, Z} -> X$Elt .
+  op p4_ : Tuple{V, W, X, Y, Z} -> Y$Elt .
+  op p5_ : Tuple{V, W, X, Y, Z} -> Z$Elt .
+  eq p1((A:[V$Elt], B:[W$Elt], C:[X$Elt], D:[Y$Elt], E:[Z$Elt])) = A:[V$Elt] .
+  eq p2((A:[V$Elt], B:[W$Elt], C:[X$Elt], D:[Y$Elt], E:[Z$Elt])) = B:[W$Elt] .
+  eq p3((A:[V$Elt], B:[W$Elt], C:[X$Elt], D:[Y$Elt], E:[Z$Elt])) = C:[X$Elt] .
+  eq p4((A:[V$Elt], B:[W$Elt], C:[X$Elt], D:[Y$Elt], E:[Z$Elt])) = D:[Y$Elt] .
+  eq p5((A:[V$Elt], B:[W$Elt], C:[X$Elt], D:[Y$Elt], E:[Z$Elt])) = E:[Z$Elt] .
+endfm
+
+fmod 6TUPLE{X1 :: TRIV, X2 :: TRIV, X3 :: TRIV, X4 :: TRIV, X5 :: TRIV, X6 :: TRIV} is
+  sort Tuple{X1, X2, X3, X4, X5, X6} .
+  op ((_,_,_,_,_,_)) : X1$Elt X2$Elt X3$Elt X4$Elt X5$Elt X6$Elt
+       -> Tuple{X1, X2, X3, X4, X5, X6} .
+  op p1_ : Tuple{X1, X2, X3, X4, X5, X6} -> X1$Elt .
+  op p2_ : Tuple{X1, X2, X3, X4, X5, X6} -> X2$Elt .
+  op p3_ : Tuple{X1, X2, X3, X4, X5, X6} -> X3$Elt .
+  op p4_ : Tuple{X1, X2, X3, X4, X5, X6} -> X4$Elt .
+  op p5_ : Tuple{X1, X2, X3, X4, X5, X6} -> X5$Elt .
+  op p6_ : Tuple{X1, X2, X3, X4, X5, X6} -> X6$Elt .
+  eq p1((V1:[X1$Elt],V2:[X2$Elt],V3:[X3$Elt],V4:[X4$Elt],V5:[X5$Elt],V6:[X6$Elt]))
+    = V1:[X1$Elt] .
+  eq p2((V1:[X1$Elt],V2:[X2$Elt],V3:[X3$Elt],V4:[X4$Elt],V5:[X5$Elt],V6:[X6$Elt]))
+    = V2:[X2$Elt] .
+  eq p3((V1:[X1$Elt],V2:[X2$Elt],V3:[X3$Elt],V4:[X4$Elt],V5:[X5$Elt],V6:[X6$Elt]))
+    = V3:[X3$Elt] .
+  eq p4((V1:[X1$Elt],V2:[X2$Elt],V3:[X3$Elt],V4:[X4$Elt],V5:[X5$Elt],V6:[X6$Elt]))
+    = V4:[X4$Elt] .
+  eq p5((V1:[X1$Elt],V2:[X2$Elt],V3:[X3$Elt],V4:[X4$Elt],V5:[X5$Elt],V6:[X6$Elt]))
+    = V5:[X5$Elt] .
+  eq p6((V1:[X1$Elt],V2:[X2$Elt],V3:[X3$Elt],V4:[X4$Elt],V5:[X5$Elt],V6:[X6$Elt]))
+    = V6:[X6$Elt] .
+endfm
+
+fmod 7TUPLE{X1 :: TRIV, X2 :: TRIV, X3 :: TRIV,
+            X4 :: TRIV, X5 :: TRIV, X6 :: TRIV, X7 :: TRIV} is
+  ---- define it using 6TUPLE{}
+  sort Tuple{X1, X2, X3, X4, X5, X6, X7} .
+  op ((_,_,_,_,_,_,_)) : X1$Elt X2$Elt X3$Elt X4$Elt X5$Elt X6$Elt X7$Elt
+       -> Tuple{X1, X2, X3, X4, X5, X6, X7} .
+  op p1_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X1$Elt .
+  op p2_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X2$Elt .
+  op p3_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X3$Elt .
+  op p4_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X4$Elt .
+  op p5_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X5$Elt .
+  op p6_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X6$Elt .
+  op p7_ : Tuple{X1, X2, X3, X4, X5, X6, X7} -> X7$Elt .
+  eq p1((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+         V6:[X6$Elt], V7:[X7$Elt]))
+    = V1:[X1$Elt] .
+  eq p2((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+        V6:[X6$Elt], V7:[X7$Elt]))
+    = V2:[X2$Elt] .
+  eq p3((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+         V6:[X6$Elt], V7:[X7$Elt]))
+    = V3:[X3$Elt] .
+  eq p4((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+         V6:[X6$Elt], V7:[X7$Elt]))
+    = V4:[X4$Elt] .
+  eq p5((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+         V6:[X6$Elt], V7:[X7$Elt]))
+    = V5:[X5$Elt] .
+  eq p6((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+         V6:[X6$Elt], V7:[X7$Elt]))
+    = V6:[X6$Elt] .
+  eq p7((V1:[X1$Elt], V2:[X2$Elt], V3:[X3$Elt], V4:[X4$Elt], V5:[X5$Elt],
+         V6:[X6$Elt], V7:[X7$Elt]))
+    = V7:[X7$Elt] .
+endfm
+
+fmod 8TUPLE{X1 :: TRIV, X2 :: TRIV, X3 :: TRIV, X4 :: TRIV,
+            X5 :: TRIV, X6 :: TRIV, X7 :: TRIV, X8 :: TRIV} is
+  sort Tuple{X1, X2, X3, X4, X5, X6, X7, X8} .
+  op ((_,_,_,_,_,_,_,_)) : X1$Elt X2$Elt X3$Elt X4$Elt X5$Elt X6$Elt X7$Elt X8$Elt
+       -> Tuple{X1, X2, X3, X4, X5, X6, X7, X8} .
+  op p1_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X1$Elt .
+  op p2_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X2$Elt .
+  op p3_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X3$Elt .
+  op p4_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X4$Elt .
+  op p5_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X5$Elt .
+  op p6_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X6$Elt .
+  op p7_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X7$Elt .
+  op p8_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8} -> X8$Elt .
+  var V1 : [X1$Elt] . var V2 : [X2$Elt] . var V3 : [X3$Elt] . var V4 : [X4$Elt] .
+  var V5 : [X5$Elt] . var V6 : [X6$Elt] . var V7 : [X7$Elt] . var V8 : [X8$Elt] .
+  eq p1((V1, V2, V3, V4, V5, V6, V7, V8)) = V1 .
+  eq p2((V1, V2, V3, V4, V5, V6, V7, V8)) = V2 .
+  eq p3((V1, V2, V3, V4, V5, V6, V7, V8)) = V3 .
+  eq p4((V1, V2, V3, V4, V5, V6, V7, V8)) = V4 .
+  eq p5((V1, V2, V3, V4, V5, V6, V7, V8)) = V5 .
+  eq p6((V1, V2, V3, V4, V5, V6, V7, V8)) = V6 .
+  eq p7((V1, V2, V3, V4, V5, V6, V7, V8)) = V7 .
+  eq p8((V1, V2, V3, V4, V5, V6, V7, V8)) = V8 .
+endfm
+
+fmod 9TUPLE{X1 :: TRIV, X2 :: TRIV, X3 :: TRIV, X4 :: TRIV,
+            X5 :: TRIV, X6 :: TRIV, X7 :: TRIV, X8 :: TRIV, X9 :: TRIV} is
+  sort Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} .
+  op ((_,_,_,_,_,_,_,_,_)) : X1$Elt X2$Elt X3$Elt X4$Elt X5$Elt X6$Elt X7$Elt
+       X8$Elt X9$Elt -> Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} .
+  op p1_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X1$Elt .
+  op p2_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X2$Elt .
+  op p3_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X3$Elt .
+  op p4_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X4$Elt .
+  op p5_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X5$Elt .
+  op p6_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X6$Elt .
+  op p7_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X7$Elt .
+  op p8_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X8$Elt .
+  op p9_ : Tuple{X1, X2, X3, X4, X5, X6, X7, X8, X9} -> X9$Elt .
+  var V1 : [X1$Elt] . var V2 : [X2$Elt] . var V3 : [X3$Elt] . var V4 : [X4$Elt] .
+  var V5 : [X5$Elt] . var V6 : [X6$Elt] . var V7 : [X7$Elt] . var V8 : [X8$Elt] .
+  var V9 : [X9$Elt] .
+  eq p1((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V1 .
+  eq p2((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V2 .
+  eq p3((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V3 .
+  eq p4((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V4 .
+  eq p5((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V5 .
+  eq p6((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V6 .
+  eq p7((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V7 .
+  eq p8((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V8 .
+  eq p9((V1, V2, V3, V4, V5, V6, V7, V8, V9)) = V9 .
+endfm

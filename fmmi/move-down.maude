@@ -1,0 +1,361 @@
+***
+*** The \texttt{down} Function
+***
+
+*** Given a term of sort \texttt{Term} metarepresenting a term of sort
+*** \texttt{Term} or \texttt{Module}, the \texttt{down} function can be seen
+*** as the inverse of the \texttt{up} function discussed in the previous
+*** section, that is, it returns the original term that had been
+*** metarepresented. There are also \texttt{down} functions for terms
+*** metarepresenting terms in other sorts. We present here only some of them.
+
+*** We assume that the \texttt{down} functions are called with valid
+*** metarepresentations. In fact, these functions should be declared as
+*** partial functions going to error sorts when their arguments are invalid.
+
+*** The main application of the \texttt{down} functions is in the evaluation
+*** of the \texttt{down} command (see
+*** Section~\ref{structured-specifications}).  However, they are also used in
+*** other tasks, as for example in the parsing of some inputs.
+
+-------------------------------------------------------------------------------
+*******************************************************************************
+-------------------------------------------------------------------------------
+
+fmod MOVE-DOWN is
+  pr FM-UNIT .
+  pr CONVERSION .
+  pr FM-INT-LIST .
+
+  op downTerm : Term -> [Term] .
+  op downModule : Term -> [Module] .
+  op downQid : Term -> [Qid] [memo] .
+  op downQidList : Term -> [QidList] .
+  op downTypes : Term -> [TypeList] .
+  op downSorts : Term -> [SortSet] .
+  op downSort : Term -> [Sort] .
+  op downModExp : Term -> [ModuleExpression] .
+  op downParList : Term -> [NeParameterList] .
+  op downNat : Term -> [Int] .
+  op downString : Term -> [String] .
+
+  op downResultPair : Term -> [ResultPair] .
+  op downTerm : TermList -> [Term] .
+  op downImports : TermList -> [ImportList] .
+  op downSubsorts : TermList -> [SubsortDeclSet] .
+  op downOps : TermList -> [OpDeclSet] .
+  op downEqCond : TermList -> [EqCondition] .
+  op downCond : TermList -> [Condition] .
+  op downMbs : TermList -> [MembAxSet] .
+  op downEqs : TermList -> [EquationSet] .
+  op downRls : TermList -> [RuleSet] .
+  op downAttrs : TermList -> [AttrSet] .
+  op downAttr : Term -> [Attr] .
+  op downHooks : TermList -> [HookList] .
+  op downMetaNat : Term -> [Term] .
+  op downNat : TermList -> [IntList] .
+
+  op downClasses : TermList -> [ClassDeclSet] .
+  op downMsgs : TermList -> [MsgDeclSet] .
+  op downSubclasses : TermList -> [SubclassDeclSet] .
+  op downClassAttrs : TermList -> [AttrDeclSet] .
+
+  op downStratDcls : TermList -> [StratDeclSet] .
+  op downStratDefs : TermList -> [StratDefSet] .
+
+  vars T T' T'' T''' T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 : Term .
+  vars TL TL' : TermList .
+  vars NTL NTL' : NeTermList .
+  vars QI QI' F V L : Qid .
+  var  Ct : Constant .
+  var  M : Module .
+  var  Tp : Type .
+
+  eq downResultPair('`{_`,_`}[T, T']) = {downTerm(T), downTerm(T')} .
+
+  eq downModule('fmod_is_sorts_.____endfm[T1, T2, T3, T4, T5, T6, T7])
+    = (fmod downModExp(T1) is
+         downImports(T2)
+         sorts downSorts(T3) .
+         downSubsorts(T4)
+         downOps(T5)
+         downMbs(T6)
+         downEqs(T7)
+       endfm) .
+  eq downModule('mod_is_sorts_._____endm[T1, T2, T3, T4, T5, T6, T7, T8])
+    = (mod downModExp(T1) is
+         downImports(T2)
+         sorts downSorts(T3) .
+         downSubsorts(T4)
+         downOps(T5)
+         downMbs(T6)
+         downEqs(T7)
+         downRls(T8)
+       endm) .
+  eq downModule('omod_is_sorts_.________endom[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11])
+    = (omod downModExp(T1) is
+         downImports(T2)
+         sorts downSorts(T3) .
+         downSubsorts(T4)
+         downClasses(T5)
+         downSubclasses(T6)
+         downOps(T7)
+         downMsgs(T8)
+         downMbs(T9)
+         downEqs(T10)
+         downRls(T11)
+       endom) .
+   eq downModule('smod_is_sorts_._____endm[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10])
+     = (smod downModExp(T1) is
+          downImports(T2)
+          sorts downSorts(T3) .
+          downSubsorts(T4)
+          downOps(T5)
+          downMbs(T6)
+          downEqs(T7)
+          downRls(T8)
+          downStratDcls(T9)
+          downStratDefs(T10)
+        endsm) .
+
+  ----  op _{_} : ModuleExpression NeParameterList -> ModuleExpression [ctor ditto] .
+  ----  op _+_ : ModuleExpression ModuleExpression -> ModuleExpression [ctor assoc comm] .
+  ----  op _*(_) : ModuleExpression RenamingSet -> ModuleExpression
+  eq downModExp(Ct) = downQid(Ct) .
+  eq downModExp('_`{_`}[T, T']) = downModExp(T) { downParList(T') } .
+
+  eq downParList(Ct) = downQid(Ct) .
+  eq downParList('_`,_[T, T']) = downParList(T), downParList(T') .
+
+  eq downImports('nil.ImportList) = nil .
+  eq downImports('__[TL]) = downImports(TL) .
+  eq downImports('including_.[T]) = (including downModExp(T) .) .
+  eq downImports('extending_.[T]) = (extending downModExp(T) .) .
+  eq downImports('protecting_.[T]) = (protecting downModExp(T) .) .
+  eq downImports((NTL, NTL')) = (downImports(NTL) downImports(NTL')) .
+
+  eq downSubsorts('none.SubsortDeclSet) = none .
+  eq downSubsorts('__[TL]) = downSubsorts(TL) .
+  eq downSubsorts('subsort_<_.[T, T']) = (subsort downQid(T) < downQid(T') .) .
+  eq downSubsorts((NTL, NTL')) = (downSubsorts(NTL) downSubsorts(NTL')) .
+
+  eq downOps('none.OpDeclSet) = none .
+  eq downOps('__[TL]) = downOps(TL) .
+  eq downOps('op_:_->_`[_`].[Ct, T, T', T''])
+    = (op downQid(Ct) : downTypes(T) -> downQid(T') [downAttrs(T'')] .) .
+  eq downOps((NTL, NTL')) = (downOps(NTL) downOps(NTL')) .
+
+  eq downAttrs('none.AttrSet) = none .
+  eq downAttrs('__[TL]) = downAttrs(TL) .
+  ceq downAttrs((TL, TL')) = (downAttr(TL) downAttrs(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downAttrs(T) = downAttr(T) [owise].
+
+  eq downAttr('assoc.Attr) = assoc .
+  eq downAttr('comm.Attr) = comm .
+  eq downAttr('idem.Attr) = idem .
+  eq downAttr('id[T]) = id(downTerm(T)) .
+  eq downAttr('left-id[T]) = left-id(downTerm(T)) .
+  eq downAttr('right-id[T]) = right-id(downTerm(T)) .
+  eq downAttr('poly[T]) = poly(downNat(T)) .
+  eq downAttr('strat[T]) = strat(downNat(T)) .
+  eq downAttr('memo.Attr) = memo .
+  eq downAttr('prec[T]) = prec(downNat(T)) .
+  eq downAttr('gather[T]) = gather(downQidList(T)) .
+  eq downAttr('ctor.Attr) = ctor .
+  eq downAttr('special[T]) = special(downHooks(T)) .
+  eq downAttr('iter.Attr) = iter .
+  eq downAttr('frozen[T]) = frozen(downNat(T)) .
+  eq downAttr('label[T]) = label(downQid(T)) .
+  eq downAttr('config.Attr) = config .
+  eq downAttr('object.Attr) = object .
+  eq downAttr('msg.Attr) = msg .
+  eq downAttr('nonexec.Attr) = nonexec .
+  eq downAttr('variant.Attr) = variant .
+----  eq downAttr('metadata`(_`)['token[T]]) = metadata(downString(downQid(T))) .
+  eq downAttr('owise.Attr) = owise .
+  eq downAttr('metadata[T]) = metadata(substr(string(T), 1, find(string(T), "\".String", 0) + (- 1))) .
+  eq downAttr('format[T]) = format(downQidList(T)) .
+
+  eq downHooks('__[TL]) = downHooks(TL) .
+  eq downHooks('id-hook[T, T']) = id-hook(downQid(T), downQidList(T')) .
+  eq downHooks('op-hook[T, T', T'', T3])
+    = op-hook(downQid(T), downQid(T'), downQidList(T''), downQid(T3)) .
+  eq downHooks('term-hook[T, T']) = term-hook(downQid(T), downTerm(T')) .
+  eq downHooks((NTL, NTL')) = downHooks(NTL) downHooks(NTL') .
+
+----  eq downTerm(T) = downTerm(T, qidError('\r 'Error: '\o 'Incorrect 'term. '\n)) .
+  eq downTerm(QI) = downQid(QI) .
+  eq downTerm('_`[_`][T, T']) = downQid(T)[downTerm(T')] .
+  eq downTerm('_`,_[T, TL]) = (downTerm(T), downTerm(TL)) .
+  eq downTerm((T, NTL)) = (downTerm(T), downTerm(NTL)) .
+  eq downTerm(F[TL])
+    = qidError('\r 'Error: '\o 'Incorrect 'term. '\n) [owise] .
+
+  eq downEqCond('_/\_[TL]) = downEqCond(TL) .
+  eq downEqCond('_=_[T, T']) = downTerm(T) = downTerm(T') .
+  eq downEqCond('_:_[T, T']) = downTerm(T) : downSort(T') .
+  eq downEqCond('_:=_[T, T']) = downTerm(T) := downTerm(T') .
+  eq downEqCond((NTL, NTL')) = downEqCond(NTL) /\ downEqCond(NTL') .
+
+  eq downCond('_/\_[TL]) = downCond(TL) .
+  eq downCond('_=_[T, T']) = downEqCond('_=_[T, T']) .
+  eq downCond('_:_[T, T']) = downEqCond('_:_[T, T']) .
+  eq downCond('_:=_[T, T']) = downEqCond('_:=_[T, T']) .
+  eq downCond('_=>_[T, T']) = downTerm(T) => downTerm(T') .
+  eq downCond((NTL, NTL')) = downCond(NTL) /\ downCond(NTL') .
+
+  eq downMbs('none.MembAxSet) = none .
+  eq downMbs('__[TL]) = downMbs(TL) .
+  eq downMbs('mb_:_`[_`].[T, T', T''])
+    = (mb downTerm(T) : downSort(T') [downAttrs(T'')] .) .
+  eq downMbs('cmb_:_if_`[_`].[T, T', T'', T3])
+    = (cmb downTerm(T) : downSort(T') if downEqCond(T'') [downAttrs(T3)] .) .
+  eq downMbs((NTL, NTL')) = (downMbs(NTL) downMbs(NTL')) .
+
+  eq downEqs('none.EquationSet) = none .
+  eq downEqs('__[TL]) = downEqs(TL) .
+  eq downEqs('eq_=_`[_`].[T, T', T''])
+    = (eq downTerm(T) = downTerm(T') [downAttrs(T'')] .) .
+  eq downEqs('ceq_=_if_`[_`].[T, T', T'', T3])
+    = (ceq downTerm(T) = downTerm(T') if downEqCond(T'') [downAttrs(T3)] .) .
+  eq downEqs((NTL, NTL')) = (downEqs(NTL) downEqs(NTL')) .
+
+  eq downRls('none.RuleSet) = none .
+  eq downRls('__[TL]) = downRls(TL) .
+  eq downRls('rl_=>_`[_`].[T, T', T''])
+    = (rl downTerm(T) => downTerm(T') [downAttrs(T'')] .) .
+  eq downRls('crl_=>_if_`[_`].[T, T', T'', T3])
+    = (crl downTerm(T) => downTerm(T') if downCond(T'') [downAttrs(T3)] .) .
+  eq downRls((NTL, NTL')) = (downRls(NTL) downRls(NTL')) .
+
+  eq downSorts('none.EmptyTypeSet) = none .
+  eq downSorts(('_;_[TL], TL')) = (downSorts(TL) ; downSorts(TL')) .
+  eq downSorts((QI, TL)) = (downSort(QI) ; downSorts(TL)) .
+  eq downSorts(empty) = none .
+
+  eq downSort(Ct) = downQid(Ct) .
+
+  eq downTypes('nil.TypeList) = nil .
+  eq downTypes(('__[TL], TL')) = (downTypes(TL) downTypes(TL')) .
+  eq downTypes((QI, TL)) = (downSort(QI) downTypes(TL)) .
+  eq downTypes(empty) = nil .
+
+  eq downQidList('nil.TypeList) = nil .
+  eq downQidList(('__[TL], TL')) = (downQidList(TL) downQidList(TL')) .
+  eq downQidList((QI, TL)) = (downQid(QI) downQidList(TL)) .
+  eq downQidList(empty) = nil .
+
+  eq downQid(Ct)
+    = qid(substr(string(getName(Ct)), 1, length(string(getName(Ct))))) .
+
+  eq downMetaNat(QI)
+    = qid(substr(string(getName(QI)), 1, length(string(getName(QI))))
+          + ".Nat") .
+
+----  eq downNat(T) = downTerm(T, numberError('Error: 'non 'valid 'metaterm)) .
+  ceq downNat(QI)
+    = trunc(rat(string(getName(QI)), 10))
+    if getType(QI) == 'Nat or getType(QI) == 'NzNat .
+  ceq downNat(QI)
+    = if substr(string(getName(QI)), 0 ,1) == "-"
+      then - trunc(rat(substr(string(getName(QI)), 1,
+                            length(string(getName(QI)))), 10))
+      else trunc(rat(string(getName(QI)), 10))
+      fi
+    if getType(QI) == 'Int or getType(QI) == 'NzInt .
+  eq downNat('0.Zero) = 0 .
+  eq downNat('s_['0.Zero]) = 1 .
+  ceq downNat(F['0.Zero])
+    = trunc(rat(substr(string(F), 3, 2), 10))
+    if substr(string(F), 0, 3) = "s_^" .
+
+  eq downString(QI) = substr(string(QI), 1, _-_(length(string(QI)), 2)) .
+
+  eq downNat('__[TL]) = downNat(TL) .
+  ceq downNat((TL, TL')) = (downNat(TL) downNat(TL')) if TL =/= empty /\ TL' =/= empty .
+
+  eq downClasses('none.ClassDeclSet) = none .
+  eq downClasses('__[TL]) = downClasses(TL) .
+  ceq downClasses((TL, TL')) = (downClasses(TL) downClasses(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downClasses('class_|_.[T, T']) = (class downSort(T) | downClassAttrs(T') .) .
+
+  eq downClassAttrs('none.AttrDeclSet) = none .
+  eq downClassAttrs('_`,_[TL]) = downClassAttrs(TL) .
+  ceq downClassAttrs((TL, TL')) = (downClassAttrs(TL), downClassAttrs(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downClassAttrs('attr_:_[T, T']) = (attr downQid(T) : downSort(T')) .
+
+  eq downSubclasses('none.SubclassDeclSet) = none .
+  eq downSubclasses('__[TL]) = downSubclasses(TL) .
+  ceq downSubclasses((TL, TL')) = (downSubclasses(TL) downSubclasses(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downSubclasses('subclass_<_.[T, T']) = (subclass downQid(T) < downQid(T') .) .
+
+  eq downMsgs('none.MsgDeclSet) = none .
+  eq downMsgs('__[TL]) = downMsgs(TL) .
+ ceq downMsgs((TL, TL')) = (downMsgs(TL) downMsgs(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downMsgs('msg_:_->_.[Ct, T, T'])
+    = (msg downQid(Ct) : downTypes(T) -> downQid(T') .) .
+
+  eq downStratDcls('none.StratDeclSet) = none .
+  eq downStratDcls('__[TL]) = downStratDcls(TL) .
+ ceq downStratDcls((TL, TL')) = (downStratDcls(TL) downStratDcls(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downStratDcls('strat_:_@_`[_`].[Ct, T, T', T''])
+    = (strat downQid(Ct) : downTypes(T) @ downQid(T') [downAttrs(T'')] .) .
+
+  eq downStratDefs('none.StratDefSet) = none .
+  eq downStratDefs('__[TL]) = downStratDefs(TL) .
+ ceq downStratDefs((TL, TL')) = (downStratDefs(TL) downStratDefs(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downStratDefs('sd_:=_`[_`].[T, T', T''])
+   = (sd downStrategy(T) := downStrategy(T') [downAttrs(T'')] .) .
+  eq downStratDefs('csd_:=_if_`[_`].[T, T', T'', T'''])
+   = (csd downStrategy(T) := downStrategy(T') if downCond(T'') [downAttrs(T''')] .) .
+
+  op downStrategy : TermList -> Strategy .
+  eq downStrategy('empty.StrategyList) = empty .
+  eq downStrategy('_`,_[T, T']) = downStrategy(T'), downStrategy(T') .
+ ceq downStrategy((TL, TL')) = (downStrategy(TL), downStrategy(TL')) if TL =/= empty /\ TL' =/= empty .
+  eq downStrategy('fail.Strategy) = fail .
+  eq downStrategy('idle.Strategy) = idle .
+  eq downStrategy('all.Strategy) = all .
+  eq downStrategy('_`[_`]`{_`}[T, T', T''])
+    = downQid(T) [ downSubstitution(T') ]{ downStrategy(T'') } .
+  eq downStrategy('top[T]) = top( downStrategy(T) ) .
+  eq downStrategy('match_s.t._[T, T']) = match downTerm(T) s.t. downCond(T') .
+  eq downStrategy('xmatch_s.t._[T, T']) = xmatch downTerm(T) s.t. downCond(T') .
+  eq downStrategy('amatch_s.t._[T, T']) = amatch downTerm(T) s.t. downCond(T') .
+  eq downStrategy('_|_[T, T']) = downStrategy(T) | downStrategy(T') .
+  eq downStrategy('_;_[T, T']) = downStrategy(T) ; downStrategy(T') .
+  eq downStrategy('_or-else_[T, T']) = downStrategy(T) or-else downStrategy(T') .
+  eq downStrategy('_+[T]) = downStrategy(T) + .
+  eq downStrategy('_?_:_[T, T', T'']) = downStrategy(T) ? downStrategy(T') : downStrategy(T'') .
+  eq downStrategy('matchrew_s.t._by_[T, T', T''])
+    = matchrew downTerm(T) s.t. downCond(T') by downUsingPairSet(T'') .
+  eq downStrategy('xmatchrew_s.t._by_[T, T', T''])
+    = matchrew downTerm(T) s.t. downCond(T') by downUsingPairSet(T'') .
+  eq downStrategy('amatchrew_s.t._by_[T, T', T''])
+    = matchrew downTerm(T) s.t. downCond(T') by downUsingPairSet(T'') .
+  eq downStrategy('one[T]) = one( downStrategy(T) ) .
+  eq downStrategy('_*[T]) = downStrategy(T) * .
+  eq downStrategy('_![T]) = downStrategy(T) ! .
+  eq downStrategy('not[T]) = not(downStrategy(T)) .
+  eq downStrategy('test[T]) = test(downStrategy(T)) .
+  eq downStrategy('try[T]) = try(downStrategy(T)) .
+
+  op downCallStrategy : TermList -> CallStrategy .
+  eq downCallStrategy('_`[`[_`]`][T, T']) = downQid(T) [[ downTerm(T') ]] .
+
+  op downUsingPairSet : TermList -> UsingPairSet .
+  eq downUsingPairSet('_`,_[TL]) = downUsingPairSet(TL) .
+ ceq downUsingPairSet((TL, TL'))
+    = (downUsingPairSet(TL), downUsingPairSet(TL'))
+    if TL =/= empty /\ TL' =/= empty .
+  eq downUsingPairSet('_using_[T, T']) = downQid(T) using downStrategy(T') .
+
+  op downSubstitution : TermList -> Substitution .
+  eq downSubstitution('none.Substitution) = none .
+  eq downSubstitution('_;_[T, T']) = downSubstitution(T) ; downSubstitution(T') .
+ ceq downSubstitution((TL, TL'))
+    = (downSubstitution(TL) ; downSubstitution(TL'))
+    if TL =/= empty /\ TL' =/= empty .
+  eq downSubstitution('_<-_[T, T']) = downQid(T) <- downTerm(T') .
+endfm
+
