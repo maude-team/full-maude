@@ -1,0 +1,492 @@
+  ---- from the book All About Maude
+  ---- from the Maude Manual
+  ---- by the Maude team
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-BUBBLES is
+  pr QID-LIST .
+  sorts @Bubble@ @Token@ @NeTokenList@ 
+        @ViewToken@ @SortToken@
+        @UBubble@ @StBubble@ @EqLBubble@ @RlLBubble@ @SdLBubble@ @RCBubble@ @RBubble@ .
+
+  op token : Qid -> @Token@ 
+      [ special (id-hook Bubble         (1 1) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)) ] .
+  op neTokenList : QidList -> @NeTokenList@
+      [ special (id-hook Bubble         (1 -1)
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList)
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (-> . :))] .
+  op bubble : QidList -> @Bubble@ 
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid) 
+                 id-hook Exclude        (eq ceq rl crl mb cmb sd csd
+                                         var vars strat endm
+                                         endfm endsm sorts subsort subsorts
+                                         subclass subclasses op ops
+                                         protecting pr including inc extending
+                                         ctor assoc comm ==)) ] .
+  op viewToken : Qid -> @ViewToken@                              ---- TODO: unnecesary, use @Token@ instead
+      [ special (id-hook Bubble         (1 1) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)) ] .
+  op sortToken : Qid -> @SortToken@
+      [ special (id-hook Bubble         (1 1) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (`[ `] < to `, . `( `) `{ `} : |
+                                         ditto precedence prec gather
+                                         assoc associative comm commutative
+                                         ctor constructor id: strat strategy
+                                         poly memo memoization iter frozen
+                                         config object portal msg metadata nonexec variant))] .
+  op ububble : QidList -> @UBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)) ] .
+  op stbubble : QidList -> @StBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (using))] .
+  op eqlbubble : QidList -> @EqLBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (=))] .
+  op rllbubble : QidList -> @RlLBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (=>))] .
+  op sdlbubble : QidList -> @SdLBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (:=))] .
+  op rcbubble : QidList -> @RCBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (if))] .
+  op rbubble : QidList -> @RBubble@
+      [ special (id-hook Bubble         (1 -1 `( `)) 
+                 op-hook qidListSymbol  (__ : QidList QidList ~> QidList) 
+                 op-hook qidSymbol      (<Qids> : ~> Qid)
+                 id-hook Exclude        (.))] .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-EXTENDED-SORTS is
+  including MINI-MAUDE-BUBBLES .
+
+  sorts @Sort@ @Kind@ @Type@ @SortList@
+        @TypeList@ @ViewExpression@ @ModExp@ .
+
+  subsorts @SortToken@ < @Sort@ < @SortList@ < @TypeList@ .
+  subsorts @Sort@ @Kind@ < @Type@ < @TypeList@ .
+  subsort @ViewToken@ < @ViewExpression@ .
+
+  op _{_} : @Sort@ @ViewExpression@ -> @Sort@ [prec 40] .
+  op __ : @SortList@ @SortList@ -> @SortList@ [assoc] .
+  op __ : @TypeList@ @TypeList@ -> @TypeList@ [assoc] .
+  op  [_ ] : @Sort@ -> @Kind@ .
+
+  op _,_ : @ViewExpression@ @ViewExpression@ -> @ViewExpression@ [assoc] .
+  op _{_} : @ViewExpression@ @ViewExpression@ -> @ViewExpression@ [prec 40] .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-OPERATOR-ATTRIBUTES is
+  including MINI-MAUDE-BUBBLES .
+
+  sorts @Attr@ @AttrList@ @Hook@ @HookList@ .
+  subsort @Attr@ < @AttrList@ .
+  subsort @Hook@ < @HookList@ .
+
+  op __ : @AttrList@ @AttrList@ -> @AttrList@ [assoc] .
+  ops assoc associative : -> @Attr@ .
+  ops comm commutative : -> @Attr@ .
+  ops idem idempotent : -> @Attr@ .
+  ops id:_ identity:_ : @Bubble@ -> @Attr@ .
+  ops left`id:_ left`identity:_ : @Bubble@ -> @Attr@ .
+  ops right`id:_ right`identity:_ : @Bubble@ -> @Attr@ .
+  ops frozen`(_`) poly`(_`) strat`(_`) strategy`(_`) :
+        @NeTokenList@ -> @AttrList@ .
+  ops memo memoization : -> @Attr@ .
+  ops prec_ precedence_ : @Token@ -> @Attr@ .
+  ops gather`(_`) gathering`(_`) : @NeTokenList@ -> @Attr@ .
+  ops format`(_`) : @NeTokenList@ -> @Attr@ .
+  ops ctor constructor : -> @Attr@ .
+  ops frozen ditto iter : -> @Attr@ .
+  ops object msg message config : -> @Attr@ . ---- portal
+  op metadata_ : @Token@ -> @Attr@ .
+
+  op special (_ ) : @HookList@ -> @Attr@ .
+  op __ : @HookList@ @HookList@ -> @HookList@ [assoc] .
+  op id-hook_ : @Token@ -> @Hook@ .
+  op id-hook_ (_ ) : @Token@ @NeTokenList@ -> @Hook@ .
+  op op-hook_ (_:_->_ ) : @Token@ @Token@ @NeTokenList@ @Token@ -> @Hook@ .
+  op op-hook_ (_: ->_ ) : @Token@ @Token@ @Token@ -> @Hook@ .
+  op op-hook_ (_:_~>_ ) : @Token@ @Token@ @NeTokenList@ @Token@ -> @Hook@ .
+  op op-hook_ (_: ~>_ ) : @Token@ @Token@ @Token@ -> @Hook@ .
+  op term-hook_ (_ ) : @Token@ @Bubble@ -> @Hook@ .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-MOD-EXPRS is
+  including MINI-MAUDE-OPERATOR-ATTRIBUTES .
+  including MINI-MAUDE-EXTENDED-SORTS .
+
+  sorts @Map@ @MapList@ .
+  subsort @Map@ < @MapList@ .
+  subsorts @Token@ < @ModExp@ .
+
+  *** module expression
+  op _* (_ ) : @ModExp@ @MapList@ -> @ModExp@ .
+  op _{_} : @ModExp@ @ViewExpression@ -> @ModExp@ .
+  op TUPLE [_ ] : @Token@ -> @ModExp@ .
+  op POWER [_ ] : @Token@ -> @ModExp@ .
+  op _+_ : @ModExp@ @ModExp@ -> @ModExp@ [assoc prec 42] .
+
+  *** renaming maps
+  op op_to_ : @Token@ @Token@ -> @Map@ .
+  op op_:_->_to_ : @Token@ @TypeList@ @Type@ @Token@ -> @Map@ .
+  op op_: ->_to_ : @Token@ @Type@ @Token@ -> @Map@ .
+  op op_:_~>_to_ : @Token@ @TypeList@ @Type@ @Token@ -> @Map@ .
+  op op_: ~>_to_ : @Token@ @Type@ @Token@ -> @Map@ .
+  op op_to_ [_ ] : @Token@ @Token@ @AttrList@ -> @Map@ .
+  op op_:_->_to_ [_ ] : @Token@ @TypeList@ @Type@ @Token@ @AttrList@ -> @Map@ .
+  op op_: ->_to_ [_ ] : @Token@ @Type@ @Token@ @AttrList@ -> @Map@ .
+  op op_:_~>_to_ [_ ] : @Token@ @TypeList@ @Type@ @Token@ @AttrList@ -> @Map@ .
+  op op_: ~>_to_ [_ ] : @Token@ @Type@ @Token@ @AttrList@ -> @Map@ .
+  op sort_to_ : @Sort@ @Sort@ -> @Map@ .
+  op label_to_ : @Token@ @Token@ -> @Map@ .
+  op class_to_ : @Sort@ @Sort@ -> @Map@ .
+  op attr_._to_ : @Sort@ @Token@ @Token@ -> @Map@ .
+  op msg_to_ : @Token@ @Token@ -> @Map@ .
+  op msg_:_->_to_ : @Token@ @TypeList@ @Type@ @Token@ -> @Map@ .
+  op msg_: ->_to_ : @Token@ @Type@ @Token@ -> @Map@ .
+  op strat_to_ : @Token@ @Token@ -> @Map@ .
+  op strat_@_to_ : @Token@ @Type@ @Token@ -> @Map@ .
+  op strat_:_@_to_ : @Token@ @TypeList@ @Type@ @Token@ -> @Map@ .
+
+  op _,_ : @MapList@ @MapList@ -> @MapList@ [assoc prec 42] .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-SIGNATURE is
+  inc MINI-MAUDE-MOD-EXPRS .
+
+  sorts @SortDecl@ @SubsortRel@ @SubsortDecl@ @OpDecl@ .
+  sorts @ClassDecl@ @AttrDecl@ @AttrDeclList@ @SubclassDecl@ @MsgDecl@
+        @ODeclList@ .
+  subsort @AttrDecl@ < @AttrDeclList@ .
+
+  op  (_ ) : @Token@ -> @Token@ .
+
+  *** sort declaration
+  op sorts_. : @SortList@ -> @SortDecl@ .
+  op sort_. : @SortList@ -> @SortDecl@ .
+
+  *** subsort declaration
+  op subsort_. : @SubsortRel@ -> @SubsortDecl@ .
+  op subsorts_. : @SubsortRel@ -> @SubsortDecl@ .
+  op _<_ : @SortList@ @SortList@ -> @SubsortRel@ .
+  op _<_ : @SortList@ @SubsortRel@ -> @SubsortRel@ .
+
+  *** operator declaration
+  op op_: ->_. : @Token@ @Type@ -> @OpDecl@ .
+  op op_: ->_[_]. : @Token@ @Type@ @AttrList@ -> @OpDecl@ .
+  op op_:_->_. : @Token@ @TypeList@ @Type@ -> @OpDecl@ .
+  op op_:_->_[_]. : @Token@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
+  op ops_: ->_. : @NeTokenList@ @Type@ -> @OpDecl@ .
+  op ops_: ->_[_]. : @NeTokenList@ @Type@ @AttrList@ -> @OpDecl@ .
+  op ops_:_->_. : @NeTokenList@ @TypeList@ @Type@ -> @OpDecl@ .
+  op ops_:_->_[_]. : @NeTokenList@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
+
+  op op_: ~>_. : @Token@ @Sort@ -> @OpDecl@ .
+  op op_: ~>_[_]. : @Token@ @Sort@ @AttrList@ -> @OpDecl@ .
+  op op_:_~>_. : @Token@ @TypeList@ @Sort@ -> @OpDecl@ .
+  op op_:_~>_[_]. : @Token@ @TypeList@ @Sort@ @AttrList@ -> @OpDecl@ .
+  op ops_: ~>_. : @NeTokenList@ @Sort@ -> @OpDecl@ .
+  op ops_: ~>_[_]. : @NeTokenList@ @Sort@ @AttrList@ -> @OpDecl@ .
+  op ops_:_~>_. : @NeTokenList@ @TypeList@ @Sort@ -> @OpDecl@ .
+  op ops_:_~>_[_]. : @NeTokenList@ @TypeList@ @Sort@ @AttrList@ -> @OpDecl@ .
+
+  *** class declaration
+  op class_|_. : @Sort@ @AttrDeclList@ -> @ClassDecl@ .
+  op class_| . : @Sort@ -> @ClassDecl@ .
+  op class_. : @Sort@ -> @ClassDecl@ .
+  op _,_ : @AttrDeclList@ @AttrDeclList@ -> @AttrDeclList@ [assoc] .
+  op _:_ : @Token@ @Sort@ -> @AttrDecl@ [prec 40] .
+
+  *** subclass declaration
+  op subclass_. : @SubsortRel@ -> @SubclassDecl@ .
+  op subclasses_. : @SubsortRel@ -> @SubclassDecl@ .
+
+  *** message declaration
+  op msg_:_->_. : @Token@ @SortList@ @Sort@ -> @MsgDecl@ .
+  op msgs_:_->_. : @NeTokenList@ @SortList@ @Sort@ -> @MsgDecl@ .
+  op msg_: ->_. : @Token@ @Sort@ -> @MsgDecl@ .
+  op msgs_: ->_. : @NeTokenList@ @Sort@ -> @MsgDecl@ .
+
+  *** strategy declarations
+  op strat_@_. : @Token@ @Type@ -> @OpDecl@ .
+  op strats_@_. : @NeTokenList@ @Type@ -> @OpDecl@ .
+  op strat_@_[_]. : @Token@ @Type@ @AttrList@ -> @OpDecl@ .
+  op strats_@_[_]. : @NeTokenList@ @Type@ @AttrList@ -> @OpDecl@ .
+  op strat_:_@_. : @Token@ @TypeList@ @Type@ -> @OpDecl@ .
+  op strats_:_@_. : @NeTokenList@ @TypeList@ @Type@ -> @OpDecl@ .
+  op strat_:_@_[_]. : @Token@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
+  op strats_:_@_[_]. : @NeTokenList@ @TypeList@ @Type@ @AttrList@ -> @OpDecl@ .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-STATEMENTS is
+  including MINI-MAUDE-SIGNATURE .
+
+  sorts @ImportDecl@ @EqDecl@ @RlDecl@ @StDecl@ @MbDecl@ @VarDecl@ .
+
+  *** variable declaration
+  op vars_:_. : @NeTokenList@ @Type@ -> @VarDecl@ .
+  op var_:_. : @NeTokenList@ @Type@ -> @VarDecl@ .
+
+  *** membership axiom declaration
+  op mb_:_. : @RBubble@ @RBubble@ -> @MbDecl@ .
+  op cmb_:_if_. : @RBubble@ @Sort@ @RBubble@ -> @MbDecl@ .
+
+  *** equation declaration
+  op eq_=_. : @EqLBubble@ @RBubble@ -> @EqDecl@ .
+  op ceq_=_if_. : @EqLBubble@ @RCBubble@ @RBubble@ -> @EqDecl@ .
+  op cq_=_if_. : @EqLBubble@ @RCBubble@ @RBubble@ -> @EqDecl@ .
+
+  *** rule declaration
+  op rl_=>_. : @RlLBubble@ @RBubble@ -> @RlDecl@ .
+  op crl_=>_if_. : @RlLBubble@ @RCBubble@ @RBubble@ -> @RlDecl@ .
+
+  *** importation declaration
+  ops including_. inc_. : @ModExp@ -> @ImportDecl@ .
+  ops extending_. ex_. : @ModExp@ -> @ImportDecl@ .
+  ops protecting_. pr_. : @ModExp@ -> @ImportDecl@ .
+
+  *** strat statement
+  op sd_:=_. : @SdLBubble@ @RBubble@ -> @StDecl@ .
+  op csd_:=_if_. : @SdLBubble@ @RCBubble@ @RBubble@ -> @StDecl@ .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-MODULES is
+  including MINI-MAUDE-STATEMENTS .
+
+  sorts @DeclList@ @Module@ @Parameter@ @List<Parameter>@ .
+  sorts @Interface@ .
+  subsorts @VarDecl@ @ImportDecl@ @SortDecl@ @SubsortDecl@ @OpDecl@ @MbDecl@
+           @EqDecl@
+           @RlDecl@
+           @StDecl@
+           @MsgDecl@ @SubclassDecl@ @ClassDecl@ < @DeclList@ .
+  subsort @Parameter@ < @List<Parameter>@ .
+  subsorts @Token@ < @Interface@ .
+
+  *** declaration list
+  op __ : @DeclList@ @DeclList@ -> @DeclList@ [assoc] .
+  op __ : @VarDecl@ @VarDecl@ -> @VarDecl@ [assoc] .
+
+  *** parameterized module interface
+  op _::_ : @Token@ @ModExp@ -> @Parameter@ [prec 40 gather (e &)] .
+  op _::_ : @Token@ @Interface@ -> @Parameter@ [prec 40 gather (e &)] .
+
+  op _,_ : @List<Parameter>@ @List<Parameter>@ -> @List<Parameter>@ [assoc] .
+
+  op _{_} : @ModExp@ @List<Parameter>@ -> @Interface@ .
+
+  *** modules and theories
+  op fmod_is_endfm : @Interface@ @DeclList@ -> @Module@ .
+  op obj_is_jbo : @Interface@ @DeclList@ -> @Module@ .
+  op obj_is_endo : @Interface@ @DeclList@ -> @Module@ .
+  op mod_is_endm : @Interface@ @DeclList@ -> @Module@ .
+  op omod_is_endom : @Interface@ @DeclList@ -> @Module@ .
+  op smod_is_endsm : @Interface@ @DeclList@ -> @Module@ .
+  op fth_is_endfth : @Interface@ @DeclList@ -> @Module@ .
+  op th_is_endth : @Interface@ @DeclList@ -> @Module@ .
+  op oth_is_endoth : @Interface@ @DeclList@ -> @Module@ .
+  op sth_is_endsth : @Interface@ @DeclList@ -> @Module@ .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-VIEWS is
+  including MINI-MAUDE-MODULES .
+
+  sorts @ViewDecl@ @ViewDeclList@ @View@ .
+  subsorts @VarDecl@ < @ViewDecl@ < @ViewDeclList@ .
+
+  *** view maps
+  op op_to term_. : @Bubble@ @Bubble@ -> @ViewDecl@ .
+  op op_to_. : @Token@ @Token@ -> @ViewDecl@ .
+  op op_:_->_to_. : @Token@ @TypeList@ @Type@ @Token@ -> @ViewDecl@ .
+  op op_: ->_to_. : @Token@ @Type@ @Token@ -> @ViewDecl@ .
+  op op_:_~>_to_. : @Token@ @TypeList@ @Type@ @Token@ -> @ViewDecl@ .
+  op op_: ~>_to_. : @Token@ @Type@ @Token@ -> @ViewDecl@ .
+  op sort_to_. : @Sort@ @Sort@ -> @ViewDecl@ .
+  op class_to_. : @Sort@ @Sort@ -> @ViewDecl@ .
+  op attr_._to_. : @Sort@ @Token@ @Token@ -> @ViewDecl@ .
+  op msg_to_. : @Token@ @Token@ -> @ViewDecl@ .
+  op msg_:_->_to_. : @Token@ @TypeList@ @Type@ @Token@ -> @ViewDecl@ .
+  op msg_: ->_to_. : @Token@ @Type@ @Token@ -> @ViewDecl@ .
+  op strat_to_. : @Token@ @Token@ -> @ViewDecl@ .
+  op strat_@_to_. : @Token@ @Type@ @Token@ -> @ViewDecl@ .
+  op strat_:_@_to_. : @Token@ @TypeList@ @Type@ @Token@ -> @ViewDecl@ .
+  op strat_to expr_. : @Bubble@ @Bubble@ -> @ViewDecl@ .
+
+  *** view
+  op view_from_to_is_endv : @Interface@ @ModExp@ @ModExp@ @ViewDeclList@ -> @View@ .
+  op view_from_to_is endv : @Interface@ @ModExp@ @ModExp@ -> @View@ .
+  op __ : @ViewDeclList@ @ViewDeclList@ -> @ViewDeclList@ [assoc] .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-COMMANDS is
+  including MINI-MAUDE-MOD-EXPRS .
+
+  sorts @Command@ .
+
+  *** down function
+  op down_:_ : @ModExp@ @Command@ -> @Command@ .
+
+  *** parse commands
+  op parse_. : @Bubble@ -> @Command@ .
+
+  *** reduce commands
+  op red_. : @Bubble@ -> @Command@ .
+  op reduce_. : @Bubble@ -> @Command@ .
+
+  *** rewrite commands
+  op rew_. : @Bubble@ -> @Command@ .
+  op rewrite_. : @Bubble@ -> @Command@ .
+
+  *** frewrite commands
+  op frew_. : @Bubble@ -> @Command@ .
+  op frewrite_. : @Bubble@ -> @Command@ .
+
+  *** srewrite commands
+  op srew_. : @Bubble@ -> @Command@ .
+  op dsrew_. : @Bubble@ -> @Command@ .
+  op srewrite_. : @Bubble@ -> @Command@ .
+  op dsrewrite_. : @Bubble@ -> @Command@ .
+
+  *** search commands
+  op search_=>1_. : @Bubble@ @Bubble@ -> @Command@ .
+  op search_=>*_. : @Bubble@ @Bubble@ -> @Command@ .
+  op search_=>+_. : @Bubble@ @Bubble@ -> @Command@ .
+  op search_=>!_. : @Bubble@ @Bubble@ -> @Command@ .
+
+  *** narrowing search commands
+  op vu-narrow_=>1_. : @Bubble@ @Bubble@ -> @Command@ .
+  op vu-narrow_=>*_. : @Bubble@ @Bubble@ -> @Command@ .
+  op vu-narrow_=>+_. : @Bubble@ @Bubble@ -> @Command@ .
+  op vu-narrow_=>!_. : @Bubble@ @Bubble@ -> @Command@ .
+
+  op fvu-narrow_=>1_. : @Bubble@ @Bubble@ -> @Command@ .
+  op fvu-narrow_=>*_. : @Bubble@ @Bubble@ -> @Command@ .
+  op fvu-narrow_=>+_. : @Bubble@ @Bubble@ -> @Command@ .
+  op fvu-narrow_=>!_. : @Bubble@ @Bubble@ -> @Command@ .
+
+  op search_~>1_. : @Bubble@ @Bubble@ -> @Command@ .
+  op search_~>*_. : @Bubble@ @Bubble@ -> @Command@ .
+  op search_~>+_. : @Bubble@ @Bubble@ -> @Command@ .
+  op search_~>!_. : @Bubble@ @Bubble@ -> @Command@ .
+
+  *** matching commands
+  op match_<=?_. : @Bubble@ @Bubble@ -> @Command@ .
+  op xmatch_<=?_. : @Bubble@ @Bubble@ -> @Command@ .
+
+  *** unifying command
+  op unify_. : @Bubble@ -> @Command@ .
+
+  *** unifying command
+  op id-unify_. : @Bubble@ -> @Command@ .
+
+  *** unifying command
+  op variant unify_. : @Bubble@ -> @Command@ .
+
+  *** unifying command
+  op asymmetric variant unify_. : @Bubble@ -> @Command@ .
+
+  *** unifying command
+  op get variants_. : @Bubble@ -> @Command@ .
+
+  *** select command
+  op select_. : @ModExp@ -> @Command@ .
+
+  *** show commands
+  op show module . : -> @Command@ .
+  op show module_. : @ModExp@ -> @Command@ .
+  op show all . : -> @Command@ .
+  op show all_. : @ModExp@ -> @Command@ .
+  op show vars . : -> @Command@ .
+  op show vars_. : @ModExp@ -> @Command@ .
+  op show sorts . : -> @Command@ .
+  op show sorts_. : @ModExp@ -> @Command@ .
+  op show ops . : -> @Command@ .
+  op show ops_. : @ModExp@ -> @Command@ .
+  op show mbs . : -> @Command@ .
+  op show mbs_. : @ModExp@ -> @Command@ .
+  op show eqs . : -> @Command@ .
+  op show eqs_. : @ModExp@ -> @Command@ .
+  op show rls . : -> @Command@ .
+  op show rls_. : @ModExp@ -> @Command@ .
+  op show view_. : @ViewExpression@ -> @Command@ .
+  op show modules . : -> @Command@ .
+  op show views . : -> @Command@ .
+
+  *** set commands
+  op set protect_on . : @ModExp@ -> @Command@ .
+  op set protect_off . : @ModExp@ -> @Command@ .
+  op set include_on . : @ModExp@ -> @Command@ .
+  op set include_off . : @ModExp@ -> @Command@ .
+  op set extend_on . : @ModExp@ -> @Command@ .
+  op set extend_off . : @ModExp@ -> @Command@ .
+
+  *** miscellaneous
+  op load_. : @Bubble@ -> @Command@ .
+  ops remove`identity`attributes`. rm`ids`. : -> @Command@ .
+  ops remove`identity`attributes_. rm`ids_. : @ModExp@ -> @Command@ .
+  op remove assoc attributes . : -> @Command@ .
+  op remove assoc attributes_. : @ModExp@ -> @Command@ .
+  op ax coherence completion . : -> @Command@ .
+  op ax coherence completion_. : @ModExp@ -> @Command@ .
+  op help . : -> @Command@ .
+  ops q quit : -> @Command@ .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod MINI-MAUDE-SYNTAX is
+  protecting MINI-MAUDE-MODULES .
+  protecting MINI-MAUDE-VIEWS .
+  protecting MINI-MAUDE-COMMANDS .
+
+  sort @Input@ .
+  subsorts @Module@ @View@ @Command@ < @Input@ .
+endfm
+
+***(
+red in META-LEVEL :
+  metaParse(upModule('MINI-MAUDE-SYNTAX, false),
+    'fmod 'NAT3 'is
+       'sort 'Nat3 '.
+       'op 's_ ': 'Nat3 '-> 'Nat3 '.
+       'op '0 ': '-> 'Nat3 '.
+       'eq 's 's 's '0 '= '0 '.
+    'endfm,
+    '@Module@) .
+)

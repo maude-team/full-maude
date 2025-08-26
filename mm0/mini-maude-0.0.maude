@@ -1,0 +1,281 @@
+load file 
+load metaInterpreter
+load mini-maude-0.0-syntax
+load maybe
+
+fmod MM-BANNER is
+  pr STRING .
+  op banner : -> String .
+  eq banner = "Mini Maude 0.0 Feb 19 2025" .
+endfm
+
+---- Error handling
+
+fmod MM-PRINT-SYNTAX-ERROR is
+  protecting META-LEVEL .
+  protecting INT .
+
+  var  QIL : QidList .
+  var  Q : Qid .
+  var  N : Nat .
+  vars RP RP' : ResultPair .
+  var  RP? : [ResultPair?] .
+  vars Strat Strat' : Strategy .
+  var  Strat? : [Strategy?] .
+
+  op printN : Nat QidList -> QidList .  ---- first N qid's in a qidList
+  eq printN(N, nil) = nil .
+  eq printN(0, QIL) = nil .
+  eq printN(s N, Q QIL) = Q printN(N, QIL) .
+
+  op removeFront : Nat QidList -> QidList .  ---- removes first N qid's
+  eq removeFront(N, nil) = nil .
+  eq removeFront(0, QIL) = QIL .
+  eq removeFront(s N, Q QIL) = removeFront(N, QIL) .
+
+  op printSyntaxError : [ResultPair?] QidList -> String .
+  eq printSyntaxError(noParse(N), QIL)
+    = string('\r 'Parse 'error 'in '\o '\s printN(N + 1, QIL) '\r '<---*HERE* '\o) .
+  eq printSyntaxError(ambiguity(RP, RP'), QIL)
+    = string('\r 'Ambiguous 'parsing 'for '\o '\s QIL '\o) .
+  eq printSyntaxError(RP?, QIL) = string(QIL) [owise] .
+
+----  op printSyntaxError : [Strategy?] QidList -> QidList .
+----  eq printSyntaxError(noStratParse(N), QIL)
+----    = string('\r 'Parse 'error 'in '\o '\s printN(N + 1, QIL) '\r '<---*HERE* '\o) .
+----  eq printSyntaxError(ambiguity(Strat, Strat'), QIL)
+----    = string('\r 'Ambiguous 'parsing 'for '\o '\s QIL '\o) .
+----  eq printSyntaxError(Strat?, QIL) = QIL [owise] .
+endfm
+
+-------------------------------------------------------------------------------
+
+view Oid from TRIV to CONFIGURATION is
+  sort Elt to Oid .
+endv
+
+view Module from TRIV to META-MODULE is
+  sort Elt to Module .
+endv
+
+view Term from TRIV to META-TERM is
+  sort Elt to Term .
+endv
+
+omod MINI-MAUDE is
+  pr MM-BANNER .
+  pr FILE .
+  pr STD-STREAM .
+  pr LEXICAL .
+  pr STRING-OPS .
+  pr META-LEVEL .
+  inc MAYBE{Oid} * (op maybe to null) .
+  inc MAYBE{Qid} * (op maybe to null) .
+  ---- inc MAYBE{Term} * (op maybe to null) .
+  sort Maybe{Term} .
+  subsort Maybe{Qid} < Maybe{Term} .
+  inc MAYBE{String} * (op maybe to null) .
+  inc MAYBE{Module} * (op maybe to null) .
+  inc META-INTERPRETER .
+  pr MM-PRINT-SYNTAX-ERROR .
+
+  op mm : -> Oid .
+  class MiniMaude | 
+    mi : Maybe{Oid},    ---- meta-interpreter
+    in : QidList,       ---- accumulated input
+    pi : Maybe{Term},   ---- parsed input
+    it : Maybe{String}, ---- input type (mod, fmod, omod, view)
+    mn : Maybe{Qid},    ---- default module name
+    st : Nat .          ---- state
+
+  vars O O' MI : Oid .
+  var  Str : String .
+  var  QIL : QidList .
+  var  IT : Maybe{String} .
+  var  F : Qid .
+  vars T T' T'' : Term .
+  var  ME : ModuleExpression .
+
+  op minimaude : -> Configuration .
+  eq minimaude 
+    = <> 
+      < mm : MiniMaude | mi : null, mn : null, in : nil, pi : null, it : null, st : 0 >
+      write(stdout, mm, banner + "\n") .
+
+  rl < O : MiniMaude | mi : null, st : 0 >
+     wrote(O, O')
+  => < O : MiniMaude | >
+     createInterpreter(interpreterManager, mm, none) .
+  rl < O : MiniMaude | mi : null, st : 0 >
+     createdInterpreter(O, interpreterManager, MI) 
+  => < O : MiniMaude | mi : MI, st : 1 >
+     getLine(stdin, O, "MiniMaude> ") .
+  rl  < O : MiniMaude | in : QIL, it : IT, st : 1 > 
+      gotLine(O, stdin, Str) 
+   => if metaParse(upModule('MINI-MAUDE-SYNTAX, false), none, QIL tokenize(trim(Str)), '@Input@) :: ResultPair
+      then < O : MiniMaude | 
+             in : nil, 
+             it : null,
+             pi : getTerm(metaParse(upModule('MINI-MAUDE-SYNTAX, false), none, QIL tokenize(trim(Str)), '@Input@)),
+             st : 2 > 
+      else if (IT == "fmod" and-then endsWith(trimEnd(Str), "endfm"))
+              or-else ((IT == "omod" and-then endsWith(trimEnd(Str), "endom"))
+                       or-else ((IT == "view" and-then endsWith(trimEnd(Str), "endv"))
+                                or-else ((IT == "mod" and-then endsWith(trimEnd(Str), "endm"))
+                                         or-else ((IT == "smod" and-then endsWith(trimEnd(Str), "endsm"))
+                                                  or-else (IT == null and-then endsWith(trimEnd(Str), " ."))))))
+           then < O : MiniMaude | in : nil >
+                write(stdout, mm, printSyntaxError(metaParse(upModule('MINI-MAUDE-SYNTAX, false), none, QIL tokenize(trim(Str)), '@Input@), QIL)) 
+           else if IT == null 
+                then if startsWith(trimStart(Str), "fmod") 
+                     then < O : MiniMaude | in : QIL tokenize(trim(Str)), it : "fmod" >
+                     else if startsWith(trimStart(Str), "omod")
+                          then < O : MiniMaude | in : QIL tokenize(trim(Str)), it : "omod" >
+                          else if startsWith(trimStart(Str), "view")
+                               then < O : MiniMaude | in : QIL tokenize(trim(Str)), it : "view" >
+                               else if startsWith(trimStart(Str), "mod")
+                                    then < O : MiniMaude | in : QIL tokenize(trim(Str)), it : "mod" >
+                                    else if startsWith(trimStart(Str), "smod")
+                                         then < O : MiniMaude | in : QIL tokenize(trim(Str)), it : "smod" >
+                                         else < O : MiniMaude | in : QIL tokenize(trim(Str)), it : null >
+                                         fi
+                                    fi
+                               fi
+                          fi
+                     fi
+                else < O : MiniMaude | in : QIL tokenize(trim(Str)) >
+                fi
+                getLine(stdin, O, "> ") 
+           fi
+      fi .
+
+  crl [module] :
+     < O : MiniMaude | pi : (F[T, T']), mn : ME, st : 2 >
+     => < O : MiniMaude |
+           pi : null,
+           mn : parseHeader(T) >
+        write(stdout, O, "Module " + metaPrintToString(parseHeader(T)) + " introduced.\n") .
+        to O : procModule(F[T, T'])
+     if  (F == 'fmod_is_endfm) or-else
+        ((F == 'mod_is_endm)   or-else
+        ((F == 'smod_is_endsm) or-else
+         (F == 'omod_is_endom))) .
+
+  op parseHeader : Term -> Qid .
+  eq parseHeader('token[T]) = downQid(T) .
+  eq parseHeader('_`{_`}['token[T], T']) = downQid(T) .
+
+  msg to_: procModule`(_`) : Oid Term -> Msg .
+  msg to_: procModule2`(_`,_`) : Oid Term Term -> Msg .
+  msg to_: procModule2`(_`) : Oid Term -> Msg .
+  msg to_: procModule3`(_`,_`,_`,_`) : Oid Term Term Term Module -> Msg .
+  msg to_: procModule3`(_`,_`,_`) : Oid Term Term Module -> Msg .
+
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule(F[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule2(F[T, T'], F[T, T']) .
+
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'fmod_is_endfm[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', emptyFModule) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'mod_is_endm[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', emptySModule) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'omod_is_endom[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', addImports((including 'CONFIGURATION .), emptyOModule)) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'smod_is_endsm[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', emptyStratModule) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'fth_is_endfth[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', emptyFTheory) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'th_is_endth[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', emptySTheory) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'oth_is_endoth[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', addImports((including 'CONFIGURATION .), emptyOTheory)) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2(T, 'sth_is_endsth[T', T''])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', T'', emptyStratTheory) .
+
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('fmod_is_endfm[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', emptyFModule) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('mod_is_endm[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', emptySModule) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('omod_is_endom[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', addImports((including 'CONFIGURATION .), emptyOModule)) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('smod_is_endsm[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', emptyStratModule) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('fth_is_endfth[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', emptyFTheory) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('th_is_endth[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', emptySTheory) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('oth_is_endoth[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', addImports((including 'CONFIGURATION .), emptyOTheory)) .
+  rl [module] :
+     < O : MiniMaude | st : 2 >
+     to O : procModule2('sth_is_endsth[T, T'])
+  => < O : MiniMaude | st : 2 >
+     to O : procModule3(T, T', emptyStratTheory) .
+
+
+  *** projection functions (from prelude.maude)
+  op getTerm : ResultPair ~> Term .
+  eq getTerm({T:[Term], T':[Type]}) = T:[Term] .
+  op getType : ResultPair ~> Type .
+  eq getType({T:[Term], T':[Type]}) = T':[Type] .
+
+  op parse : Term -> Msg [ ctor ] .
+
+----
+----    --- quit
+----  eq < OID : MiniMaude | > 
+----     parse(STR, 'q.NuITP-Command) 
+----    = (none).Configuration 
+----      write(stdout, OID, printCommand(ATS, STR) + WHITE + "  Bye." + BW + "\n\n") .
+----  eq < OID : MiniMaude | ATS > parse(STR, 'quit.NuITP-Command) = (none).Configuration write(stdout, OID, printCommand(ATS, STR) + WHITE + "  Bye." + BW + "\n\n") .
+----
+endom
+
+erew minimaude .

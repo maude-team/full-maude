@@ -1,0 +1,5 @@
+fmod FM-BANNER is
+  pr STRING .
+  op banner : -> String .
+  eq banner = "Full Maude 3.5 Oct 1 2024" .
+endfm
