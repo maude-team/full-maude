@@ -1,3 +1,9 @@
+(fmod MY-INT is 
+   pr INT .
+   op iii : -> Int .
+   eq iii = 3 .
+  endfm)
+
 (fmod FOO{X :: TRIV} is
    sort Foo{X} .
    op f : X$Elt -> Foo{X} .
@@ -5,12 +11,19 @@
    eq f(X:X$Elt) = g .
  endfm)
 
-(red in FOO{Int} : f(3) .)
+(view iii from TRIV to MY-INT is 
+  sort Elt to Int .
+ endv)
 
----- the renaming don't reach the core maude modules
-(red in FOO{Int} * (op 3 to term three) : f(three) .)
-(red in FOO{Int} * (op _+_ to _plus_) : f(2 + 3) .)
-(red in FOO{Int} * (op _+_ to _plus_) : f(2 plus 3) .)
+(red in FOO{iii} : f(iii) .)
+
+(red in FOO{iii} * (op iii to term three) : f(three) .)
+(red in FOO{iii} * (op _+_ to _plus_) : f(2 + iii) .)
+(red in FOO{iii} * (op _+_ to _plus_) : f(2 plus iii) .)
+
+(view Qid from TRIV to QID is 
+   sort Elt to Qid .
+ endv)
 
 (fmod BAR is
   pr QID + FOO{Qid} .

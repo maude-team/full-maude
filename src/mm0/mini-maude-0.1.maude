@@ -1,0 +1,1327 @@
+***(
+
+    This file is part of the Maude 3 interpreter.
+
+    Copyright 2017-2024 ITIS Software, University of Malaga, Malaga, Spain.
+
+    This program is free software: you can redistribute it and/or modify it under the terms 
+    of the GNU General Public License as published by the Free Software Foundation, either 
+    version 3 of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+    See the GNU General Public License for more details.
+
+)
+
+----                                                     To be run on Maude 3.5
+----                                                    author: Francisco Duran
+
+load file 
+load metaInterpreter
+load mini-maude-0.1-syntax
+load maybe
+
+fmod MM-BANNER is
+  pr STRING .
+  op banner : -> String .
+  eq banner = "Mini Maude 0.1 Aug 26 2025" .
+endfm
+
+---------------------------------------------------------------------------------
+---- Error handling -------------------------------------------------------------
+---------------------------------------------------------------------------------
+
+fmod MM-PRINT-SYNTAX-ERROR is
+  protecting META-LEVEL .
+  protecting INT .
+
+  var  QIL : QidList .
+  var  Q : Qid .
+  var  N : Nat .
+  vars RP RP' : ResultPair .
+  var  RP? : [ResultPair?] .
+  vars Strat Strat' : Strategy .
+  var  Strat? : [Strategy?] .
+
+  op printN : Nat QidList -> QidList .  ---- first N qid's in a qidList
+  eq printN(N, nil) = nil .
+  eq printN(0, QIL) = nil .
+  eq printN(s N, Q QIL) = Q printN(N, QIL) .
+
+  op removeFront : Nat QidList -> QidList .  ---- removes first N qid's
+  eq removeFront(N, nil) = nil .
+  eq removeFront(0, QIL) = QIL .
+  eq removeFront(s N, Q QIL) = removeFront(N, QIL) .
+
+  op printSyntaxError : [ResultPair?] QidList -> String .
+  eq printSyntaxError(noParse(N), QIL)
+    = string('\r 'Parse 'error 'in '\o '\s printN(N + 1, QIL) '\r '<---*HERE* '\o) .
+  eq printSyntaxError(ambiguity(RP, RP'), QIL)
+    = string('\r 'Ambiguous 'parsing 'for '\o '\s QIL '\o) .
+  eq printSyntaxError(RP?, QIL) = string(QIL) [owise] .
+
+----  op printSyntaxError : [Strategy?] QidList -> QidList .
+----  eq printSyntaxError(noStratParse(N), QIL)
+----    = string('\r 'Parse 'error 'in '\o '\s printN(N + 1, QIL) '\r '<---*HERE* '\o) .
+----  eq printSyntaxError(ambiguity(Strat, Strat'), QIL)
+----    = string('\r 'Ambiguous 'parsing 'for '\o '\s QIL '\o) .
+----  eq printSyntaxError(Strat?, QIL) = QIL [owise] .
+endfm
+
+-------------------------------------------------------------------------------
+
+fmod FM-HELP is
+  pr STRING .
+  op fm-help : -> String .
+  eq fm-help
+    = "Additional commands available:\n"
+      + "\t load <meta-module> .\n"
+      + "\t \t Takes as argument a term of sort Module, i.e., a metaterm.\n"
+      + "\t remove identity attributes [<module-expr.>] . | rm ids [ <module-expr.>] .\n"
+      + "\t \t Shows the module with the id attributes removed using a variant-based transformation.\n"
+      + "\t remove assoc attributes [<module-expr.>] .\n"
+      + "\t \t Shows the module with the assoc (if not with comm) attributes removed using a variant-based transformation.\n"
+      + "\t ax coherence completion [<module-expr.>] .\n"
+      + "\t \t Shows the module resulting from completing for coherence for the different combinations of axioms.\n" .
+endfm
+
+fmod FM-EXT-SORT is
+  pr META-LEVEL .
+----  pr EXT-BOOL .
+----  pr FM-VIEW-EXPR-TO-QID .
+----  pr FM-EXT-QID-LIST .
+----  pr FM-TERMSET .
+
+  vars Tp Tp' Tp'' Tp''' : Type .
+  vars TpL TpL' : TypeList .
+  var  M : Module .
+  var  QIL : QidList .
+
+  op sameKind : Module TypeList TypeList -> Bool [ditto] .
+  eq sameKind(M, (Tp Tp' TpL), (Tp'' Tp''' TpL'))
+    = sameKind(M, Tp, Tp'')
+      and-then sameKind(M, Tp' TpL, Tp''' TpL') .
+  eq sameKind(M, nil, nil) = true .
+  eq sameKind(M, TpL, TpL') = false [owise] .
+
+  op cc : SortSet -> Type .
+  
+  eq sameKind(M, cc(S:Sort ; SS:SortSet), Tp)
+    = sameKind(M, S:Sort, Tp) .
+  eq sameKind(M, Tp, cc(S:Sort ; SS:SortSet))
+    = sameKind(M, Tp, S:Sort) .
+  eq sameKind(M, cc(S:Sort ; SS:SortSet), cc(S':Sort ; SS':SortSet))
+    = sameKind(M, S:Sort, S':Sort) .
+
+  op sameKindAll : Module Type TypeList -> Bool .
+  eq sameKindAll(M, Tp, Tp' TpL) = sameKind(M, Tp, Tp') and-then sameKindAll(M, Tp, TpL) .
+  eq sameKindAll(M, Tp, nil) = true .
+
+  op eLeastSort : Module TermList ~> TypeList .
+  eq eLeastSort(M, (T:Term, TL:TermList))
+    = (leastSort(M, T:Term) eLeastSort(M, TL:TermList)) .
+  eq eLeastSort(M, empty) = nil .
+  eq eLeastSort(M, qidError(QIL)) = qidError(QIL) .
+
+----  op eLeastSort : Module TermSet ~> TypeSet .
+----  eq eLeastSort(M, (T:Term | TS:TermSet))
+----    = (leastSort(M, T:Term) ; eLeastSort(M, TS:TermSet)) .
+----  eq eLeastSort(M, emptyTermSet) = none .
+----  eq eLeastSort(M, qidError(QIL)) = qidError(QIL) .
+
+  op qidError : QidList -> [Sort] .
+  op stringError : QidList -> [String] .
+  eq string(qidError(QIL)) = stringError(QIL) .
+  eq qid(stringError(QIL)) = qidError(QIL) .
+  eq stringError(QIL) + St:String = stringError(QIL) .
+
+  op getMsg : [Sort] -> QidList .
+  eq getMsg(qidError(QIL:QidList)) = QIL:QidList .
+
+  op kind : TypeList -> Type .
+
+  eq kind(S:Sort TL:TypeList)
+    = qid("[" + string(S:Sort) + "]") kind(TL:TypeList) .
+  eq kind(K:Kind TL:TypeList) = K:Kind kind(TL:TypeList) .
+  eq kind(nil) = nil .
+
+  op kind : SortSet -> Type .
+  eq kind(S:Sort ; SS:SortSet) = qid("[" + string(S:Sort) + "]") .
+endfm
+
+fmod MOD-NAME is
+  pr META-MODULE .
+  op nullHeader : -> Header .
+endfm
+
+fmod FM-INT-LIST is
+  pr META-MODULE .
+  pr INT .
+  sort IntList .
+  subsort Int NatList < IntList .
+  op __ : IntList IntList -> IntList [ctor ditto] .
+
+  op numberError : QidList -> [Nat] .
+
+  vars N M : Nat .
+
+  op from_to_list : Nat Nat ~> NatList .
+  ceq from N to M list
+    = if N == M
+      then N
+      else N from N + 1 to M list
+      fi
+    if N <= M .
+endfm
+
+fmod FM-EXT-DECL is
+  pr META-MODULE .
+  pr FM-INT-LIST .
+
+  var  QI : Qid .
+  vars QIL QIL' : QidList .
+  var  At : Attr .
+  var  AtS : AttrSet .
+  var  OPD OPD' : OpDecl .
+  var  OPDS : OpDeclSet .
+  vars LHS RHS T T' : Term .
+  var  S : Sort .
+  var  Cond : Condition .
+  var  EqS : EquationSet .
+  var  RlS : RuleSet .
+  var  MbS : MembAxSet .
+  var  M : Module .
+
+*** extended attribute declarations
+  op strat : IntList -> Attr [ditto] .   *** to handle on-demand strategies
+  op ditto : -> Attr [ctor] .
+
+  op _in_ : Attr AttrSet -> Bool .
+  eq At in At AtS = true .
+  eq At in AtS = false [owise] .
+
+*** subsort declarations error
+  op subsortDeclError : QidList -> [SubsortDeclSet] [ctor format (r o)] .
+  eq subsortDeclError(QIL) subsortDeclError(QIL')
+    = subsortDeclError(QIL QIL') .
+
+  ops lhs rhs : Rule -> Term .
+  op cond : Rule -> Condition .
+  op atts : Rule -> AttrSet .
+  op label : Rule -> [Qid] .
+  eq lhs(rl LHS => RHS [AtS] .) = LHS .
+  eq lhs(crl LHS => RHS if Cond [AtS] .) = LHS .
+  eq rhs(rl LHS => RHS [AtS] .) = RHS .
+  eq rhs(crl LHS => RHS if Cond [AtS] .) = RHS .
+  eq cond(rl LHS => RHS [AtS] .) = nil .
+  eq cond(crl LHS => RHS if Cond [AtS] .) = Cond .
+  eq atts(rl LHS => RHS [AtS] .) = AtS .
+  eq atts(crl LHS => RHS if Cond [AtS] .) = AtS .
+  eq label(rl LHS => RHS [label(QI) AtS] .) = QI .
+  eq label(crl LHS => RHS if Cond [label(QI) AtS] .) = QI .
+
+  ops lhs rhs : Equation -> Term .
+  op cond : Equation -> Condition .
+  op atts : Equation -> AttrSet .
+  op label : Equation -> [Qid] .
+  eq lhs(eq LHS = RHS [AtS] .) = LHS .
+  eq lhs(ceq LHS = RHS if Cond [AtS] .) = LHS .
+  eq rhs(eq LHS = RHS [AtS] .) = RHS .
+  eq rhs(ceq LHS = RHS if Cond [AtS] .) = RHS .
+  eq cond(eq LHS = RHS [AtS] .) = nil .
+  eq cond(ceq LHS = RHS if Cond [AtS] .) = Cond .
+  eq atts(eq LHS = RHS [AtS] .) = AtS .
+  eq atts(ceq LHS = RHS if Cond [AtS] .) = AtS .
+  eq label(eq LHS = RHS [label(QI) AtS] .) = QI .
+  eq label(ceq LHS = RHS if Cond [label(QI) AtS] .) = QI .
+
+  op cond : MembAx -> Condition .
+  op atts : MembAx -> AttrSet .
+  eq cond(mb T : S [AtS] .) = nil .
+  eq cond(cmb T : S if Cond [AtS] .) = Cond .
+  eq atts(mb T : S [AtS] .) = AtS .
+  eq atts(cmb T : S if Cond [AtS] .) = AtS .
+endfm
+
+view Oid from TRIV to CONFIGURATION is
+  sort Elt to Oid .
+endv
+
+view Module from TRIV to META-MODULE is
+  sort Elt to Module .
+endv
+
+view Term from TRIV to META-TERM is
+  sort Elt to Term .
+endv
+
+fmod FM-UNIT is
+  pr FM-EXT-SORT .
+  pr MOD-NAME .
+  inc META-LEVEL .
+  inc FM-EXT-DECL .
+
+  vars M M' M'' : Module .
+  vars QI V : Qid .
+  var  S : Sort .
+  vars SSDS SSDS' SSDS'' : SubsortDeclSet .
+  vars OPD OPD' : OpDecl .
+  vars OPDS OPDS' : OpDeclSet .
+  var  OPDS? : [OpDeclSet] .
+  var  At : Attr .
+  var  AtS : AttrSet .
+  vars MAS MAS' MbS : MembAxSet .
+  vars Eq Eq' : Equation .
+  vars EqS EqS' : EquationSet .
+  vars Rl Rl' : Rule .
+  vars RlS RlS' : RuleSet .
+  vars SS SS' : SortSet .
+  vars IL IL' : ImportList .
+  vars QIL QIL' : QidList .
+  vars PL PL' : ParameterList .
+----  vars CDS CDS' : ClassDeclSet .
+----  vars SCD SCD' : SubclassDecl .
+----  vars SCDS SCDS' : SubclassDeclSet .
+  vars U U' : Module .
+----  vars MDS MDS' : MsgDeclSet .
+  vars I I' : Import .
+  vars T T' T1 T1' T2 T2' : Term .
+  vars ME ME' : ModuleExpression .
+  vars PD PD' : ParameterDecl .
+  vars PDL PDL' : ParameterDeclList .
+  var  H : Header .
+  vars MN MN' : Qid .
+  var  Cd Cond Cond1 Cond2 : Condition .
+  vars StratDcls StratDcls' : StratDeclSet .
+  vars StratDefs StratDefs' : StratDefSet .
+  var  StratDcls? : [StratDeclSet] .
+  var  StratDefs? : [StratDefSet] .
+  var U? : [Module] .
+  var RlS? : [RuleSet] .
+
+  op noModule : -> Module .   
+  op unitError : QidList -> [Module] [ctor format (r o)] .
+  op getMsg : [Module] -> QidList .
+  eq getMsg(unitError(QIL)) = QIL .
+
+*** extended operation declarations
+  op opDeclError : QidList -> [OpDeclSet] [ctor format (r o)] .
+  eq opDeclError(QIL) opDeclError(QIL') = opDeclError(QIL QIL') .
+
+*** extended membership axioms
+  op membAxError : QidList -> [MembAxSet] [ctor format (r o)] .
+  eq membAxError(QIL) membAxError(QIL') = membAxError(QIL QIL') .
+
+*** extended equations
+  op equationError : QidList -> [EquationSet] [ctor format (r o)] .
+  eq equationError(QIL) equationError(QIL') = equationError(QIL QIL') .
+
+*** extended rules
+  op ruleError : QidList -> [RuleSet] [ctor format (r o)] .
+  eq ruleError(QIL) ruleError(QIL') = ruleError(QIL QIL') .
+
+*** extended strategy definitions
+  op stratDefError : QidList -> [StratDefSet] [ctor format (r o)] .
+  eq stratDefError(QIL) stratDefError(QIL') = stratDefError(QIL QIL') .
+
+---- Selector functions for the different components of a Module.
+
+  op getHeader : Module -> Header .
+  op getPars : Module -> ParameterDeclList .
+  op getStratDcls : Module -> StratDeclSet .
+  op getStratDefs : Module -> StratDefSet .
+
+  eq getHeader(unitError(QIL)) = ' .
+  eq getHeader(noModule) = ' .
+  eq getHeader(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = ME .
+  eq getHeader(mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = ME .
+  eq getHeader(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = MN .
+  eq getHeader(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm) = ME .
+  eq getHeader(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm) = ME .
+  eq getHeader(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth) = MN .
+  eq getHeader(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = ME .
+  eq getHeader(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = ME .
+  eq getHeader(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = MN .
+
+  eq getImports(unitError(QIL)) = nil .
+  eq getImports(noModule) = nil .
+  eq getImports(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = IL .
+  eq getImports(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = IL .
+  eq getImports(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = IL .
+  eq getImports(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = IL .
+  eq getImports(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = IL .
+  eq getImports(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = IL .
+
+  eq getPars(unitError(QIL)) = nil .
+  eq getPars(noModule) = nil .
+  eq getPars(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = nil .
+  eq getPars(mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = PDL .
+----  eq getPars(mod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS endm)
+----    = nil .
+  eq getPars(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = nil .
+  eq getPars(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = nil .
+  eq getPars(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm) = nil .
+  eq getPars(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm) = PDL .
+----  eq getPars(fmod nullHeader is IL sorts SS . SSDS OPDS MAS EqS endfm) = nil .
+  eq getPars(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth) = nil .
+  eq getPars(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = nil .
+  eq getPars(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = PDL .
+----  eq getPars(smod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm)
+----    = nil .
+  eq getPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = nil .
+  eq getPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = nil .
+
+  eq getSorts(unitError(QIL)) = none .
+  eq getSorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = SS .
+  eq getSorts(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = SS .
+  eq getSorts(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = SS .
+  eq getSorts(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = SS .
+  eq getSorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = SS .
+  eq getSorts(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = SS .
+
+  op getAllSorts : Module -> SortSet .
+  eq getAllSorts(M) = getSorts(M) .
+
+  eq getSubsorts(unitError(QIL)) = none .
+  eq getSubsorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = SSDS .
+  eq getSubsorts(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = SSDS .
+  eq getSubsorts(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = SSDS .
+  eq getSubsorts(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = SSDS .
+  eq getSubsorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = SSDS .
+  eq getSubsorts(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = SSDS .
+
+  eq getOps(unitError(QIL)) = none .
+  eq getOps(noModule) = none .
+  eq getOps(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = OPDS .
+  eq getOps(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = OPDS .
+  eq getOps(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = OPDS .
+  eq getOps(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = OPDS .
+  eq getOps(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = OPDS .
+  eq getOps(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = OPDS .
+
+  eq getMbs(unitError(QIL)) = none .
+  eq getMbs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = MAS .
+  eq getMbs(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = MAS .
+  eq getMbs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = MAS .
+  eq getMbs(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = MAS .
+  eq getMbs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = MAS .
+  eq getMbs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = MAS .
+
+  eq getEqs(unitError(QIL)) = none .
+  eq getEqs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = EqS .
+  eq getEqs(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = EqS .
+  eq getEqs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = EqS .
+  eq getEqs(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = EqS .
+  eq getEqs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = EqS .
+  eq getEqs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = EqS .
+
+  eq getRls(unitError(QIL)) = none .
+  eq getRls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = RlS .
+  eq getRls(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = RlS .
+  eq getRls(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = none .
+  eq getRls(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = none .
+  eq getRls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = RlS .
+  eq getRls(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = RlS .
+
+  eq getStratDcls(unitError(QIL)) = none .
+  eq getStratDcls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
+  eq getStratDcls(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = none .
+  eq getStratDcls(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = none .
+  eq getStratDcls(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = none .
+  eq getStratDcls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = StratDcls .
+  eq getStratDcls(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = StratDcls .
+
+  eq getStratDefs(unitError(QIL)) = none .
+  eq getStratDefs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm) = none .
+  eq getStratDefs(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth) = none .
+  eq getStratDefs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm) = none .
+  eq getStratDefs(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth) = none .
+  eq getStratDefs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm) = StratDefs .
+  eq getStratDefs(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth) = StratDefs .
+
+---- Set Functions to change the value of each of the components of a Module.
+
+  op setName : Module ModuleExpression -> Module .
+  op setName : Module ParameterDecl -> Module .
+  op setPars : Module ParameterDeclList -> Module .
+  op setImports : Module ImportList -> Module .
+  op setSorts : Module SortSet -> Module .
+  op setSubsorts : Module SubsortDeclSet -> Module .
+  op setOps : Module OpDeclSet -> Module .
+  op setMbs : Module MembAxSet -> Module .
+  op setEqs : Module EquationSet -> Module .
+  op setRls : Module RuleSet ~> Module .
+----  op setClasses : Module ClassDeclSet -> Module .
+----  op setSubclasses : Module SubclassDeclSet -> Module .
+----  op setMsgs : Module MsgDeclSet -> Module .
+  op setStratDefs : Module StratDefSet -> Module .
+  op setStratDcls : Module StratDeclSet -> Module .
+
+  eq setImports(unitError(QIL), IL) = unitError(QIL) .
+  eq setImports(noModule, IL) = noModule .
+  eq setImports(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, IL')
+    = mod H is IL' sorts SS . SSDS OPDS MAS EqS RlS endm .
+  eq setImports(th H is IL sorts SS . SSDS OPDS MAS EqS RlS endth, IL')
+    = th H is IL' sorts SS . SSDS OPDS MAS EqS RlS endth .
+  eq setImports(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, IL')
+    = fmod H is IL' sorts SS . SSDS OPDS MAS EqS endfm .
+  eq setImports(fth H is IL sorts SS . SSDS OPDS MAS EqS endfth, IL')
+    = fth H is IL' sorts SS . SSDS OPDS MAS EqS endfth .
+  eq setImports(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, IL')
+    = smod H is IL' sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setImports(sth H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, IL')
+    = sth H is IL' sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
+
+  eq setOps(unitError(QIL), OPDS) = unitError(QIL) .
+  eq setOps(noModule, OPDS) = noModule .
+  eq setOps(U, opDeclError(QIL) OPDS) = unitError(QIL) .
+  eq setOps(unitError(QIL), opDeclError(QIL') OPDS) = unitError(QIL QIL') .
+  eq setOps(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, OPDS')
+    = mod H is IL sorts SS . SSDS OPDS' MAS EqS RlS endm .
+  eq setOps(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, OPDS')
+    = th MN is IL sorts SS . SSDS OPDS' MAS EqS RlS endth .
+  eq setOps(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, OPDS')
+    = fmod H is IL sorts SS . SSDS OPDS' MAS EqS endfm .
+  eq setOps(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, OPDS')
+    = fth MN is IL sorts SS . SSDS OPDS' MAS EqS endfth .
+  eq setOps(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, OPDS')
+    = smod H is IL sorts SS . SSDS OPDS' MAS EqS RlS StratDcls StratDefs endsm .
+  eq setOps(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, OPDS')
+    = sth MN is IL sorts SS . SSDS OPDS' MAS EqS RlS StratDcls StratDefs endsth .
+
+  eq setSubsorts(unitError(QIL), SSDS) = unitError(QIL) .
+  eq setSubsorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, SSDS')
+    = mod H is IL sorts SS . SSDS' OPDS MAS EqS RlS endm .
+  eq setSubsorts(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, SSDS')
+    = th MN is IL sorts SS . SSDS' OPDS MAS EqS RlS endth .
+  eq setSubsorts(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, SSDS')
+    = fmod H is IL sorts SS . SSDS' OPDS MAS EqS endfm .
+  eq setSubsorts(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, SSDS')
+    = fth MN is IL sorts SS . SSDS' OPDS MAS EqS endfth .
+  eq setSubsorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, SSDS')
+    = smod H is IL sorts SS . SSDS' OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setSubsorts(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, SSDS')
+    = sth MN is IL sorts SS . SSDS' OPDS MAS EqS RlS StratDcls StratDefs endsth .
+
+  eq setMbs(unitError(QIL), membAxError(QIL') MAS) = unitError(QIL QIL') .
+  eq setMbs(unitError(QIL), MAS) = unitError(QIL) .
+  eq setMbs(U, membAxError(QIL) MAS) = unitError(QIL) .
+  eq setMbs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, MAS')
+    = mod H is IL sorts SS . SSDS OPDS MAS' EqS RlS endm .
+  eq setMbs(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, MAS')
+    = th MN is IL sorts SS . SSDS OPDS MAS' EqS RlS endth .
+  eq setMbs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, MAS')
+    = fmod H is IL sorts SS . SSDS OPDS MAS' EqS endfm .
+  eq setMbs(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, MAS')
+    = fth MN is IL sorts SS . SSDS OPDS MAS' EqS endfth .
+  eq setMbs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, MAS')
+    = smod H is IL sorts SS . SSDS OPDS MAS' EqS RlS StratDcls StratDefs endsm .
+  eq setMbs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, MAS')
+    = sth MN is IL sorts SS . SSDS OPDS MAS' EqS RlS StratDcls StratDefs endsth .
+
+  eq setEqs(unitError(QIL), EqS) = unitError(QIL) .
+  eq setEqs(U, equationError(QIL) EqS?:[EquationSet]) = unitError(QIL) .
+  eq setEqs(unitError(QIL), equationError(QIL') EqS?:[EquationSet])
+    = unitError(QIL QIL') .
+  eq setEqs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, EqS')
+    = mod H is IL sorts SS . SSDS OPDS MAS EqS' RlS endm .
+  eq setEqs(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, EqS')
+    = th MN is IL sorts SS . SSDS OPDS MAS EqS' RlS endth .
+  eq setEqs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, EqS')
+    = fmod H is IL sorts SS . SSDS OPDS MAS EqS' endfm .
+  eq setEqs(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, EqS')
+    = fth MN is IL sorts SS . SSDS OPDS MAS EqS' endfth .
+  eq setEqs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, EqS')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS' RlS StratDcls StratDefs endsm .
+  eq setEqs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, EqS')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS' RlS StratDcls StratDefs endsth .
+
+  eq setRls(unitError(QIL), RlS?) = unitError(QIL) .
+  eq setRls(U?, ruleError(QIL) RlS?) = unitError(QIL) .
+  eq setRls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, RlS')
+    = mod H is IL sorts SS . SSDS OPDS MAS EqS RlS' endm .
+  eq setRls(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, RlS')
+    = th MN is IL sorts SS . SSDS OPDS MAS EqS RlS' endth .
+  eq setRls(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, RlS)
+    = if RlS == none
+      then fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm
+      else mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      fi .
+  eq setRls(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, RlS)
+    = if RlS == none
+      then fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth
+      else th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth
+      fi .
+  eq setRls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, RlS')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS' StratDcls StratDefs endsm .
+  eq setRls(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, RlS')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS' StratDcls StratDefs endsth .
+
+  eq setSorts(unitError(QIL), SS) = unitError(QIL) .
+  eq setSorts(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, SS')
+    = mod H is IL sorts SS' . SSDS OPDS MAS EqS RlS endm .
+  eq setSorts(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, SS')
+    = th MN is IL sorts SS' . SSDS OPDS MAS EqS RlS endth .
+  eq setSorts(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, SS')
+    = fmod H is IL sorts SS' . SSDS OPDS MAS EqS endfm .
+  eq setSorts(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, SS')
+    = fth MN is IL sorts SS' . SSDS OPDS MAS EqS endfth .
+  eq setSorts(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, SS')
+    = smod H is IL sorts SS' . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setSorts(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, SS')
+    = sth MN is IL sorts SS' . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
+
+  eq setPars(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm, PDL)
+    = if PDL == nil
+      then mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      else mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      fi .
+  eq setPars(mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm, PDL')
+    = if PDL' == nil
+      then mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      else mod ME{PDL'} is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      fi .
+  eq setPars(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, PDL)
+    = th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth .
+  eq setPars(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm, PDL)
+    = if PDL == nil
+      then fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm
+      else fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm
+      fi .
+  eq setPars(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm, PDL')
+    = if PDL' == nil
+      then fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm
+      else fmod ME{PDL'} is IL sorts SS . SSDS OPDS MAS EqS endfm
+      fi .
+  eq setPars(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, PDL)
+    = fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth .
+  eq setPars(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, PDL)
+    = if PDL == nil
+      then smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
+      else smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
+      fi .
+  eq setPars(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, PDL')
+    = if PDL' == nil
+      then smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
+      else smod ME{PDL'} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm
+      fi .
+  eq setPars(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, PDL)
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
+
+  eq setName(mod ME is IL sorts SS . SSDS OPDS MAS EqS RlS endm, ME')
+    = mod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS endm .
+  eq setName(mod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm, ME')
+    = mod ME'{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS endm .
+  eq setName(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm, ME')
+    = fmod ME' is IL sorts SS . SSDS OPDS MAS EqS endfm .
+  eq setName(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm, ME')
+    = fmod ME'{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm .
+  eq setName(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, MN')
+    = fth MN' is IL sorts SS . SSDS OPDS MAS EqS endfth .
+  eq setName(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, MN')
+    = th MN' is IL sorts SS . SSDS OPDS MAS EqS RlS endth .
+  eq setName(smod ME is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, ME')
+    = smod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setName(smod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, ME')
+    = smod ME'{PDL} is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setName(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, MN')
+    = sth MN' is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
+  eq setName(noModule, ME) = noModule .
+  eq setName(unitError(QIL), ME) = unitError(QIL) .
+
+  eq setName(mod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS endm, ME')
+    = mod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS endm .
+  eq setName(fmod nullHeader is IL sorts SS . SSDS OPDS MAS EqS endfm, ME')
+    = fmod ME' is IL sorts SS . SSDS OPDS MAS EqS endfm .
+  eq setName(fth nullHeader is IL sorts SS . SSDS OPDS MAS EqS endfth, MN)
+    = fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth .
+  eq setName(th nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS endth, MN)
+    = th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth .
+  eq setName(smod nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, ME')
+    = smod ME' is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm .
+  eq setName(sth nullHeader is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, MN)
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth .
+  eq setName(noModule, ME) = noModule .
+  eq setName(unitError(QIL), ME) = unitError(QIL) .
+
+  eq setStratDcls(unitError(QIL), StratDcls?) = unitError(QIL) .
+----  eq setStratDcls(U?, ruleError(QIL) StratDcls?) = unitError(QIL) .
+  eq setStratDcls(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StratDcls)
+    = if StratDcls == none
+      then mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls none endsm
+      fi .
+  eq setStratDcls(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, StratDcls)
+    = if StratDcls == none
+      then th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls none endsth
+      fi .
+  eq setStratDcls(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, StratDcls)
+    = if StratDcls == none
+      then fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS none StratDcls none endsm
+      fi .
+  eq setStratDcls(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, StratDcls)
+    = if StratDcls == none
+      then fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS none StratDcls none endsth
+      fi .
+  eq setStratDcls(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, StratDcls')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls' StratDefs endsm .
+  eq setStratDcls(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, StratDcls')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls' StratDefs endsth .
+
+  eq setStratDefs(unitError(QIL), StratDefs?) = unitError(QIL) .
+  eq setStratDefs(U?, stratDefError(QIL) StratDefs?) = unitError(QIL) .
+  eq setStratDefs(mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm, StratDefs)
+    = if StratDefs == none
+      then mod H is IL sorts SS . SSDS OPDS MAS EqS RlS endm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS RlS none StratDefs endsm
+      fi .
+  eq setStratDefs(th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth, StratDefs)
+    = if StratDefs == none
+      then th MN is IL sorts SS . SSDS OPDS MAS EqS RlS endth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS none StratDefs endsth
+      fi .
+  eq setStratDefs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, StratDefs)
+    = if StratDefs == none
+      then fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm
+      else smod H is IL sorts SS . SSDS OPDS MAS EqS none none StratDefs endsm
+      fi .
+  eq setStratDefs(fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth, StratDefs)
+    = if StratDefs == none
+      then fth MN is IL sorts SS . SSDS OPDS MAS EqS endfth
+      else sth MN is IL sorts SS . SSDS OPDS MAS EqS none none StratDefs endsth
+      fi .
+  eq setStratDefs(smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsm, StratDefs')
+    = smod H is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs' endsm .
+  eq setStratDefs(sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs endsth, StratDefs')
+    = sth MN is IL sorts SS . SSDS OPDS MAS EqS RlS StratDcls StratDefs' endsth .
+
+*** Add functions
+
+  op addImports : ImportList Module -> Module .
+  op addSorts : SortSet Module -> Module .
+  op addSubsorts : [SubsortDeclSet] Module -> Module .
+  op addOps : [OpDeclSet] Module -> Module .
+  op addMbs : MembAxSet Module -> Module .
+  op addEqs : EquationSet Module -> Module .
+  op addRls : RuleSet Module -> Module .
+----  op addClasses : ClassDeclSet Module -> Module .
+----  op addSubclasses : SubclassDeclSet Module -> Module .
+----  op addMsgs : MsgDeclSet Module -> Module .
+  op addStratDefs : StratDefSet Module -> Module .
+  op addStratDcls : StratDeclSet Module -> Module .
+
+  eq addSorts(SS, U) = setSorts(U, (SS ; getSorts(U))) .
+  eq addSorts(SS, unitError(QIL)) = unitError(QIL) .
+
+  eq addSubsorts(SSDS, U) = setSubsorts(U, (SSDS getSubsorts(U))) .
+  eq addSubsorts(subsortDeclError(QIL), U) = unitError(QIL) .
+  eq addSubsorts(SSDS, unitError(QIL)) = unitError(QIL) .
+
+  eq addOps(OPDS, U) = setOps(U, (OPDS getOps(U))) .
+  eq addOps(OPDS?, unitError(QIL)) = unitError(QIL) .
+  eq addOps(OPDS?, U) = U [owise] .
+
+  eq addMbs(MAS, U) = setMbs(U, (MAS getMbs(U))) .
+  eq addMbs(MAS, unitError(QIL)) = unitError(QIL) .
+  eq addEqs(EqS, U) = setEqs(U, (EqS getEqs(U))) .
+  eq addEqs(EqS, unitError(QIL)) = unitError(QIL) .
+  eq addRls(RlS, U) = setRls(U, (RlS getRls(U))) .
+  eq addRls(RlS, unitError(QIL)) = unitError(QIL) .
+  eq addRls(ruleError(QIL), U) = unitError(QIL) .
+  eq addImports(IL, U) = setImports(U, (getImports(U) IL)) .
+  eq addImports(IL, unitError(QIL)) = unitError(QIL) .
+----  eq addClasses(CDS, U) = setClasses(U, (getClasses(U) CDS)) .
+----  eq addClasses(CDS, unitError(QIL)) = unitError(QIL) .
+----  eq addSubclasses(SCDS, U) = setSubclasses(U, (getSubclasses(U) SCDS)) .
+----  eq addSubclasses(SCDS, unitError(QIL)) = unitError(QIL) .
+----  eq addMsgs(MDS, U) = setMsgs(U, getMsgs(U) MDS) .
+----  eq addMsgs(MDS, unitError(QIL)) = unitError(QIL) .
+  eq addStratDefs(StratDefs, U) = setStratDefs(U, StratDefs getStratDefs(U)) .
+  eq addStratDcls(StratDcls, U) = setStratDcls(U, StratDcls getStratDcls(U)) .
+
+  *** moreGeneralEqs  ******************************
+  ---- An equation is more general than other if there is a substitution such that
+  ---- the more general equation with such a substitution applied is equal to the
+  ---- less general one.
+  op moreGeneralEqs : Module -> Module .
+  op moreGeneralRls : Module -> Module .
+  op $moreGeneralEqs : Module Module EquationSet EquationSet -> Module .
+  op $moreGeneralRls : Module Module RuleSet RuleSet -> Module .
+  op $moreGeneral : Module Equation Equation -> Bool .
+  op $moreGeneral : Module Rule Rule -> Bool .
+  op $moreGeneral : Module Condition Condition Term Term -> Bool .
+
+  eq moreGeneralEqs(M)
+    = $moreGeneralEqs(
+        M,
+        addOps((op '@/\@ : '@@@ '@@@ -> '@@@ [assoc] .
+                op '@--@ : 'Universal -> '@@@ [poly(1)] .
+                op '@--@ : 'Universal 'Universal -> '@@@ [poly(1 2)] .),
+               addSorts('@@@, M)),
+        getEqs(M), getEqs(M)) .
+  eq moreGeneralRls(M)
+    = $moreGeneralRls(
+        M,
+        addOps((op '@/\@ : '@@@ '@@@ -> '@@@ [assoc] .
+                op '@--@ : 'Universal -> '@@@ [poly(1)] .
+                op '@--@ : 'Universal 'Universal -> '@@@ [poly(1 2)] .),
+               addSorts('@@@, M)),
+        getRls(M), getRls(M)) .
+
+ ceq $moreGeneralEqs(M, M', Eq EqS, Eq Eq' EqS')
+    = $moreGeneralEqs(M, M', EqS, Eq' EqS')
+    if $moreGeneral(M', Eq', Eq) .
+  eq $moreGeneralEqs(M, M', EqS, EqS') = setEqs(M, EqS') [owise] .
+
+ ceq $moreGeneralRls(M, M', Rl RlS, Rl Rl' RlS')
+    = $moreGeneralRls(M, M', RlS, Rl' RlS')
+    if $moreGeneral(M', Rl', Rl) .
+  eq $moreGeneralRls(M, M', RlS, RlS') = setRls(M, RlS') [owise] .
+
+  eq $moreGeneral(M, Eq, Eq')
+    = sameKind(M, leastSort(M, lhs(Eq)), leastSort(M, lhs(Eq')))
+      and-then
+      $moreGeneral(M, cond(Eq), cond(Eq'), '@--@[lhs(Eq), rhs(Eq)], '@--@[lhs(Eq'), rhs(Eq')]) .
+
+  eq $moreGeneral(M, Rl, Rl')
+    = sameKind(M, leastSort(M, lhs(Rl)), leastSort(M, lhs(Rl')))
+      and-then
+      $moreGeneral(M, cond(Rl), cond(Rl'), '@--@[lhs(Rl), rhs(Rl)], '@--@[lhs(Rl'), rhs(Rl')]) .
+
+  eq $moreGeneral(M, T1 = T1' /\ Cond1, T2 = T2' /\ Cond2, T, T')
+    = sameKind(M, leastSort(M, T1), leastSort(M, T2))
+      and-then
+      $moreGeneral(M, Cond1, Cond2, '@/\@['@--@[T1, T1'], T], '@/\@['@--@[T2, T2'], T']) .
+  eq $moreGeneral(M, T1 := T1' /\ Cond1, T2 := T2' /\ Cond2, T, T')
+    = sameKind(M, leastSort(M, T1), leastSort(M, T2))
+      and-then
+      $moreGeneral(M, Cond1, Cond2, '@/\@['@--@[T1, T1'], T], '@/\@['@--@[T2, T2'], T']) .
+  eq $moreGeneral(M, T1 => T1' /\ Cond1, T2 => T2' /\ Cond2, T, T')
+    = sameKind(M, leastSort(M, T1), leastSort(M, T2))
+      and-then
+      $moreGeneral(M, Cond1, Cond2, '@/\@['@--@[T1, T1'], T], '@/\@['@--@[T2, T2'], T']) .
+  eq $moreGeneral(M, T1 : S /\ Cond1, T2 : S /\ Cond2, T, T')
+    = $moreGeneral(M, Cond1, Cond2, '@/\@['@--@[T1], T], '@/\@['@--@[T2], T']) .
+
+  eq $moreGeneral(M, nil, nil, T, T') = metaMatch(M, T, T', nil, 0) =/= noMatch .
+  eq $moreGeneral(M, Cond1, Cond2, T, T') = false [owise] .
+
+  op rmVariantAttrs : Module -> Module .
+  op $rmVariants : EquationSet -> EquationSet .
+  op $rmVariants : RuleSet -> RuleSet .
+  op $rmVariants : MembAxSet -> MembAxSet .
+  eq rmVariantAttrs(M) = setRls(setEqs(setMbs(M, $rmVariants(getMbs(M))), $rmVariants(getEqs(M))), $rmVariants(getRls(M))) .
+  eq rmVariantAttrs(unitError(QIL)) = unitError(QIL) .
+
+  eq $rmVariants(eq T = T' [variant AtS] . EqS) = (eq T = T' [variant AtS] .) $rmVariants(EqS) .
+  eq $rmVariants(ceq T = T' if Cond [variant AtS] . EqS) = (ceq T = T' if Cond [variant AtS] .) $rmVariants(EqS) .
+  eq $rmVariants(EqS) = EqS [owise] .
+
+  eq $rmVariants(rl T => T' [variant AtS] . RlS) = (rl T => T' [variant AtS] .) $rmVariants(RlS) .
+  eq $rmVariants(crl T => T' if Cond [variant AtS] . RlS) = (crl T => T' if Cond [variant AtS] .) $rmVariants(RlS) .
+  eq $rmVariants(RlS) = RlS [owise] .
+
+  eq $rmVariants(mb T : S [variant AtS] . MbS) = (mb T : S [variant AtS] .) $rmVariants(MbS) .
+  eq $rmVariants(cmb T : S if Cond [variant AtS] . MbS) = (cmb T : S if Cond [variant AtS] .) $rmVariants(MbS) .
+  eq $rmVariants(MbS) = MbS [owise] .
+endfm
+
+fmod AX-COHERENCE-COMPLETION is
+  inc FM-UNIT .
+----  inc FM-MODULE-HANDLING * (op addOps to addOpsSE, op addEqs to addEqsSE, op addSorts to addSortsSE) .
+
+  vars V W : Variable .
+  var  C : Constant .
+  var  FM : FModule .
+  var  SM : SModule .
+  var  M : Module .
+  var  N : Nat .
+  vars T T' T'' LHS RHS : Term .
+  vars Subst Subst' : Substitution .
+  var  F : Qid .
+  var  TL : TermList .
+  vars AtS AtS' : AttrSet .
+----  var  VFS : VariantFourSet .
+  vars Tp Tp' Tp'' : Type .
+  var  TpL : TypeList .
+  var  Rl : Rule .
+  var  RlS : RuleSet .
+  var  Eq : Equation .
+  var  EqS : EquationSet .
+  var  ODS : OpDeclSet .
+  var  Cond : Condition .
+  var  QIL : QidList .
+
+  ------------------------------------------------------------------------------
+  ---- coherence completion
+  ------------------------------------------------------------------------------
+
+  op axCohComplete : SModule -> SModule .
+  op axCohComplete : SModule OpDeclSet RuleSet -> RuleSet .
+  op axCohCompleteAux : SModule OpDeclSet RuleSet -> RuleSet .
+  op axCohComplete : SModule Type AttrSet Rule -> RuleSet .
+  op axCohComplete : SModule OpDeclSet EquationSet -> EquationSet .
+  op axCohCompleteAux : SModule OpDeclSet EquationSet -> EquationSet .
+  op axCohComplete : SModule Type AttrSet Equation -> EquationSet .
+
+  eq axCohComplete(FM)
+    = moreGeneralEqs(setEqs(FM, axCohComplete(FM, getOps(FM), getEqs(FM)))) .
+  eq axCohComplete(SM)
+    = moreGeneralEqs(
+        moreGeneralRls(
+          setRls(
+            setEqs(SM,
+              axCohComplete(SM, getOps(SM), getEqs(SM))),
+            axCohComplete(SM, getOps(SM), getRls(SM)))))
+    [owise] .
+  eq axCohComplete(unitError(QIL)) = unitError(QIL) .
+
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, rl F[TL] => RHS [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc AtS, rl F[TL] => RHS [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, crl F[TL] => RHS if Cond [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc AtS, crl F[TL] => RHS if Cond [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  eq axCohComplete(M, ODS, RlS) = axCohCompleteAux(M, ODS, RlS) [owise] .
+
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, rl LHS => RHS [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc id(T) AtS, rl F[LHS] => RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, crl LHS => RHS if Cond [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc id(T) AtS, crl F[LHS] => RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, rl LHS => RHS [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc left-id(T) AtS, rl F[LHS] => RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, crl LHS => RHS if Cond [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc left-id(T) AtS, crl F[LHS] => RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, rl LHS => RHS [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc right-id(T) AtS, rl F[LHS] => RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, crl LHS => RHS if Cond [AtS'] . RlS)
+    = axCohComplete(M, Tp, assoc right-id(T) AtS, crl F[LHS] => RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, RlS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  eq axCohCompleteAux(M, ODS, RlS) = RlS [owise] .
+
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, eq F[TL] = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, eq F[TL] = RHS [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, ceq F[TL] = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  eq axCohComplete(M, ODS, EqS) = axCohCompleteAux(M, ODS, EqS) [owise] .
+
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, eq LHS = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc id(T) AtS, eq F[LHS] = RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, ceq LHS = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc id(T) AtS, ceq F[LHS] = RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, eq LHS = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc left-id(T) AtS, eq F[LHS] = RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, ceq LHS = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc left-id(T) AtS, ceq F[LHS] = RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, eq LHS = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc right-id(T) AtS, eq F[LHS] = RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, ceq LHS = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc right-id(T) AtS, ceq F[LHS] = RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  eq axCohCompleteAux(M, ODS, EqS) = EqS [owise] .
+
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, eq F[TL] = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, eq F[TL] = RHS [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKind(M, Tp, Tp')
+    /\ sameKind(M, Tp', Tp'')
+    /\ sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, ceq F[TL] = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKind(M, Tp, Tp')
+    /\ sameKind(M, Tp', Tp'')
+    /\ sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  eq axCohComplete(M, ODS, eq LHS = RHS [AtS] . EqS)
+    = eq LHS = RHS [AtS] . axCohComplete(M, ODS, EqS)
+    [owise] .
+  eq axCohComplete(M, ODS, ceq LHS = RHS if Cond [AtS] . EqS)
+    = ceq LHS = RHS if Cond [AtS] . axCohComplete(M, ODS, EqS)
+    [owise] .
+  eq axCohComplete(M, ODS, (none).EquationSet) = none .
+
+  ---- Given f(t1,...,tn) -> r if C
+  ---- if f AC add f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
+  eq axCohComplete(M, Tp, assoc comm AtS, rl F[TL] => RHS [AtS'] .)
+    = (rl F[TL] => RHS [AtS'] .)
+      (rl F[TL, qid("X@@@:" + string(getKind(M, Tp)))] => getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    [owise] .
+  eq axCohComplete(M, Tp, assoc comm AtS, crl F[TL] => RHS if Cond [AtS'] .)
+    = (crl F[TL] => RHS if Cond [AtS'] .)
+      (crl F[TL, qid("X@@@:" + string(getKind(M, Tp)))] => getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    [owise] .
+  ---- if f ACU replace by f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
+  eq axCohComplete(M, Tp, assoc comm id(T) AtS, rl F[TL] => RHS [AtS'] .)
+    = (rl F[TL, qid("X@@@:" + string(getKind(M, Tp)))] => getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) [AtS'] .) .
+  eq axCohComplete(M, Tp, assoc comm id(T) AtS, crl F[TL] => RHS if Cond [AtS'] .)
+    = (crl F[TL, qid("X@@@:" + string(getKind(M, Tp)))] => getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .) .
+  ---- if f AU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ceq axCohComplete(M, Tp, assoc id(T) AtS, rl F[TL] => RHS [AtS'] .)
+    = (rl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    if not comm in AtS .
+  ceq axCohComplete(M, Tp, assoc id(T) AtS, crl F[TL] => RHS if Cond [AtS'] .)
+    = (crl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    if not comm in AtS .
+  ---- if f ALU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----             and add f(x:[s],t1,...,tn) -> f(x:[s],r) if C
+  eq axCohComplete(M, Tp, assoc left-id(T) AtS, rl F[TL] => RHS [AtS'] .)
+    = (rl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (rl F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) [AtS'] .)  .
+  eq axCohComplete(M, Tp, assoc left-id(T) AtS, crl F[TL] => RHS if Cond [AtS'] .)
+    = (crl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (crl F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) if Cond [AtS'] .)  .
+  ---- if f ARU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----             and add f(t1,...,tn,y:[s]) -> f(r,y:[s]) if C
+  eq axCohComplete(M, Tp, assoc right-id(T) AtS, rl F[TL] => RHS [AtS'] .)
+    = (rl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (rl F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .) .
+  eq axCohComplete(M, Tp, assoc right-id(T) AtS, crl F[TL] => RHS if Cond [AtS'] .)
+    = (crl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (crl F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .) .
+  ---- if f A add f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----            f(x:[s],t1,...,tn) -> f(x:[s],r) if C
+  ----            f(t1,...,tn,y:[s]) -> f(r,y:[s]) if C
+  ceq axCohComplete(M, Tp, assoc AtS, rl F[TL] => RHS [AtS'] .)
+    = (rl F[TL] => RHS [AtS'] .)
+      (rl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (rl F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) [AtS'] .)
+      (rl F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    if not comm in AtS
+    [owise] .
+  ceq axCohComplete(M, Tp, assoc AtS, crl F[TL] => RHS if Cond [AtS'] .)
+    = (crl F[TL] => RHS if Cond [AtS'] .)
+      (crl F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (crl F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         => getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) if Cond [AtS'] .)
+      (crl F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         => getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    if not comm in AtS
+    [owise] .
+
+  ---- Given f(t1,...,tn) -> r if C
+  ---- if f AC add f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
+  eq axCohComplete(M, Tp, assoc comm AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[TL] = RHS [AtS'] .)
+      (eq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    [owise] .
+  eq axCohComplete(M, Tp, assoc comm AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[TL] = RHS if Cond [AtS'] .)
+      (ceq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    [owise] .
+  ---- if f ACU replace by f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
+  eq axCohComplete(M, Tp, assoc comm id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) [AtS'] .) .
+  eq axCohComplete(M, Tp, assoc comm id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .) .
+  ---- if f AU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ceq axCohComplete(M, Tp, assoc id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    if not comm in AtS .
+  ceq axCohComplete(M, Tp, assoc id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    if not comm in AtS .
+  ---- if f ALU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----             and add f(x:[s],t1,...,tn) -> f(x:[s],r) if C
+  eq axCohComplete(M, Tp, assoc left-id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) [AtS'] .)  .
+  eq axCohComplete(M, Tp, assoc left-id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) if Cond [AtS'] .)  .
+  ---- if f ARU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----             and add f(t1,...,tn,y:[s]) -> f(r,y:[s]) if C
+  eq axCohComplete(M, Tp, assoc right-id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (eq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .) .
+  eq axCohComplete(M, Tp, assoc right-id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (ceq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .) .
+  ---- if f A add f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----            f(x:[s],t1,...,tn) -> f(x:[s],r) if C
+  ----            f(t1,...,tn,y:[s]) -> f(r,y:[s]) if C
+  ceq axCohComplete(M, Tp, assoc AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[TL] = RHS [AtS'] .)
+      (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) [AtS'] .)
+      (eq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    if not comm in AtS
+    [owise] .
+  ceq axCohComplete(M, Tp, assoc AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[TL] = RHS if Cond [AtS'] .)
+      (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) if Cond [AtS'] .)
+      (ceq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    if not comm in AtS
+    [owise] .
+endfm
+
+fmod MOVE-DOWN is
+  pr FM-UNIT .
+  pr CONVERSION .
+  pr FM-INT-LIST .
+endfm
+
+omod MINI-MAUDE is
+  pr MM-BANNER .
+  pr FILE .
+  pr STD-STREAM .
+  pr LEXICAL .
+  pr STRING-OPS .
+  pr META-LEVEL .
+  inc MAYBE{Oid} * (op maybe to null) .
+  inc MAYBE{Qid} * (op maybe to null) .
+  ---- inc MAYBE{Term} * (op maybe to null) .
+  sort Maybe{Term} .
+  subsort Maybe{Qid} < Maybe{Term} .
+  inc MAYBE{String} * (op maybe to null) .
+  inc MAYBE{Module} * (op maybe to null) .
+  inc META-INTERPRETER .
+  pr MM-PRINT-SYNTAX-ERROR .
+  inc MM-DATABASE-HANDLING .
+  pr FM-HELP .
+
+  op mm : -> Oid .
+  class MiniMaude | 
+    mi : Maybe{Oid},    ---- meta-interpreter
+    in : QidList,       ---- accumulated input
+    ----pi : Maybe{Term},   ---- parsed input
+    it : Maybe{String}, ---- input type (mod, fmod, omod, view)
+    mn : Maybe{Qid},    ---- default module name
+    ----st : Nat .          ---- state
+    .
+
+  vars O O' MI : Oid .
+  var  Str : String .
+  var  QIL : QidList .
+  var  IT : Maybe{String} .
+  var  F : Qid .
+  vars T T' T'' : Term .
+  var  ME : ModuleExpression .
+
+  op minimaude : -> Configuration .
+  eq minimaude 
+    = <> 
+      < mm : MiniMaude | mi : null, mn : null, in : nil, it : null>
+      write(stdout, mm, banner + "\n") .
+
+  rl < O : MiniMaude | mi : null >
+     wrote(O, O')
+  => < O : MiniMaude | >
+     createInterpreter(interpreterManager, mm, none) .
+  rl < O : MiniMaude | mi : null >
+     createdInterpreter(O, interpreterManager, MI) 
+  => < O : MiniMaude | mi : MI >
+     getLine(stdin, O, "MiniMaude> ") .
+  rl  < O : MiniMaude | in : QIL > 
+      gotLine(O, stdin, Str) 
+   => if metaParse(upModule('MINI-MAUDE-SYNTAX, false), none, QIL tokenize(trim(Str)), '@Input@) :: ResultPair
+      then < O : MiniMaude | 
+             in : nil, 
+             it : null >
+           to O : procInput(getTerm(metaParse(upModule('MINI-MAUDE-SYNTAX, false), none, QIL tokenize(trim(Str)), '@Input@)))
+      else if  endsWith(trimEnd(Str), "endfm") or-else 
+              (endsWith(trimEnd(Str), "endfth") or-else 
+              (endsWith(trimEnd(Str), "endview") or-else 
+              (endsWith(trimEnd(Str), "endm") or-else 
+              (endsWith(trimEnd(Str), "endsm") or-else 
+              (endsWith(trimEnd(Str), "endom") or-else 
+               endsWith(trimEnd(Str), " ."))))))
+           then < O : MiniMaude | in : nil >
+                write(stdout, mm, printSyntaxError(metaParse(upModule('MINI-MAUDE-SYNTAX, false), none, QIL tokenize(trim(Str)), '@Input@), QIL)) 
+           else < O : MiniMaude | in : QIL tokenize(trim(Str)) >
+                getLine(stdin, O, "> ") 
+           fi
+      fi .
+
+  crl [module] :
+     < O : MiniMaude | mn : ME >
+     to O : procInput(F[T, T'])
+     => < O : MiniMaude | mn : parseHeader(T) >
+        write(stdout, O, "Module " + metaPrintToString(parseHeader(T)) + " introduced.\n") .
+        to O : procModule(F[T, T'])
+     if  (F == 'fmod_is_endfm) or-else
+        ((F == 'mod_is_endm)   or-else
+        ((F == 'smod_is_endsm) or-else
+         (F == 'omod_is_endom))) .
+
+  op parseHeader : Term -> Qid .
+  eq parseHeader('token[T]) = downQid(T) .
+  eq parseHeader('_`{_`}['token[T], T']) = downQid(T) .
+
+  msg to_: procInput`(_`) : Oid Term -> Msg .
+  msg to_: procModule`(_`) : Oid Term -> Msg .
+  msg to_: procModule2`(_`,_`) : Oid Term Term -> Msg .
+  msg to_: procModule2`(_`) : Oid Term -> Msg .
+  msg to_: procModule3`(_`,_`,_`,_`) : Oid Term Term Term Module -> Msg .
+  msg to_: procModule3`(_`,_`,_`) : Oid Term Term Module -> Msg .
+
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule(F[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule2(F[T, T'], F[T, T']) .
+
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'fmod_is_endfm[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', emptyFModule) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'mod_is_endm[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', emptySModule) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'omod_is_endom[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', addImports((including 'CONFIGURATION .), emptyOModule)) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'smod_is_endsm[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', emptyStratModule) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'fth_is_endfth[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', emptyFTheory) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'th_is_endth[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', emptySTheory) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'oth_is_endoth[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', addImports((including 'CONFIGURATION .), emptyOTheory)) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2(T, 'sth_is_endsth[T', T''])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', T'', emptyStratTheory) .
+
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('fmod_is_endfm[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', emptyFModule) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('mod_is_endm[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', emptySModule) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('omod_is_endom[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', addImports((including 'CONFIGURATION .), emptyOModule)) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('smod_is_endsm[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', emptyStratModule) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('fth_is_endfth[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', emptyFTheory) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('th_is_endth[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', emptySTheory) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('oth_is_endoth[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', addImports((including 'CONFIGURATION .), emptyOTheory)) .
+  rl [module] :
+     < O : MiniMaude | >
+     to O : procModule2('sth_is_endsth[T, T'])
+  => < O : MiniMaude | >
+     to O : procModule3(T, T', emptyStratTheory) .
+
+
+  *** projection functions (from prelude.maude)
+  op getTerm : ResultPair ~> Term .
+  eq getTerm({T:[Term], T':[Type]}) = T:[Term] .
+  op getType : ResultPair ~> Type .
+  eq getType({T:[Term], T':[Type]}) = T':[Type] .
+
+  op parse : Term -> Msg [ ctor ] .
+
+----
+----    --- quit
+----  eq < OID : MiniMaude | > 
+----     parse(STR, 'q.NuITP-Command) 
+----    = (none).Configuration 
+----      write(stdout, OID, printCommand(ATS, STR) + WHITE + "  Bye." + BW + "\n\n") .
+----  eq < OID : MiniMaude | ATS > parse(STR, 'quit.NuITP-Command) = (none).Configuration write(stdout, OID, printCommand(ATS, STR) + WHITE + "  Bye." + BW + "\n\n") .
+----
+endom
+
+erew minimaude .

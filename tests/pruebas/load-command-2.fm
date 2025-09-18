@@ -3,7 +3,7 @@
 (load (omod 'SAVING-ACCOUNT is
        including 'BOOL .
        including 'CONFIGURATION .
-       including 'CONFIGURATION+ .
+----       including 'CONFIGURATION+ .
        protecting 'FLOAT .
        protecting 'QID .
        protecting 'INT .
