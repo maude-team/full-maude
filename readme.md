@@ -2,7 +2,7 @@
 
 This repo contains the latest version of Full Maude. If you are looking for the Maude system or information on it, please go to the [Maude official site](http://maude.cs.uiuc.edu/).
 
-The current version of Full Maude is [FM 3.5.1](sr/fm3/full-maude351.maude). A new alpha is at [FM 3.5.1a](sr/fm3/full-maude351a.maude).
+The current version of Full Maude is [FM 3.5.1](sr/fm3/full-maude351.maude). 
 
 During the development of the Maude system we have put special emphasis on the creation of metaprogramming facilities to allow the generation of execution environments for a wide variety of languages and logics. The first most obvious area where Maude can be used as a metalanguage is in building language extensions for Maude itself. Our experience in this regard is very encouraging.
 
