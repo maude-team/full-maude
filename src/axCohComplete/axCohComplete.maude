@@ -1,0 +1,235 @@
+fmod AX-COHERENCE-COMPLETION is
+  inc META-LEVEL .
+
+  vars V W : Variable .
+  var  C : Constant .
+  var  FM : FModule .
+  var  M : Module .
+  var  N : Nat .
+  vars T T' T'' LHS RHS : Term .
+  vars Subst Subst' : Substitution .
+  var  F : Qid .
+  var  TL : TermList .
+  vars AtS AtS' : AttrSet .
+  vars Tp Tp' Tp'' Tp''' : Type .
+  vars TpL TpL' : TypeList .
+  var  Rl : Rule .
+  var  RlS : RuleSet .
+  var  Eq : Equation .
+  vars EqS EqS' : EquationSet .
+  var  ODS : OpDeclSet .
+  var  Cond : Condition .
+  var  QIL : QidList .
+  var  At : Attr .
+  var  H : Header .
+  vars IL IL' : ImportList .
+  var  SS : SortSet .
+  var  SSDS : SubsortDeclSet .
+  var  OPDS : OpDeclSet .
+  var  MAS : MembAxSet .
+  vars ME ME' : ModuleExpression .
+  var  PDL : ParameterDeclList .
+
+  ------------------------------------------------------------------------------
+  ---- a new module expression axCohComplete(<module-name>)
+  ------------------------------------------------------------------------------
+
+  op axCohComplete : ModuleExpression -> ModuleExpression .
+
+  ------------------------------------------------------------------------------
+  ---- some auxiliary functions
+  ------------------------------------------------------------------------------
+
+  op setName : Module ModuleExpression -> Module .
+  eq setName(fmod ME is IL sorts SS . SSDS OPDS MAS EqS endfm, ME')
+    = fmod ME' is IL sorts SS . SSDS OPDS MAS EqS endfm .
+  eq setName(fmod ME{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm, ME')
+    = fmod ME'{PDL} is IL sorts SS . SSDS OPDS MAS EqS endfm .
+
+  op setIL : FModule ImportList -> FModule .
+  eq setIL(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, IL')
+    = fmod H is IL' sorts SS . SSDS OPDS MAS EqS endfm .
+
+  op setEqs : FModule EquationSet -> FModule .
+  eq setEqs(fmod H is IL sorts SS . SSDS OPDS MAS EqS endfm, EqS')
+    = fmod H is IL sorts SS . SSDS OPDS MAS EqS' endfm .
+
+  op _in_ : Attr AttrSet -> Bool .
+  eq At in At AtS = true .
+  eq At in AtS = false [owise] .
+
+  op eLeastSort : Module TermList ~> TypeList .
+  eq eLeastSort(M, (T:Term, TL:TermList))
+    = (leastSort(M, T:Term) eLeastSort(M, TL:TermList)) .
+  eq eLeastSort(M, empty) = nil .
+
+  op sameKind : Module TypeList TypeList -> Bool [ditto] .
+  eq sameKind(M, (Tp Tp' TpL), (Tp'' Tp''' TpL'))
+    = sameKind(M, Tp, Tp'')
+      and-then sameKind(M, Tp' TpL, Tp''' TpL') .
+  eq sameKind(M, nil, nil) = true .
+  eq sameKind(M, TpL, TpL') = false [owise] .
+
+  op sameKindAll : Module Type TypeList -> Bool .
+  eq sameKindAll(M, Tp, Tp' TpL) = sameKind(M, Tp, Tp') and-then sameKindAll(M, Tp, TpL) .
+  eq sameKindAll(M, Tp, nil) = true .
+
+  ------------------------------------------------------------------------------
+  ---- coherence completion
+  ------------------------------------------------------------------------------
+
+  op axCohComplete : FModule -> FModule .
+  op axCohComplete : ImportList -> ImportList .
+  op axCohComplete : FModule OpDeclSet EquationSet -> EquationSet .
+  op axCohCompleteAux : FModule OpDeclSet EquationSet -> EquationSet .
+  op axCohComplete : FModule Type AttrSet Equation -> EquationSet .
+
+  eq axCohComplete(FM)
+    = setName(
+        setEqs(
+          setIL(FM, axCohComplete(getImports(FM))), 
+          axCohComplete(FM, getOps(FM), getEqs(FM))), 
+        axCohComplete(getName(FM))) .
+
+  eq axCohComplete(protecting ME . IL)
+    = protecting axCohComplete(ME) . axCohComplete(IL) .
+  eq axCohComplete(including ME . IL)
+    = including axCohComplete(ME) . axCohComplete(IL) .
+  eq axCohComplete(extending ME . IL)
+    = extending axCohComplete(ME) . axCohComplete(IL) .
+  eq axCohComplete(generated-by ME . IL)
+    = generated-by axCohComplete(ME) . axCohComplete(IL) .
+  eq axCohComplete((nil).ImportList) = nil .
+
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, eq F[TL] = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, eq F[TL] = RHS [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, ceq F[TL] = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  eq axCohComplete(M, ODS, EqS) = axCohCompleteAux(M, ODS, EqS) [owise] .
+
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, eq LHS = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc id(T) AtS, eq F[LHS] = RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, ceq LHS = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc id(T) AtS, ceq F[LHS] = RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, eq LHS = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc left-id(T) AtS, eq F[LHS] = RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, ceq LHS = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc left-id(T) AtS, ceq F[LHS] = RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc left-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, eq LHS = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc right-id(T) AtS, eq F[LHS] = RHS [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  ceq axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, ceq LHS = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc right-id(T) AtS, ceq F[LHS] = RHS if Cond [AtS'] .)
+      axCohCompleteAux(M, op F : Tp Tp' -> Tp'' [assoc right-id(T) AtS] . ODS, EqS)
+    if sameKindAll(M, Tp, leastSort(M, LHS)) .
+  eq axCohCompleteAux(M, ODS, EqS) = EqS [owise] .
+
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, eq F[TL] = RHS [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, eq F[TL] = RHS [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKind(M, Tp, Tp')
+    /\ sameKind(M, Tp', Tp'')
+    /\ sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  ceq axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, ceq F[TL] = RHS if Cond [AtS'] . EqS)
+    = axCohComplete(M, Tp, assoc AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+      axCohComplete(M, op F : Tp Tp' -> Tp'' [assoc AtS] . ODS, EqS)
+    if sameKind(M, Tp, Tp')
+    /\ sameKind(M, Tp', Tp'')
+    /\ sameKindAll(M, Tp, eLeastSort(M, TL)) .
+  eq axCohComplete(M, ODS, eq LHS = RHS [AtS] . EqS)
+    = eq LHS = RHS [AtS] . axCohComplete(M, ODS, EqS)
+    [owise] .
+  eq axCohComplete(M, ODS, ceq LHS = RHS if Cond [AtS] . EqS)
+    = ceq LHS = RHS if Cond [AtS] . axCohComplete(M, ODS, EqS)
+    [owise] .
+  eq axCohComplete(M, ODS, (none).EquationSet) = none .
+
+  ---- Given f(t1,...,tn) -> r if C
+  ---- if f AC add f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
+  eq axCohComplete(M, Tp, assoc comm AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[TL] = RHS [AtS'] .)
+      (eq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    [owise] .
+  eq axCohComplete(M, Tp, assoc comm AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[TL] = RHS if Cond [AtS'] .)
+      (ceq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    [owise] .
+  ---- if f ACU replace by f(t1,...,tn,x:[s]) -> f(r,x:[s]) if C
+  eq axCohComplete(M, Tp, assoc comm id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) [AtS'] .) .
+  eq axCohComplete(M, Tp, assoc comm id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[TL, qid("X@@@:" + string(getKind(M, Tp)))] = getTerm(metaNormalize(M, F[RHS, qid("X@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .) .
+  ---- if f AU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ceq axCohComplete(M, Tp, assoc id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    if not comm in AtS .
+  ceq axCohComplete(M, Tp, assoc id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    if not comm in AtS .
+  ---- if f ALU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----             and add f(x:[s],t1,...,tn) -> f(x:[s],r) if C
+  eq axCohComplete(M, Tp, assoc left-id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) [AtS'] .)  .
+  eq axCohComplete(M, Tp, assoc left-id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) if Cond [AtS'] .)  .
+  ---- if f ARU replace by f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----             and add f(t1,...,tn,y:[s]) -> f(r,y:[s]) if C
+  eq axCohComplete(M, Tp, assoc right-id(T) AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (eq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .) .
+  eq axCohComplete(M, Tp, assoc right-id(T) AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (ceq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .) .
+  ---- if f A add f(x:[s],t1,...,tn,y:[s]) -> f(x:[s],r,y:[s]) if C
+  ----            f(x:[s],t1,...,tn) -> f(x:[s],r) if C
+  ----            f(t1,...,tn,y:[s]) -> f(r,y:[s]) if C
+  ceq axCohComplete(M, Tp, assoc AtS, eq F[TL] = RHS [AtS'] .)
+    = (eq F[TL] = RHS [AtS'] .)
+      (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+      (eq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) [AtS'] .)
+      (eq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) [AtS'] .)
+    if not comm in AtS
+    [owise] .
+  ceq axCohComplete(M, Tp, assoc AtS, ceq F[TL] = RHS if Cond [AtS'] .)
+    = (ceq F[TL] = RHS if Cond [AtS'] .)
+      (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+      (ceq F[qid("X@@@:" + string(getKind(M, Tp))), TL]
+         = getTerm(metaNormalize(M, F[qid("X@@@:" + string(getKind(M, Tp))), RHS])) if Cond [AtS'] .)
+      (ceq F[TL, qid("Y@@@:" + string(getKind(M, Tp)))]
+         = getTerm(metaNormalize(M, F[RHS, qid("Y@@@:" + string(getKind(M, Tp)))])) if Cond [AtS'] .)
+    if not comm in AtS
+    [owise] .
+endfm
+
+eof
+red axCohComplete(upModule('BOOL, true)) .
+red axCohComplete(upModule('BOOL, false)) .

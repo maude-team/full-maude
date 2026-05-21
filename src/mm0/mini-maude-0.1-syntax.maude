@@ -107,8 +107,7 @@ fmod MINI-MAUDE-OPERATOR-ATTRIBUTES is
   ops id:_ identity:_ : @Bubble@ -> @Attr@ .
   ops left`id:_ left`identity:_ : @Bubble@ -> @Attr@ .
   ops right`id:_ right`identity:_ : @Bubble@ -> @Attr@ .
-  ops frozen`(_`) poly`(_`) strat`(_`) strategy`(_`) :
-        @NeTokenList@ -> @AttrList@ .
+  ops frozen`(_`) poly`(_`) strat`(_`) strategy`(_`) : @NeTokenList@ -> @AttrList@ .
   ops memo memoization : -> @Attr@ .
   ops prec_ precedence_ : @Token@ -> @Attr@ .
   ops gather`(_`) gathering`(_`) : @NeTokenList@ -> @Attr@ .
@@ -281,11 +280,8 @@ fmod MINI-MAUDE-MODULES is
 
   sorts @DeclList@ @Module@ @Parameter@ @List<Parameter>@ .
   sorts @Interface@ .
-  subsorts @VarDecl@ @ImportDecl@ @SortDecl@ @SubsortDecl@ @OpDecl@ @MbDecl@
-           @EqDecl@
-           @RlDecl@
-           @StDecl@
-           @MsgDecl@ @SubclassDecl@ @ClassDecl@ < @DeclList@ .
+  subsorts @VarDecl@ @ImportDecl@ @SortDecl@ @SubsortDecl@ @OpDecl@ @MbDecl@ @EqDecl@
+           @RlDecl@ @StDecl@ @MsgDecl@ @SubclassDecl@ @ClassDecl@ < @DeclList@ .
   subsort @Parameter@ < @List<Parameter>@ .
   subsorts @Token@ < @Interface@ .
 
