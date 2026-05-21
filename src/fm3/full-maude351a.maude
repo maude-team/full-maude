@@ -19,6 +19,8 @@
 ----                           printSyntaxError functionality by Peter Olveczky
 ----                                       narrowing search by Santiago Escobar
 
+load file
+
 set show loop stats off .
 set show loop timing off .
 ----set show advisories off .
@@ -26,7 +28,7 @@ set show loop timing off .
 fmod FM-BANNER is
   pr STRING .
   op banner : -> String .
-  eq banner = "Full Maude 3.5.1 Sept 12 2025" .
+  eq banner = "Full Maude 3.5.1a Nov 12 2025" .
 endfm
 
 ---- Latest changes and bugs fixed:
@@ -6182,6 +6184,7 @@ fmod FM-COMMANDS is
   op ax`coherence`completion`. : -> @Command@ .
   op ax`coherence`completion_. : @ModExp@ -> @Command@ .
   op help`. : -> @Command@ .
+  ops quit`. exit`. quit q exit : -> @Command@ . 
 endfm
 
 -------------------------------------------------------------------------------
@@ -21841,10 +21844,9 @@ endfm
 *** in the following module \texttt{FM-DATABASE-HANDLING}.
 
 
-mod FM-DATABASE-HANDLING is
+omod FM-DATABASE-HANDLING is
 ---  inc META-LEVEL + PRE-VARIANT .
   inc META-LEVEL .
-  inc CONFIGURATION .
   pr VIEW-META-PRETTY-PRINT .
   pr VIEW-PROCESSING .
   pr FM-COMMAND-PROCESSING .
@@ -21880,21 +21882,11 @@ mod FM-DATABASE-HANDLING is
             addImports(getImports(#UP#), upModule('META-MODULE, false)))),
         emptyDatabase) .
 
-*** We start by introducing a subsort \texttt{DatabaseClass} of sort
-*** \texttt{Cid}, the operator declarations necessary for representing objects
-*** in class \texttt{DatabaseClass} as defined above, and variables to range
-*** over subclasses of class \texttt{DatabaseClass} and over attributes.
+  class FM | db : Database, 
+             input : TermList,
+             output : QidList, 
+             default : Header .
 
-  sort DatabaseClass .
-  subsort DatabaseClass < Cid .
-  op Database : -> DatabaseClass .
-  op db :_ : Database -> Attribute .
-  op input :_ : TermList -> Attribute .
-  op output :_ : QidList -> Attribute .
-  op default :_ : Header -> Attribute .
-
-  var Atts : AttributeSet .
-  var X@DatabaseClass : DatabaseClass .
   var O : Oid .
 
 *** Next, we introduce an auxiliary function \texttt{parseHeader} to parse
@@ -21920,11 +21912,11 @@ mod FM-DATABASE-HANDLING is
 *** of declarations of such a unit.
 
   crl [module] :
-     < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass |
+     < O : FM | db : DB, input : (F[T, T']), output : nil, default : ME >
+     => < O : FM |
            db : procModule(F[T, T'], DB), input : nilTermList,
            output : ('Introduced 'module header2Qid(parseHeader(T)) '\n),
-           default : parseHeader(T), Atts >
+           default : parseHeader(T) >
      if  (F == 'fmod_is_endfm) or-else
         ((F == 'obj_is_endo)   or-else
         ((F == 'obj_is_jbo)    or-else
@@ -21940,54 +21932,54 @@ mod FM-DATABASE-HANDLING is
 *** theories and views.
 
   crl [theory] :
-     < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass |
+     < O : FM | db : DB, input : (F[T, T']), output : nil, default : ME >
+     => < O : FM |
            db : procModule(F[T, T'], DB), input : nilTermList,
            output : ('Introduced 'theory header2Qid(parseHeader(T)) '\n),
-           default : parseHeader(T), Atts >
+           default : parseHeader(T) >
      if  (F == 'fth_is_endfth) or-else
          (F == 'th_is_endth)   or-else
          (F == 'oth_is_endoth) or-else
          (F == 'sth_is_endsth) .
 
   rl [view] :
-     < O : X@DatabaseClass | db : DB,
+     < O : FM | db : DB,
         input : ('view_from_to_is`endv[T, T', T'']),
-        output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass |
+        output : nil, default : ME >
+     => < O : FM |
            db : procView('view_from_to_is_endv[T, T', T'', 'none.ViewDeclSet], DB),
            input : nilTermList,
            output : ('Introduced 'view header2Qid(parseHeader(T)) '\n),
-           default : ME, Atts > .
+           default : ME > .
   rl [view] :
-     < O : X@DatabaseClass | db : DB,
+     < O : FM | db : DB,
         input : ('view_from_to_is_endv[T, T', T'', T3]),
-        output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass |
+        output : nil, default : ME >
+     => < O : FM |
            db : procView('view_from_to_is_endv[T, T', T'', T3], DB),
            input : nilTermList,
            output : ('Introduced 'view header2Qid(parseHeader(T)) '\n),
-           default : ME, Atts > .
+           default : ME > .
 
 *** Commands are handled by rules as well. For example, the \texttt{down},
 *** \texttt{reduce}, and \texttt{rewrite} commands are handled by the
 *** following rules.
 
   rl [down] :
-     < O : X@DatabaseClass | db : DB, input : ('down_:_[T, T']), output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass |
+     < O : FM | db : DB, input : ('down_:_[T, T']), output : nil, default : ME >
+     => < O : FM |
            db : getDatabase(procDownCommand('down_:_[T, T'], ME, DB)),
            input : nilTermList,
            output : getQidList(procDownCommand('down_:_[T, T'], ME, DB)),
-           default : ME, Atts > .
+           default : ME > .
 
   crl [red/rew/frew] :
-     < O : X@DatabaseClass | db : DB, input : (F[T]), output : QIL, default : ME, Atts >
-     => < O : X@DatabaseClass |
+     < O : FM | db : DB, input : (F[T]), output : QIL, default : ME >
+     => < O : FM |
            db : getDatabase(procCommand(F[T], ME, DB)),
            input : nilTermList,
            output : getQidList(procCommand(F[T], ME, DB)),
-           default : ME, Atts >
+           default : ME >
      if  (F == 'parse_.)     or-else
          (F == 'red_.)       or-else
          (F == 'reduce_.)    or-else
@@ -22006,12 +21998,12 @@ mod FM-DATABASE-HANDLING is
          (F == 'get`variants_.) .
 
   crl [search] :
-     < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : QIL, default : ME, Atts >
-     => < O : X@DatabaseClass |
+     < O : FM | db : DB, input : (F[T, T']), output : QIL, default : ME >
+     => < O : FM |
            db : getDatabase(procCommand(F[T, T'], ME, DB)),
            input : nilTermList,
            output : getQidList(procCommand(F[T, T'], ME, DB)),
-           default : ME, Atts >
+           default : ME >
      if  (F == 'search_=>_.)  or-else
         ((F == 'search_=>1_.) or-else
         ((F == 'search_=>*_.) or-else
@@ -22037,343 +22029,343 @@ mod FM-DATABASE-HANDLING is
 
 
   rl [select] :
-     < O : X@DatabaseClass | db : DB, input : ('select_.[T]), output : QIL, default : ME, Atts >
-     => < O : X@DatabaseClass | db : DB, input : nilTermList, output : (QIL 'The eMetaPrettyPrint(parseModExp(T)) 'has 'been 'set 'as 'current 'module. '\n), default : parseModExp(T), Atts > .
+     < O : FM | db : DB, input : ('select_.[T]), output : QIL, default : ME >
+     => < O : FM | db : DB, input : nilTermList, output : (QIL 'The eMetaPrettyPrint(parseModExp(T)) 'has 'been 'set 'as 'current 'module. '\n), default : parseModExp(T) > .
 
   rl [show-modules] :
-     < O : X@DatabaseClass | db : DB,
+     < O : FM | db : DB,
         input : ('show`modules`..@Command@),
-        output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass | db : DB, input : nilTermList,
-           output : showModules(DB), default : ME, Atts > .
+        output : nil, default : ME >
+     => < O : FM | db : DB, input : nilTermList,
+           output : showModules(DB), default : ME > .
   rl [show-views] :
-     < O : X@DatabaseClass | db : DB,
+     < O : FM | db : DB,
         input : ('show`views`..@Command@),
-        output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass | db : DB, input : nilTermList,
-           output : showViews(DB), default : ME, Atts >  .
+        output : nil, default : ME >
+     => < O : FM | db : DB, input : nilTermList,
+           output : showViews(DB), default : ME >  .
 
 *** The \texttt{show module} command, which prints the specified module, or
 *** the current one if no module name is specified, is handled by the
 *** following rules.
 
   crl [show-module] :
-    < O : X@DatabaseClass | db : DB,
+    < O : FM | db : DB,
        input : ('show`module`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getTopModule(ME', DB')),
-          default : ME', Atts >
+          default : ME' >
     if < DB' ; ME' > := evalModExp(ME, DB) .
   crl [show-module] :
-    < O : X@DatabaseClass | db : DB, input : ('show`module_.[T]), output : nil, default : ME,   Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('show`module_.[T]), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME'', DB'), getTopModule(ME'', DB')),
-          default : ME, Atts >
+          default : ME >
     if < DB' ; ME'' > := evalModExp(parseModExp(T), DB) .
   crl [show-module] :
-    < O : X@DatabaseClass | db : DB, input : ('show`module_.[T]), output : nil, Atts >
-    => < O : X@DatabaseClass | db : DB, input : nil,
-          output : ('Error 'evaluating 'the 'given 'module 'expression.), Atts >
+    < O : FM | db : DB, input : ('show`module_.[T]), output : nil >
+    => < O : FM | db : DB, input : nil,
+          output : ('Error 'evaluating 'the 'given 'module 'expression.) >
     if evalModExp(ME:[ModuleExpression], DB':[Database]) := evalModExp(parseModExp(T), DB) .
 
   crl [show-all] :
-    < O : X@DatabaseClass | db : DB, input : ('show`all`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`all`..@Command@),
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getFlatModule(ME', DB')),
-          default : ME', Atts >
+          default : ME' >
     if < DB' ; ME' > := evalModExp(ME, DB) .
   crl [show-all] :
-    < O : X@DatabaseClass | db : DB, input : ('show`all_.[T]), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`all_.[T]), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getFlatModule(ME', DB')),
-          default : ME, Atts >
+          default : ME >
     if ME'' := parseModExp(T)
     /\ < DB' ; ME' > := evalModExp(ME'', DB) .
 
   crl [show-vars] :
-    < O : X@DatabaseClass | db : DB, input : ('show`vars`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`vars`..@Command@),
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrintVars(getVars(ME', DB')),
-          default : ME', Atts >
+          default : ME' >
     if DB' := database(evalModExp(ME, DB))
        /\ ME' := modExp(evalModExp(ME, DB)) .
   crl [show-vars] :
-    < O : X@DatabaseClass | db : DB, input : ('show`vars_.[T]),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`vars_.[T]),
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrintVars(getVars(ME', DB')),
-          default : ME, Atts >
+          default : ME >
     if ME'' := parseModExp(T)
        /\ DB' := database(evalModExp(ME'', DB))
        /\ ME' := modExp(evalModExp(ME'', DB)) .
 
   crl [show-sorts] :
-    < O : X@DatabaseClass | db : DB, input : ('show`sorts`..@Command@), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`sorts`..@Command@), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getSorts(getFlatModule(ME', DB'))),
-          default : ME', Atts >
+          default : ME' >
     if DB' := database(evalModExp(ME, DB))
        /\ ME' := modExp(evalModExp(ME, DB)) .
   crl [show-sorts] :
-    < O : X@DatabaseClass | db : DB, input : ('show`sorts_.[T]), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`sorts_.[T]), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getSorts(getFlatModule(ME', DB'))),
-          default : ME, Atts >
+          default : ME >
     if ME'' := parseModExp(T)
        /\ DB' := database(evalModExp(ME'', DB))
        /\ ME' := modExp(evalModExp(ME'', DB)) .
 
   crl [show-ops] :
-    < O : X@DatabaseClass | db : DB, input : ('show`ops`..@Command@), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`ops`..@Command@), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getOps(getFlatModule(ME', DB'))),
-          default : ME', Atts >
+          default : ME' >
     if DB' := database(evalModExp(ME, DB))
        /\ ME' := modExp(evalModExp(ME, DB)) .
   crl [show-ops] :
-    < O : X@DatabaseClass | db : DB, input : ('show`ops_.[T]), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`ops_.[T]), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getOps(getFlatModule(ME', DB'))),
-          default : ME, Atts >
+          default : ME >
     if ME'' := parseModExp(T)
        /\ DB' := database(evalModExp(ME'', DB))
        /\ ME' := modExp(evalModExp(ME'', DB)) .
 
   crl [show-mbs] :
-    < O : X@DatabaseClass | db : DB, input : ('show`mbs`..@Command@), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`mbs`..@Command@), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getMbs(getFlatModule(ME', DB'))),
-          default : ME', Atts >
+          default : ME' >
     if DB' := database(evalModExp(ME, DB))
        /\ ME' := modExp(evalModExp(ME, DB)) .
   crl [show-mbs] :
-    < O : X@DatabaseClass | db : DB, input : ('show`mbs_.[T]), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`mbs_.[T]), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME'', DB'), getMbs(getFlatModule(ME'', DB'))),
-          default : ME, Atts >
+          default : ME >
     if ME' := parseModExp(T)
        /\ DB' := database(evalModExp(ME', DB))
        /\ ME'' := modExp(evalModExp(ME', DB)) .
 
   crl [show-eqns] :
-    < O : X@DatabaseClass | db : DB, input : ('show`eqs`..@Command@), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('show`eqs`..@Command@), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getEqs(getFlatModule(ME', DB'))),
-         default : ME', Atts >
+         default : ME' >
     if DB' := database(evalModExp(ME, DB))
        /\ ME' := modExp(evalModExp(ME, DB)) .
   crl [show-eqns] :
-    < O : X@DatabaseClass | db : DB, input : ('show`eqs_.[T]), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('show`eqs_.[T]), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getEqs(getFlatModule(ME', DB'))),
-          default : ME, Atts >
+          default : ME >
     if ME'' := parseModExp(T)
        /\ DB' := database(evalModExp(ME'', DB))
        /\ ME' := modExp(evalModExp(ME'', DB)) .
 
   crl [show-rls] :
-    < O : X@DatabaseClass | db : DB, input : ('show`rls`..@Command@), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`rls`..@Command@), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getRls(getFlatModule(ME', DB'))),
-          default : ME', Atts >
+          default : ME' >
     if DB' := database(evalModExp(ME, DB))
        /\ ME' := modExp(evalModExp(ME, DB)) .
   crl [show-rls] :
-    < O : X@DatabaseClass | db : DB, input : ('show`rls_.[T]), output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+    < O : FM | db : DB, input : ('show`rls_.[T]), output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : eMetaPrettyPrint(getFlatModule(ME', DB'), getRls(getFlatModule(ME', DB'))),
-          default : ME, Atts >
+          default : ME >
     if ME'' := parseModExp(T)
        /\ DB' := database(evalModExp(ME'', DB))
        /\ ME' := modExp(evalModExp(ME'', DB)) .
 
   crl [show-view] :
-     < O : X@DatabaseClass | db : DB, input : ('show`view_.[T]), output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass | db : DB', input : nilTermList,
+     < O : FM | db : DB, input : ('show`view_.[T]), output : nil, default : ME >
+     => < O : FM | db : DB', input : nilTermList,
            output : eMetaPrettyPrint(DB', getView(parseViewExpression(T), DB')),
-           default : ME, Atts >
+           default : ME >
      if DB' := evalViewExpression(parseViewExpression(T), nil, DB) .
 
   crl [set`protect_on] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : DB,
            input : ('set`protect_on`.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES,
                    MNS' ME', MNS'', MNS3, QIL),
            input : nilTermList,
            output : (QIL' 'set 'protect header2QidList(ME') 'on '\n),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T)
         /\ unitInDb(ME', DB)
         /\ db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, QIL) := DB .
   crl [set`protect_off] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, QIL),
            input : ('set`protect_off`.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES, remove(MNS', ME'), MNS'', MNS3, QIL),
            input : nilTermList,
            output : (QIL' 'set 'protect header2QidList(ME') 'off '\n),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T) .
 
   crl [set`extend_on] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : DB,
            input : ('set`extend_on`.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES,
                    MNS', MNS'' ME', MNS3, QIL),
            input : nilTermList,
            output : (QIL' 'set 'extend header2QidList(ME') 'on '\n),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T)
         /\ unitInDb(ME', DB)
         /\ db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, QIL) := DB .
   crl [set`extend_off] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, QIL),
            input : ('set`extend_off`.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES, MNS', remove(MNS'', ME'), MNS3, QIL),
            input : nilTermList,
            output : (QIL' 'set 'extend header2QidList(ME') 'off '\n),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T) .
 
   crl [set`include_on] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : DB,
            input : ('set`include_on`.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES,
                    MNS', MNS'', MNS3 . ME', QIL),
            input : nilTermList,
            output : (QIL' 'set 'include header2QidList(ME') 'on '\n),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T)
         ----/\ unitInDb(ME', DB)
         /\ db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, QIL) := DB .
   crl [set`include_off] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, QIL),
            input : ('set`include_off`.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES, MNS', MNS'', remove(MNS3, ME'), QIL),
            input : nilTermList,
            output : (QIL' 'set 'include header2QidList(ME') 'off '\n),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T) .
 
   crl [load] :
-     < O : X@DatabaseClass |
+     < O : FM |
            db : DB,
            input : ('load_.[T]),
            output : QIL',
-           default : ME, Atts >
-     => < O : X@DatabaseClass |
+           default : ME >
+     => < O : FM |
            db : getDatabase(procLoad(T, ME, DB)),
            input : nilTermList,
            output : getQidList(procLoad(T, ME, DB)),
-           default : ME, Atts >
+           default : ME >
      if ME' := parseModExp(T) .
 
   eq 'rm`ids`..@Command@ = 'remove`identity`attributes`..@Command@ .
   eq 'rm`ids_.[T] = 'remove`identity`attributes_.[T] .
 
   crl [remove-id-attributes] :
-    < O : X@DatabaseClass | db : DB,
+    < O : FM | db : DB,
        input : ('remove`identity`attributes`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME', DB'), removeIds(getFlatModule(ME', DB'), all))),
-          default : ME', Atts >
+          default : ME' >
     if < DB' ; ME' > := evalModExp(ME, DB) .
   crl [remove-id-attributes] :
-    < O : X@DatabaseClass | db : DB, input : ('remove`identity`attributes_.[T]), output : nil, default : ME,   Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('remove`identity`attributes_.[T]), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME'', DB'), removeIds(axCohComplete(getFlatModule(ME'', DB')), all))),
-          default : ME, Atts >
+          default : ME >
     if < DB' ; ME'' > := evalModExp(parseModExp(T), DB) .
 
   eq 'rm`nh`ids`..@Command@ = 'remove`non-handled`identity`attributes`..@Command@ .
   eq 'rm`nh`ids_.[T] = 'remove`non-handled`identity`attributes_.[T] .
 
   crl [remove-id-attributes] :
-    < O : X@DatabaseClass | db : DB,
+    < O : FM | db : DB,
        input : ('remove`non-handled`identity`attributes`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME', DB'), removeIds(getFlatModule(ME', DB'), non-handled))),
-          default : ME', Atts >
+          default : ME' >
     if < DB' ; ME' > := evalModExp(ME, DB) .
   crl [remove-id-attributes] :
-    < O : X@DatabaseClass | db : DB, input : ('remove`non-handled`identity`attributes_.[T]), output : nil, default : ME,   Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('remove`non-handled`identity`attributes_.[T]), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME'', DB'), removeIds(getFlatModule(ME'', DB'), non-handled))),
-          default : ME, Atts >
+          default : ME >
     if < DB' ; ME'' > := evalModExp(parseModExp(T), DB) .
 
   crl [remove-assoc-attributes] :
-    < O : X@DatabaseClass | db : DB,
+    < O : FM | db : DB,
        input : ('remove`assoc`attributes`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME', DB'), removeLonelyAssocs(getFlatModule(ME', DB')))),
-          default : ME', Atts >
+          default : ME' >
     if < DB' ; ME' > := evalModExp(ME, DB) .
   crl [remove-assoc-attributes] :
-    < O : X@DatabaseClass | db : DB, input : ('remove`assoc`attributes_.[T]), output : nil, default : ME,   Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('remove`assoc`attributes_.[T]), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME'', DB'), removeLonelyAssocs(getFlatModule(ME'', DB')))),
-          default : ME, Atts >
+          default : ME >
     if < DB' ; ME'' > := evalModExp(parseModExp(T), DB) .
 
   crl [acu-coherence-completion] :
-    < O : X@DatabaseClass | db : DB,
+    < O : FM | db : DB,
        input : ('ax`coherence`completion`..@Command@),
-       output : nil, default : ME, Atts >
-    => < O : X@DatabaseClass | db : DB', input : nilTermList,
+       output : nil, default : ME >
+    => < O : FM | db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME', DB'), axCohComplete(getFlatModule(ME', DB')))),
-          default : ME', Atts >
+          default : ME' >
     if < DB' ; ME' > := evalModExp(ME, DB) .
   crl [acu-coherence-completion] :
-    < O : X@DatabaseClass | db : DB, input : ('ax`coherence`completion_.[T]), output : nil, default : ME,   Atts >
-    => < O : X@DatabaseClass |
+    < O : FM | db : DB, input : ('ax`coherence`completion_.[T]), output : nil, default : ME >
+    => < O : FM |
           db : DB', input : nilTermList,
           output : (eMetaPrettyPrint(getFlatModule(ME'', DB'), axCohComplete(getFlatModule(ME'', DB')))),
-          default : ME, Atts >
+          default : ME >
     if < DB' ; ME'' > := evalModExp(parseModExp(T), DB) .
 
   rl [error] :
-     < O : X@DatabaseClass |
+     < O : FM |
         db : db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, NQIL),
-        input : TL, output : nil, default : ME, Atts >
-     => < O : X@DatabaseClass |
+        input : TL, output : nil, default : ME >
+     => < O : FM |
            db : db(MIS, MNS, VIS, VES, MNS', MNS'', MNS3, nil),
-           input : TL, output : NQIL, default : ME, Atts > .
+           input : TL, output : NQIL, default : ME > .
 
   *** Auxiliary Functions
 
@@ -22396,9 +22388,20 @@ mod FM-DATABASE-HANDLING is
     = nil .
 
   rl [help] :
-     < O : X@DatabaseClass | input : ('help`..@Command@), output : QIL, Atts >
-     => < O : X@DatabaseClass | input : nilTermList, output : fm-help, Atts > .
-endm
+     < O : FM | input : ('help`..@Command@), output : QIL >
+     => < O : FM | input : nilTermList, output : fm-help > .
+
+  crl [quit] :
+     < O : FM | input : C:Constant, output : QIL >
+     => none
+     if C:Constant == ('quit`..@Command@)
+     or C:Constant == ('q`..@Command@) 
+     or C:Constant == ('exit`..@Command@) 
+     or C:Constant == ('quit.@Command@) 
+     or C:Constant == ('q.@Command@) 
+     or C:Constant == ('exit.@Command@) 
+     .
+endom
 
 *******************************************************************************
 fmod TEXT-STYLE is
@@ -22426,28 +22429,16 @@ endfm
 *** The Full Maude Module
 ***
 
-*** We now give the rules to initialize the loop, and to specify the
-*** communication between the loop---the input/output of the system---and the
-*** database.  Depending on the kind of input that the database receives, its
-*** state will be changed, or some output will be generated.
-
-mod FULL-MAUDE is
+omod FULL-MAUDE is
   pr META-FULL-MAUDE-SIGN .
   pr FM-DATABASE-HANDLING .
-  inc LOOP-MODE .
   pr FM-BANNER .
-
-*** The state of the persistent system, which is supported by the built-in
-*** module \texttt{LOOP-MODE}, described in Section~\ref{loop}, is represented
-*** as a single object.
-
-  subsort Object < State .
+  inc STD-STREAM .
+  inc LEXICAL .
 
   op o : -> Oid .
-  op init : -> System .
+  op init : -> Configuration .
 
-  var  Atts : AttributeSet .
-  var  X@DatabaseClass : DatabaseClass .
   var  O : Oid .
   var  DB : Database .
   var  ME : Header .
@@ -22456,51 +22447,46 @@ mod FULL-MAUDE is
   var  TL : TermList .
   var  N : Nat .
   vars RP RP' : ResultPair .
+  var  RPK : [ResultPair] .
+  var  TEXT : String .
 
   rl [init] :
      init
-     => [nil,
-         < o : Database |
-            db : initialDatabase,
-            input : nilTermList, output : nil,
-            default : 'CONVERSION >,
-         ('\n '\t '\s '\s '\s '\s '\s '\s '\s '\s '\s '\s string2qidList(banner) '\n)] .
+     => <>
+        < o : FM |
+          db : initialDatabase,
+          input : nilTermList, output : nil,
+          default : 'CONVERSION >
+        write(stdout, o, printTokens('\n '\t '\s '\s '\s '\s '\s '\s '\s '\s '\s string2qidList(banner) '\n)) .
 
-*** When some text has been introduced in the loop, the first argument of the
-*** operator \verb~[_,_,_,]~ is different from \texttt{nil}, and we can use
-*** this fact to activate the following rule, that enters an input such as a
-*** module or a command from the user into the database.  The constant
-*** \texttt{GRAMMAR} names the module containing the signature defining the
-*** top level syntax of Full Maude (see Section~\ref{sec:signature} and
-*** Appendix~\ref{signature-full-maude}). This signature is used by the
-*** \texttt{metaParse} function to parse the input. PD the input is
-*** syntactically valid\footnote{Of course, the input may be syntactically
-*** valid, but not semantically valid, since further processing---for example,
-*** of bubbles---may reveal a semantic inconsistency.}, the parsed input is
-*** placed in the \texttt{input} attribute of the database object; otherwise,
-*** an error message is placed in the output channel of the loop.
+  rl [loop] :
+    < o : FM | none >
+    wrote(o, stdout)
+    => < o : FM | none >
+       getLine(stdin, o, "FM> ") .
 
-  rl [in] :
-    [QI QIL,
-     < O : X@DatabaseClass |
-         db : DB, input : nilTermList, output : nil, default : ME, Atts >,
-     QIL']
-    => if metaParse(GRAMMAR, QI QIL, '@Input@) :: ResultPair
-       then [nil,
-             < O : X@DatabaseClass | db : DB,
-                 input : getTerm(metaParse(GRAMMAR, QI QIL, '@Input@)),
-                 output : nil, default : ME, Atts >,
-              QIL']
-       else [nil,
-             < O : X@DatabaseClass | db : DB, input : nilTermList,
-                 output : ('\r 'Warning:
-                           printSyntaxError(metaParse(GRAMMAR, QI QIL, '@Input@),
-                             QI QIL)
-                           '\n
-                           '\r 'Error: '\o 'No 'parse 'for 'input. '\n),
-                 default : ME, Atts >,
-             QIL']
-       fi .
+---- The constant GRAMMAR names the module containing the signature defining the
+---- top level syntax of Full Maude. This signature is used by the metaParse 
+---- function to parse the input. 
+---- Of course, the input may be syntactically valid, but not semantically valid, 
+---- since further processing---for example, of bubbles---may reveal a semantic inconsistency.
+---- The parsed input is placed in the input attribute of the database object; otherwise,
+---- an error message is placed in the output channel of the loop.
+
+  crl [in] :
+    < O : FM | db : DB, input : nilTermList, output : nil, default : ME >
+    gotLine(O, stdin, TEXT)
+    => if RPK :: ResultPair
+       then < O : FM | db : DB, input : getTerm(RPK), output : nil, default : ME >
+       else < O : FM | db : DB, input : nilTermList,
+              output : ('\r 'Warning:
+                        printSyntaxError(RPK, QI QIL)
+                        '\n
+                        '\r 'Error: '\o 'No 'parse 'for 'input. '\n),
+              default : ME >
+       fi 
+    if QI QIL := tokenize(TEXT) 
+    /\ RPK := metaParse(GRAMMAR, QI QIL, '@Input@) .
 
 *** When the \texttt{output} attribute of the persistent object contains a
 *** nonempty list of quoted identifiers, the \texttt{out} rule moves it to the
@@ -22508,19 +22494,15 @@ mod FULL-MAUDE is
 *** terminal.
 
   rl [out] :
-    [QIL,
-     < O : X@DatabaseClass |
-         db : DB, input : TL, output : (QI QIL'), default : ME, Atts >,
-     QIL'']
-    => [QIL,
-        < O : X@DatabaseClass |
-            db : DB, input : TL, output : nil, default : ME, Atts >,
-        (QI QIL' QIL'')] .
-endm
+    < O : FM | db : DB, input : TL, output : (QI QIL'), default : ME >
+    => < O : FM | db : DB, input : TL, output : nil, default : ME >
+       write(stdout, O, printTokens(QI QIL')) .
+endom
 
 *******************************************************************************
 
-loop init .
+set show command off . 
+erew init .
 
 eof
 --- trace exclude FULL-MAUDE .
